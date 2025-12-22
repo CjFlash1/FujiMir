@@ -1,0 +1,155 @@
+"use client";
+
+import { useCallback, useState } from "react";
+import { useDropzone } from "react-dropzone";
+import { Upload, X, FileImage, Settings, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+import { ImageOptionsModal, PhotoOptions } from "@/components/image-options";
+import { useCartStore } from "@/lib/store";
+
+const DEFAULT_OPTIONS: PhotoOptions = {
+    quantity: 1,
+    size: "10x15",
+    paper: "Glossy",
+    autoEnhance: false,
+};
+
+export default function UploadPage() {
+    const router = useRouter();
+    const { items: files, addItem, removeItem, updateItemOptions } = useCartStore();
+    const [isDragActive, setIsDragActive] = useState(false);
+    const [editingFileId, setEditingFileId] = useState<string | null>(null);
+
+    const onDrop = useCallback((acceptedFiles: File[]) => {
+        acceptedFiles.forEach((file) => {
+            addItem({
+                file,
+                preview: URL.createObjectURL(file),
+                id: Math.random().toString(36).substring(7),
+                options: { ...DEFAULT_OPTIONS },
+            });
+        });
+    }, [addItem]);
+
+    const { getRootProps, getInputProps, isDragAccept: _isDragAccept } = useDropzone({
+        onDrop,
+        accept: {
+            "image/*": [".jpeg", ".jpg", ".png"],
+        },
+        onDragEnter: () => setIsDragActive(true),
+        onDragLeave: () => setIsDragActive(false),
+        onDropAccepted: () => setIsDragActive(false),
+    });
+
+    const editingFile = files.find((f) => f.id === editingFileId);
+
+    const handleProceed = () => {
+        router.push("/checkout");
+    };
+
+    return (
+        <div className="min-h-screen bg-slate-50 py-12">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="text-center mb-12">
+                    <h1 className="text-3xl font-bold text-slate-900">Order Prints</h1>
+                    <p className="mt-2 text-slate-600">Upload your photos to get started</p>
+                </div>
+
+                <div
+                    {...getRootProps()}
+                    className={cn(
+                        "border-2 border-dashed rounded-xl p-12 text-center transition-colors cursor-pointer bg-white",
+                        isDragActive ? "border-primary-500 bg-primary-50" : "border-slate-300 hover:border-primary-400"
+                    )}
+                >
+                    <input {...getInputProps()} />
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="p-4 bg-slate-100 rounded-full">
+                            <Upload className="w-8 h-8 text-slate-600" />
+                        </div>
+                        <div>
+                            <p className="text-lg font-medium text-slate-900">
+                                Drag & drop photos here, or click to select
+                            </p>
+                            <p className="text-sm text-slate-500 mt-1">
+                                Supports JPG, PNG usually ready in 1 hour
+                            </p>
+                        </div>
+                        <Button variant="outline" className="mt-2">
+                            Select Files
+                        </Button>
+                    </div>
+                </div>
+
+                {files.length > 0 && (
+                    <div className="mt-12">
+                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
+                            <FileImage className="w-5 h-5 text-primary-600" />
+                            Selected Photos ({files.length})
+                        </h2>
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                            {files.map((file) => (
+                                <div key={file.id} className="group relative aspect-square bg-slate-200 rounded-lg overflow-hidden border border-slate-200">
+                                    <img
+                                        src={file.preview}
+                                        alt={file.file?.name || "Photo"}
+                                        className="w-full h-full object-cover"
+                                    />
+                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                removeItem(file.id);
+                                            }}
+                                            className="p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setEditingFileId(file.id);
+                                            }}
+                                            className="p-1.5 bg-white text-slate-900 rounded-full hover:bg-slate-100"
+                                        >
+                                            <Settings className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                    {/* Badge for non-default options */}
+                                    {(file.options.quantity > 1 || file.options.size !== "10x15") && (
+                                        <div className="absolute top-1 right-1 bg-primary-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-medium shadow-sm">
+                                            {file.options.size} x{file.options.quantity}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="mt-8 flex justify-end">
+                            <Button size="lg" className="px-8 gap-2" onClick={handleProceed}>
+                                Proceed to Checkout <ArrowRight size={18} />
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                {editingFile && (
+                    <ImageOptionsModal
+                        isOpen={!!editingFile}
+                        onClose={() => setEditingFileId(null)}
+                        currentOptions={editingFile.options}
+                        onSave={(opts) => {
+                            updateItemOptions(editingFile.id, opts);
+                            setEditingFileId(null);
+                        }}
+                    />
+                )}
+            </div>
+        </div>
+    );
+}
