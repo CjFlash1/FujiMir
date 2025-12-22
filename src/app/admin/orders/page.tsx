@@ -54,7 +54,7 @@ export default async function AdminOrdersPage() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-slate-500">{order._count.items} photos</td>
-                                        <td className="px-6 py-4 font-medium text-slate-900">${order.totalAmount.toFixed(2)}</td>
+                                        <td className="px-6 py-4 font-medium text-slate-900">{order.totalAmount.toFixed(2)} ₴</td>
                                         <td className="px-6 py-4">
                                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                                                 {order.status}

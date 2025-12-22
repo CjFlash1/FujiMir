@@ -1,12 +1,14 @@
 "use client";
 
-import { Card } from "@/components/ui/card"; // We'll need to create this or use a div for now
 import { Users, ShoppingBag, DollarSign, TrendingUp } from "lucide-react";
+import { ServerStats } from "@/components/server-stats";
 
 export default function AdminDashboard() {
     return (
         <div className="space-y-6">
             <h1 className="text-3xl font-bold tracking-tight text-slate-900">Dashboard</h1>
+
+            <ServerStats />
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <div className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">

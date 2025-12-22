@@ -19,7 +19,7 @@ const navigation = [
     { name: "Media / Content", href: "/admin/content", icon: Image },
     { name: "Users", href: "/admin/users", icon: Users },
     { name: "Pages", href: "/admin/pages", icon: FileText },
-    { name: "Settings", href: "/admin/settings", icon: Settings },
+    { name: "System Config", href: "/admin/config/sizes", icon: Settings },
 ];
 
 export function AdminSidebar() {

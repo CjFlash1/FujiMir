@@ -8,23 +8,41 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { ArrowLeft, Loader2, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
+import { useTranslation } from "@/lib/i18n";
 
 export default function CheckoutPage() {
     const router = useRouter();
-    const { items, clearCart } = useCartStore();
+    const { items, clearCart, config } = useCartStore();
+    const { t } = useTranslation();
     const [formData, setFormData] = useState({
         name: "",
         phone: "",
         email: "",
         deliveryAddress: "",
-        deliveryMethod: "PICKUP", // PICKUP or POST
+        deliveryMethod: "PICKUP",
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [orderComplete, setOrderComplete] = useState<string | null>(null);
 
-    const totalPhotos = items.reduce((acc, item) => acc + item.options.quantity, 0);
-    // Simple pricing logic for demo: $5 base + $0.50 per photo
-    const estimatedTotal = 5 + (totalPhotos * 0.50);
+    // Calculate Totals using Config
+    const calculateItemTotal = (item: any) => {
+        if (!config) return 0;
+        const sizeObj = config.sizes.find(s => s.name === item.options.size);
+        const basePrice = sizeObj ? sizeObj.basePrice : 0;
+
+        let extras = 0;
+        // Add option prices
+        Object.entries(item.options.options || {}).forEach(([slug, isActive]) => {
+            if (isActive) {
+                const opt = config.options.find(o => o.slug === slug);
+                if (opt) extras += opt.price;
+            }
+        });
+
+        return (basePrice + extras) * item.options.quantity;
+    };
+
+    const totalAmount = items.reduce((acc, item) => acc + calculateItemTotal(item), 0);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -37,12 +55,12 @@ export default function CheckoutPage() {
                 body: JSON.stringify({
                     customer: formData,
                     items: items.map(item => ({
-                        // We aren't sending the file blob, just metadata for this demo
                         id: item.id,
                         options: item.options,
-                        fileName: item.file?.name
+                        fileName: item.file?.name,
+                        priceSnapshot: calculateItemTotal(item) / item.options.quantity, // Unit price
                     })),
-                    total: estimatedTotal
+                    total: totalAmount
                 }),
             });
 
@@ -112,7 +130,7 @@ export default function CheckoutPage() {
                                             <label className="text-sm font-medium">Full Name</label>
                                             <Input
                                                 required
-                                                placeholder="John Doe"
+                                                placeholder="Іван Петренко"
                                                 value={formData.name}
                                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                             />
@@ -132,7 +150,7 @@ export default function CheckoutPage() {
                                         <label className="text-sm font-medium">Email Address (Optional)</label>
                                         <Input
                                             type="email"
-                                            placeholder="john@example.com"
+                                            placeholder="email@example.com"
                                             value={formData.email}
                                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                         />
@@ -145,8 +163,8 @@ export default function CheckoutPage() {
                                                 type="button"
                                                 onClick={() => setFormData({ ...formData, deliveryMethod: "PICKUP" })}
                                                 className={`p-4 border rounded-lg text-center transition-colors ${formData.deliveryMethod === "PICKUP"
-                                                        ? "border-primary-600 bg-primary-50 text-primary-900 font-medium"
-                                                        : "border-slate-200 hover:border-slate-300"
+                                                    ? "border-primary-600 bg-primary-50 text-primary-900 font-medium"
+                                                    : "border-slate-200 hover:border-slate-300"
                                                     }`}
                                             >
                                                 Pickup
@@ -155,8 +173,8 @@ export default function CheckoutPage() {
                                                 type="button"
                                                 onClick={() => setFormData({ ...formData, deliveryMethod: "POST" })}
                                                 className={`p-4 border rounded-lg text-center transition-colors ${formData.deliveryMethod === "POST"
-                                                        ? "border-primary-600 bg-primary-50 text-primary-900 font-medium"
-                                                        : "border-slate-200 hover:border-slate-300"
+                                                    ? "border-primary-600 bg-primary-50 text-primary-900 font-medium"
+                                                    : "border-slate-200 hover:border-slate-300"
                                                     }`}
                                             >
                                                 Nova Poshta
@@ -187,21 +205,20 @@ export default function CheckoutPage() {
                                 <CardTitle>Order Summary</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-slate-600">Total Photos</span>
-                                    <span className="font-medium">{totalPhotos}</span>
-                                </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-slate-600">Print Cost</span>
-                                    <span className="font-medium">${(totalPhotos * 0.50).toFixed(2)}</span>
-                                </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-slate-600">Base Fee</span>
-                                    <span className="font-medium">$5.00</span>
+                                <div className="space-y-2">
+                                    {items.map(item => (
+                                        <div key={item.id} className="flex justify-between text-xs text-slate-600">
+                                            <span>
+                                                {item.options.size} {item.options.paper} x{item.options.quantity}
+                                                {Object.keys(item.options.options || {}).length > 0 && " (+)"}
+                                            </span>
+                                            <span>{calculateItemTotal(item).toFixed(2)} ₴</span>
+                                        </div>
+                                    ))}
                                 </div>
                                 <div className="border-t pt-4 flex justify-between items-center">
                                     <span className="font-semibold text-lg">Total</span>
-                                    <span className="font-bold text-xl text-primary-600">${estimatedTotal.toFixed(2)}</span>
+                                    <span className="font-bold text-xl text-primary-600">{totalAmount.toFixed(2)} ₴</span>
                                 </div>
                             </CardContent>
                             <CardFooter>

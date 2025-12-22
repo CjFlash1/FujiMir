@@ -2,36 +2,41 @@
 
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { Upload, X, FileImage, Settings, ArrowRight } from "lucide-react";
+import { Upload, X, FileImage, Settings, ArrowRight, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { ImageOptionsModal, PhotoOptions } from "@/components/image-options";
-import { useCartStore } from "@/lib/store";
+import { ImageOptionsModal } from "@/components/image-options";
+import { useCartStore, type PrintOptions } from "@/lib/store";
 
-const DEFAULT_OPTIONS: PhotoOptions = {
+const DEFAULT_OPTIONS: PrintOptions = {
     quantity: 1,
     size: "10x15",
-    paper: "Glossy",
-    autoEnhance: false,
+    paper: "glossy", // lowercase slug matching DB seed
+    options: {},
 };
 
 export default function UploadPage() {
     const router = useRouter();
-    const { items: files, addItem, removeItem, updateItemOptions } = useCartStore();
+    const { items: files, addItem, removeItem, updateItem: updateItemOptions, setConfig, cloneItem, bulkCloneItems } = useCartStore(); // Fix: updateItem named updateItemOptions via destructuring alias
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [isBulkEditing, setIsBulkEditing] = useState(false);
     const [isDragActive, setIsDragActive] = useState(false);
     const [editingFileId, setEditingFileId] = useState<string | null>(null);
 
+    // Fetch config on mount
+    useState(() => {
+        fetch('/api/products')
+            .then(res => res.json())
+            .then(data => setConfig(data))
+            .catch(console.error);
+    });
+
     const onDrop = useCallback((acceptedFiles: File[]) => {
         acceptedFiles.forEach((file) => {
-            addItem({
-                file,
-                preview: URL.createObjectURL(file),
-                id: Math.random().toString(36).substring(7),
-                options: { ...DEFAULT_OPTIONS },
-            });
+            addItem(file, { ...DEFAULT_OPTIONS });
         });
     }, [addItem]);
 
@@ -45,7 +50,32 @@ export default function UploadPage() {
         onDropAccepted: () => setIsDragActive(false),
     });
 
+    const toggleSelection = (id: string) => {
+        setSelectedIds(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    };
+
+    const selectAll = () => {
+        if (selectedIds.length === files.length) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(files.map(f => f.id));
+        }
+    };
+
     const editingFile = files.find((f) => f.id === editingFileId);
+
+    const handleSaveOptions = (opts: PrintOptions) => {
+        if (isBulkEditing) {
+            selectedIds.forEach(id => updateItemOptions(id, opts));
+            setIsBulkEditing(false);
+            setSelectedIds([]);
+        } else if (editingFileId) {
+            updateItemOptions(editingFileId, opts);
+            setEditingFileId(null);
+        }
+    };
 
     const handleProceed = () => {
         router.push("/checkout");
@@ -87,19 +117,55 @@ export default function UploadPage() {
 
                 {files.length > 0 && (
                     <div className="mt-12">
-                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-                            <FileImage className="w-5 h-5 text-primary-600" />
-                            Selected Photos ({files.length})
-                        </h2>
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-semibold flex items-center gap-2">
+                                <FileImage className="w-5 h-5 text-primary-600" />
+                                Selected Photos ({files.length})
+                            </h2>
+                            <div className="flex gap-2">
+                                <Button variant="outline" size="sm" onClick={selectAll}>
+                                    {selectedIds.length === files.length ? "Deselect All" : "Select All"}
+                                </Button>
+                                {selectedIds.length > 0 && (
+                                    <>
+                                        <Button size="sm" onClick={() => setIsBulkEditing(true)}>
+                                            Edit Selected ({selectedIds.length})
+                                        </Button>
+                                        <Button variant="outline" size="sm" onClick={() => bulkCloneItems(selectedIds)} className="gap-1">
+                                            <Copy className="w-3.5 h-3.5" /> Duplicate Selected
+                                        </Button>
+                                    </>
+                                )}
+                                <Button variant="ghost" size="sm" onClick={() => bulkCloneItems(files.map(f => f.id))} className="text-slate-500 hover:text-slate-700">
+                                    Duplicate All
+                                </Button>
+                            </div>
+                        </div>
 
                         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                             {files.map((file) => (
-                                <div key={file.id} className="group relative aspect-square bg-slate-200 rounded-lg overflow-hidden border border-slate-200">
+                                <div
+                                    key={file.id}
+                                    onClick={() => toggleSelection(file.id)}
+                                    className={cn(
+                                        "group relative aspect-square bg-slate-200 rounded-lg overflow-hidden border-2 transition-all cursor-pointer",
+                                        selectedIds.includes(file.id) ? "border-primary-600 ring-2 ring-primary-600/20" : "border-slate-200"
+                                    )}
+                                >
                                     <img
                                         src={file.preview}
                                         alt={file.file?.name || "Photo"}
                                         className="w-full h-full object-cover"
                                     />
+
+                                    {/* Selection Checkbox */}
+                                    <div className={cn(
+                                        "absolute top-2 left-2 w-5 h-5 rounded border flex items-center justify-center transition-colors",
+                                        selectedIds.includes(file.id) ? "bg-primary-600 border-primary-600" : "bg-white/80 border-slate-300"
+                                    )}>
+                                        {selectedIds.includes(file.id) && <div className="w-2 h-2 bg-white rounded-full" />}
+                                    </div>
+
                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                         <button
                                             onClick={(e) => {
@@ -113,9 +179,20 @@ export default function UploadPage() {
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
+                                                cloneItem(file.id);
+                                            }}
+                                            className="p-1.5 bg-white text-slate-900 rounded-full hover:bg-slate-100"
+                                            title="Duplicate"
+                                        >
+                                            <Copy className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
                                                 setEditingFileId(file.id);
                                             }}
                                             className="p-1.5 bg-white text-slate-900 rounded-full hover:bg-slate-100"
+                                            title="Settings"
                                         >
                                             <Settings className="w-4 h-4" />
                                         </button>
@@ -138,15 +215,15 @@ export default function UploadPage() {
                     </div>
                 )}
 
-                {editingFile && (
+                {(editingFile || isBulkEditing) && (
                     <ImageOptionsModal
-                        isOpen={!!editingFile}
-                        onClose={() => setEditingFileId(null)}
-                        currentOptions={editingFile.options}
-                        onSave={(opts) => {
-                            updateItemOptions(editingFile.id, opts);
+                        isOpen={!!editingFile || isBulkEditing}
+                        onClose={() => {
                             setEditingFileId(null);
+                            setIsBulkEditing(false);
                         }}
+                        currentOptions={isBulkEditing ? DEFAULT_OPTIONS : editingFile?.options}
+                        onSave={handleSaveOptions}
                     />
                 )}
             </div>

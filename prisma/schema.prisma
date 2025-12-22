@@ -39,44 +39,73 @@ model OrderItem {
   order       Order    @relation(fields: [orderId], references: [id])
   
   type        String   // "PRINT", "SHOP_ITEM"
-  name        String   // "10x15 Glossy" or "Photo Album"
+  name        String   // "10x15 Glossy"
   
   quantity    Int
-  price       Float    // Price per unit at time of order
+  price       Float    // Unit price snapshot
   subtotal    Float
   
-  // Specifics for Prints
+  // Specifics
   size        String?  // "10x15"
-  paper       String?  // "Glossy", "Matte"
-  files       String?  // JSON string of file names/paths ["img1.jpg", "img2.jpg"]
+  paper       String?  // "Glossy"
+  options     String?  // JSON: { "border": true, "magnetic": false }
+  files       String?  // JSON: ["img1.jpg"]
   
   createdAt   DateTime @default(now())
 }
+
+// --- Dynamic Product Configuration ---
+
+model PrintSize {
+  id          Int      @id @default(autoincrement())
+  name        String   // "10x15"
+  slug        String   @unique // "10x15"
+  widthMm     Float?
+  heightMm    Float?
+  basePrice   Float
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model PaperType {
+  id          Int      @id @default(autoincrement())
+  name        String   // "Glossy", "Matte"
+  slug        String   @unique // "glossy", "matte"
+  description String?
+  isActive    Boolean  @default(true)
+}
+
+model PrintOption {
+  id          Int      @id @default(autoincrement())
+  name        String   // "Border", "Magnetic"
+  slug        String   @unique // "border", "magnetic"
+  priceType   String   // "FIXED", "PERCENT", "PER_AREA"? -> Simplified: "FIXED" usually
+  price       Float    // 0 for border, 10 for magnetic
+  isActive    Boolean  @default(true)
+}
+
+// --- Generic Product (Shop) ---
 
 model Product {
   id          Int      @id @default(autoincrement())
-  name        String   // "10x15" or "Wooden Frame"
-  type        String   // "PRINT_SIZE", "SHOP_ITEM"
+  name        String
   description String?
-  basePrice   Float
-  imageUrl    String?
+  price       Float
+  images      String?  // JSON
+  stock       Int      @default(0)
   isActive    Boolean  @default(true)
-  
-  priceRules  PriceRule[]
-  
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
 }
 
-model PriceRule {
-  id          Int      @id @default(autoincrement())
-  productId   Int
-  product     Product  @relation(fields: [productId], references: [id])
+// --- System & Localization ---
+
+model Translation {
+  id        Int      @id @default(autoincrement())
+  lang      String   // "uk", "ru", "en"
+  key       String   // "hero.title"
+  value     String   // "Друк фото"
   
-  minQuantity Int      // e.g. 10
-  price       Float    // e.g. 4.50 (discounted price)
-  
-  createdAt   DateTime @default(now())
+  @@unique([lang, key])
 }
 
 model Setting {

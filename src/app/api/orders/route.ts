@@ -8,8 +8,8 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { customer, items, total } = body;
 
-        // Generate a simple order number
-        const orderNumber = `ORD-${Math.floor(Math.random() * 100000)}`;
+        // Generate a random order number
+        const orderNumber = `ORD-${Date.now().toString().slice(-6)}`;
 
         const order = await prisma.order.create({
             data: {
@@ -23,13 +23,13 @@ export async function POST(request: Request) {
                 items: {
                     create: items.map((item: any) => ({
                         type: "PRINT",
-                        name: `${item.options.size} Print`,
+                        name: `${item.options.size} ${item.options.paper}`,
                         quantity: item.options.quantity,
-                        price: 0.50, // Hardcoded for now, ideal: look up from Product table
-                        subtotal: item.options.quantity * 0.50,
+                        price: item.priceSnapshot,
+                        subtotal: item.priceSnapshot * item.options.quantity,
                         size: item.options.size,
                         paper: item.options.paper,
-                        // Storing metadata about filenames
+                        options: JSON.stringify(item.options.options || {}),
                         files: JSON.stringify([item.fileName]),
                     }))
                 }

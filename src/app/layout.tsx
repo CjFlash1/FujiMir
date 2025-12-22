@@ -14,6 +14,8 @@ export const metadata: Metadata = {
   description: "Professional photo printing service in Ukraine. High quality prints, fast delivery.",
 };
 
+import { TranslationProvider } from "@/lib/i18n";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -24,9 +26,11 @@ export default function RootLayout({
       <body
         className={`${inter.variable} font-sans antialiased min-h-screen flex flex-col`}
       >
-        <Navbar />
-        {children}
-        <Footer />
+        <TranslationProvider>
+          <Navbar />
+          {children}
+          <Footer />
+        </TranslationProvider>
       </body>
     </html>
   );
