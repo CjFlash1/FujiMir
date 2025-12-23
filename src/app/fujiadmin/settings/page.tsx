@@ -23,6 +23,16 @@ const SETTING_GROUPS = [
             { key: "social_instagram", label: "Instagram URL", icon: Instagram, placeholder: "https://instagram.com/..." },
             { key: "social_facebook", label: "Facebook URL", icon: Facebook, placeholder: "https://facebook.com/..." },
         ]
+    },
+    {
+        title: "Direct Messengers",
+        description: "Configure floating buttons or contact links.",
+        items: [
+            { key: "viber_link", label: "Viber Link/Number", icon: Phone, placeholder: "viber://chat?number=..." },
+            { key: "telegram_link", label: "Telegram Username/Link", icon: Globe, placeholder: "https://t.me/..." },
+            { key: "viber_active", label: "Enable Viber (true/false)", icon: Globe, placeholder: "true" },
+            { key: "telegram_active", label: "Enable Telegram (true/false)", icon: Globe, placeholder: "true" },
+        ]
     }
 ];
 

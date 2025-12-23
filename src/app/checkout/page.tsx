@@ -247,12 +247,23 @@ export default function CheckoutPage() {
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
                                     {items.map(item => (
-                                        <div key={item.id} className="flex justify-between text-xs text-slate-600">
-                                            <span>
-                                                {item.options.size} {item.options.paper} x{item.options.quantity}
-                                                {Object.keys(item.options.options || {}).length > 0 && " (+)"}
-                                            </span>
-                                            <span>{calculateItemTotal(item).toFixed(2)} ₴</span>
+                                        <div key={item.id} className="flex flex-col border-b border-slate-100 last:border-0 pb-2 mb-2">
+                                            <div className="flex justify-between text-sm font-medium text-slate-900">
+                                                <span>{item.options.size} {item.options.paper} x{item.options.quantity}</span>
+                                                <span>{calculateItemTotal(item).toFixed(2)} ₴</span>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2 mt-1">
+                                                {item.options.options?.border && (
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-100 uppercase">
+                                                        {t('Border')}
+                                                    </span>
+                                                )}
+                                                {item.options.options?.magnetic && (
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-100 uppercase">
+                                                        {t('Magnet')}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     ))}
                                     {activeGift && (

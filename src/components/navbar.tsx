@@ -13,7 +13,7 @@ export function Navbar() {
     const { getSetting } = useSettings();
 
     return (
-        <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <nav className="bg-white border-b border-slate-100 sticky top-0 z-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16">
                     <div className="flex">
@@ -78,10 +78,10 @@ export function Navbar() {
                         <Link href="/pricing" className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800">
                             {t('nav.pricing')}
                         </Link>
-                        <Link href="/about" className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800">
+                        <Link href="/p/about" className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800">
                             {t('nav.about')}
                         </Link>
-                        <Link href="/contact" className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800">
+                        <Link href="/p/contact" className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800">
                             {t('nav.contact')}
                         </Link>
                     </div>

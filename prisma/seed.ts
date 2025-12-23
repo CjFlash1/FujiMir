@@ -72,11 +72,47 @@ async function main() {
         });
     }
 
-    await prisma.giftThreshold.upsert({
-        where: { id: 1 },
-        update: { minAmount: 1000, giftName: 'Free 10x15 Print', isActive: true },
-        create: { id: 1, minAmount: 1000, giftName: 'Free 10x15 Print', isActive: true }
-    });
+    // 6. Default Informational Pages
+    const pages = [
+        {
+            title: 'Про нас',
+            slug: 'about',
+            content: '<h1>Про наш фотоцентр</h1><p>Ми надаємо професійні послуги друку фотографій вже багато років. Використовуємо лише оригінальні матеріали Fuji.</p>',
+            description: 'Інформація про наш фотоцентр Fujimir',
+            isActive: true
+        },
+        {
+            title: 'Контакти',
+            slug: 'contact',
+            content: '<h1>Контактна інформація</h1><p>Зв\'яжіться з нами зручним для вас способом.</p>',
+            description: 'Як нас знайти та як з нами зв\'язатися',
+            isActive: true
+        }
+    ];
+
+    for (const p of pages) {
+        await prisma.page.upsert({
+            where: { slug: p.slug },
+            update: { ...p },
+            create: { ...p }
+        });
+    }
+
+    // 7. Social Links Settings
+    const defaultSettings = [
+        { key: 'viber_link', value: 'viber://chat?number=+380000000000', description: 'Viber chat link' },
+        { key: 'telegram_link', value: 'https://t.me/fujimir', description: 'Telegram chat link' },
+        { key: 'viber_active', value: 'true', description: 'Show Viber button' },
+        { key: 'telegram_active', value: 'true', description: 'Show Telegram button' },
+    ];
+
+    for (const s of defaultSettings) {
+        await prisma.setting.upsert({
+            where: { key: s.key },
+            update: { description: s.description },
+            create: { ...s }
+        });
+    }
 
     console.log('Seeding finished.')
 }

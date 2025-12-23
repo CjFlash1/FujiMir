@@ -1,11 +1,11 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 
-export default async function PublicPage({ params }: { params: { slug: string } }) {
-    const { slug } = params;
+export default async function PublicPage({ params }: { params: Promise<{ slug: string }> }) {
+    const { slug } = await params;
 
     const page = await prisma.page.findUnique({
-        where: { slug, isActive: true }
+        where: { slug }
     });
 
     if (!page) {

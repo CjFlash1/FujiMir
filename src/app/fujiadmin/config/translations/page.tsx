@@ -60,7 +60,14 @@ export default function TranslationManager() {
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold">Translation Manager</h1>
+                <div className="flex justify-between items-center">
+                    <h1 className="text-2xl font-bold">Translation Manager</h1>
+                    {saveSuccess && (
+                        <div className="bg-green-100 text-green-700 px-4 py-2 rounded-md text-sm font-medium animate-in fade-in slide-in-from-top-2">
+                            {saveSuccess}
+                        </div>
+                    )}
+                </div>
                 <div className="relative w-72">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <Input

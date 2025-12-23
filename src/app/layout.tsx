@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Manrope } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 
-const inter = Inter({
-  subsets: ["latin", "cyrillic"], // Added cyrillic for Ukrainian support
-  variable: "--font-inter",
+const manrope = Manrope({
+  subsets: ["latin", "cyrillic"],
+  variable: "--font-manrope",
 });
 
 import { prisma } from "@/lib/prisma";
@@ -30,7 +30,7 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <body
-        className={`${inter.variable} font-sans antialiased min-h-screen flex flex-col`}
+        className={`${manrope.variable} font-sans antialiased min-h-screen flex flex-col`}
       >
         <SettingsProvider>
           <TranslationProvider>
