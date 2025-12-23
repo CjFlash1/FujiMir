@@ -12,9 +12,22 @@ type TranslationContextType = {
 const TranslationContext = createContext<TranslationContextType | null>(null);
 
 export function TranslationProvider({ children }: { children: ReactNode }) {
-    const [lang, setLang] = useState("uk");
+    const [lang, setLangState] = useState("uk");
     const [translations, setTranslations] = useState<Record<string, string>>({});
     const [isLoading, setIsLoading] = useState(true);
+
+    // Initialize from localStorage
+    useEffect(() => {
+        const savedLang = localStorage.getItem("fujimir_lang");
+        if (savedLang && ["uk", "en", "ru"].includes(savedLang)) {
+            setLangState(savedLang);
+        }
+    }, []);
+
+    const setLang = (newLang: string) => {
+        setLangState(newLang);
+        localStorage.setItem("fujimir_lang", newLang);
+    };
 
     useEffect(() => {
         setIsLoading(true);

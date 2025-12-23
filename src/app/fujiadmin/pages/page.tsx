@@ -52,7 +52,7 @@ export default function CMSPages() {
     };
 
     const handleDelete = async (id: number) => {
-        if (!confirm("Are you sure?")) return;
+        // Removed window.confirm to avoid blocking issues
         try {
             await fetch(`/api/fujiadmin/cms/pages?id=${id}`, { method: "DELETE" });
             fetchPages();

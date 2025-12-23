@@ -1,10 +1,13 @@
 "use client";
 
 import { useSettings } from "@/lib/settings-context";
+import { useTranslation } from "@/lib/i18n";
 import { Instagram, Facebook } from "lucide-react";
+import Link from "next/link";
 
 export function Footer() {
     const { getSetting } = useSettings();
+    const { t } = useTranslation();
     const instagram = getSetting('social_instagram');
     const facebook = getSetting('social_facebook');
     const siteName = getSetting('site_name', 'Fujimir');
@@ -26,9 +29,17 @@ export function Footer() {
                         </a>
                     )}
                 </div>
-                <div className="mt-8 md:mt-0 md:order-1">
-                    <p className="text-center text-base text-slate-400">
-                        &copy; {new Date().getFullYear()} {siteName}. All rights reserved. {getSetting('contact_phone')}
+                <div className="flex flex-col md:flex-row items-center gap-8 md:order-1">
+                    <p className="text-center text-base text-slate-500">
+                        &copy; {new Date().getFullYear()} {siteName}. All rights reserved.
+                    </p>
+                    <div className="flex items-center gap-6 text-sm font-medium text-slate-400">
+                        <Link href="/p/about" className="hover:text-primary-600 transition-colors">{t('nav.about')}</Link>
+                        <Link href="/p/contact" className="hover:text-primary-600 transition-colors">{t('nav.contact')}</Link>
+                        <Link href="/pricing" className="hover:text-primary-600 transition-colors">{t('nav.pricing')}</Link>
+                    </div>
+                    <p className="text-sm font-bold text-primary-700">
+                        {getSetting('contact_phone')}
                     </p>
                 </div>
             </div>

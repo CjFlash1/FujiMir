@@ -9,7 +9,8 @@ import {
     Settings,
     Image,
     FileText,
-    LogOut
+    LogOut,
+    Globe
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +20,7 @@ const navigation = [
     { name: "Media / Content", href: "/fujiadmin/content", icon: Image },
     { name: "Users", href: "/fujiadmin/users", icon: Users },
     { name: "Pages", href: "/fujiadmin/pages", icon: FileText },
+    { name: "Translations", href: "/fujiadmin/config/translations", icon: Globe },
     { name: "Global Settings", href: "/fujiadmin/settings", icon: Settings },
     { name: "System Config", href: "/fujiadmin/config/sizes", icon: Settings },
 ];

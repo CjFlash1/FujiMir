@@ -32,6 +32,15 @@ export async function POST(req: Request) {
     return NextResponse.json(translation);
 }
 
+export async function PUT(req: Request) {
+    const data = await req.json();
+    const translation = await prisma.translation.update({
+        where: { id: data.id },
+        data: { value: data.value }
+    });
+    return NextResponse.json(translation);
+}
+
 export async function DELETE(req: Request) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");

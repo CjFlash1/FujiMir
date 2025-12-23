@@ -17,13 +17,16 @@ export function Navbar() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16">
                     <div className="flex">
-                        <Link href="/" className="flex-shrink-0 flex items-center gap-2">
-                            <div className="bg-emerald-600 text-white p-1 rounded">
-                                <Camera size={24} />
+                        <Link href="/" className="flex-shrink-0 flex items-center gap-3">
+                            <img src="/logo.png" alt="Fujimir" className="h-10 w-auto" />
+                            <div className="flex flex-col">
+                                <span className="font-bold text-lg tracking-tight text-primary-700 leading-none">
+                                    {getSetting('site_name', 'Fujimir')}
+                                </span>
+                                <span className="text-[10px] text-slate-500 uppercase tracking-widest leading-none mt-0.5">
+                                    Online Photo Lab
+                                </span>
                             </div>
-                            <span className="font-bold text-xl tracking-tight text-slate-900">
-                                {getSetting('site_name', 'Fujimir')}
-                            </span>
                         </Link>
                     </div>
 
@@ -34,6 +37,12 @@ export function Navbar() {
                         <Link href="/pricing" className="text-slate-600 hover:text-slate-900 px-3 py-2 rounded-md text-sm font-medium">
                             {t('nav.pricing')}
                         </Link>
+                        <Link href="/p/about" className="text-slate-600 hover:text-slate-900 px-3 py-2 rounded-md text-sm font-medium">
+                            {t('nav.about')}
+                        </Link>
+                        <Link href="/p/contact" className="text-slate-600 hover:text-slate-900 px-3 py-2 rounded-md text-sm font-medium">
+                            {t('nav.contact')}
+                        </Link>
 
                         <div className="flex items-center space-x-2 border-l pl-4 ml-4">
                             <button onClick={() => setLang('uk')} className={`text-sm font-medium ${lang === 'uk' ? 'text-primary-600' : 'text-slate-400'}`}>UA</button>
@@ -43,8 +52,8 @@ export function Navbar() {
                             <button onClick={() => setLang('en')} className={`text-sm font-medium ${lang === 'en' ? 'text-primary-600' : 'text-slate-400'}`}>EN</button>
                         </div>
 
-                        <Button size="sm">
-                            Sign In
+                        <Button size="sm" className="hidden md:flex">
+                            {t('nav.signin')}
                         </Button>
                     </div>
 
@@ -70,10 +79,10 @@ export function Navbar() {
                             {t('nav.pricing')}
                         </Link>
                         <Link href="/about" className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800">
-                            About
+                            {t('nav.about')}
                         </Link>
                         <Link href="/contact" className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800">
-                            Contact
+                            {t('nav.contact')}
                         </Link>
                     </div>
                 </div>

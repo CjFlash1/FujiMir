@@ -34,13 +34,21 @@ async function main() {
     const translations = [
         { key: 'nav.upload', val: { uk: 'Завантажити', en: 'Upload', ru: 'Загрузить' } },
         { key: 'nav.pricing', val: { uk: 'Ціни', en: 'Pricing', ru: 'Цены' } },
+        { key: 'nav.about', val: { uk: 'Про нас', en: 'About', ru: 'О нас' } },
+        { key: 'nav.contact', val: { uk: 'Контакти', en: 'Contact', ru: 'Контакты' } },
+        { key: 'nav.signin', val: { uk: 'Увійти', en: 'Sign In', ru: 'Войти' } },
         { key: 'hero.title', val: { uk: 'Друк фото онлайн', en: 'Online Photo Printing', ru: 'Печать фото онлайн' } },
-        { key: 'hero.subtitle', val: { uk: 'Якісно та швидко', en: 'Quality & Fast', ru: 'Качественно и быстро' } },
+        { key: 'hero.subtitle', val: { uk: 'Професійний фотодрук найвищої якості', en: 'Professional photo printing of the highest quality', ru: 'Профессиональная фотопечать высшего качества' } },
         { key: 'checkout.summary', val: { uk: 'Підсумок замовлення', en: 'Order Summary', ru: 'Итог заказа' } },
         { key: 'checkout.total', val: { uk: 'Всього', en: 'Total', ru: 'Всего' } },
         { key: 'checkout.bonus', val: { uk: 'Бонус', en: 'Bonus', ru: 'Бонус' } },
         { key: 'checkout.free', val: { uk: 'Безкоштовно', en: 'Free', ru: 'Бесплатно' } },
         { key: 'checkout.placeOrder', val: { uk: 'Оформити замовлення', en: 'Place Order', ru: 'Оформить заказ' } },
+        { key: 'common.processing', val: { uk: 'Обробка...', en: 'Processing...', ru: 'Обработка...' } },
+        { key: 'prints', val: { uk: 'шт.', en: 'pcs.', ru: 'шт.' } },
+        { key: 'Extra Options', val: { uk: 'Додаткові опції', en: 'Extra Options', ru: 'Дополнительные опции' } },
+        { key: 'Option', val: { uk: 'Опція', en: 'Option', ru: 'Опция' } },
+        { key: 'Price', val: { uk: 'Ціна', en: 'Price', ru: 'Цена' } },
     ]
 
     for (const t of translations) {
