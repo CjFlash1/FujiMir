@@ -12,21 +12,22 @@ import {
     LogOut,
     Globe
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-
-const navigation = [
-    { name: "Dashboard", href: "/fujiadmin", icon: LayoutDashboard },
-    { name: "Orders", href: "/fujiadmin/orders", icon: ShoppingBag },
-    { name: "Media / Content", href: "/fujiadmin/content", icon: Image },
-    { name: "Users", href: "/fujiadmin/users", icon: Users },
-    { name: "Pages", href: "/fujiadmin/pages", icon: FileText },
-    { name: "Translations", href: "/fujiadmin/config/translations", icon: Globe },
-    { name: "Global Settings", href: "/fujiadmin/settings", icon: Settings },
-    { name: "System Config", href: "/fujiadmin/config/sizes", icon: Settings },
-];
+import { useTranslation } from "@/lib/i18n";
 
 export function AdminSidebar() {
     const pathname = usePathname();
+    const { t } = useTranslation();
+
+    const navigation = [
+        { name: t("admin.dashboard"), href: "/fujiadmin", icon: LayoutDashboard },
+        { name: t("admin.orders"), href: "/fujiadmin/orders", icon: ShoppingBag },
+        { name: t("admin.content"), href: "/fujiadmin/content", icon: Image },
+        { name: t("admin.users"), href: "/fujiadmin/users", icon: Users },
+        { name: t("admin.pages"), href: "/fujiadmin/pages", icon: FileText },
+        { name: t("admin.translations"), href: "/fujiadmin/config/translations", icon: Globe },
+        { name: t("admin.settings"), href: "/fujiadmin/settings", icon: Settings },
+        { name: t("admin.config"), href: "/fujiadmin/config/sizes", icon: Settings },
+    ];
 
     return (
         <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-slate-900 px-6 pb-4 w-64 min-h-screen text-white">

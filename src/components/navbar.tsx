@@ -12,78 +12,108 @@ export function Navbar() {
     const { t, lang, setLang } = useTranslation();
     const { getSetting } = useSettings();
 
+    const navLinks = [
+        { href: "/upload", label: t('nav.upload'), primary: true },
+        { href: "/pricing", label: t('nav.pricing') },
+        { href: "/p/about", label: t('nav.about') },
+        { href: "/p/contact", label: t('nav.contact') },
+        { href: "/p/help", label: t('nav.help') },
+    ];
+
     return (
-        <nav className="bg-white border-b border-slate-100 sticky top-0 z-50">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex justify-between h-16">
-                    <div className="flex">
-                        <Link href="/" className="flex-shrink-0 flex items-center gap-3">
+        <nav className="sticky top-0 z-50 flex flex-col shadow-md">
+            {/* Top Tier: Green Gradient Header */}
+            <div className="bg-gradient-to-b from-[#00b352] to-[#009846] text-white py-3">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+                    <Link href="/" className="flex items-center gap-4 group">
+                        <div className="bg-white p-1 rounded-sm shadow-sm transition-transform group-hover:scale-105">
                             <img src="/logo.png" alt="Fujimir" className="h-10 w-auto" />
-                            <div className="flex flex-col">
-                                <span className="font-bold text-lg tracking-tight text-primary-700 leading-none">
-                                    {getSetting('site_name', 'Fujimir')}
-                                </span>
-                                <span className="text-[10px] text-slate-500 uppercase tracking-widest leading-none mt-0.5">
-                                    Online Photo Lab
-                                </span>
-                            </div>
-                        </Link>
-                    </div>
-
-                    <div className="hidden sm:ml-6 sm:flex sm:items-center sm:space-x-8">
-                        <Link href="/upload" className="text-slate-600 hover:text-slate-900 px-3 py-2 rounded-md text-sm font-medium">
-                            {t('nav.upload')}
-                        </Link>
-                        <Link href="/pricing" className="text-slate-600 hover:text-slate-900 px-3 py-2 rounded-md text-sm font-medium">
-                            {t('nav.pricing')}
-                        </Link>
-                        <Link href="/p/about" className="text-slate-600 hover:text-slate-900 px-3 py-2 rounded-md text-sm font-medium">
-                            {t('nav.about')}
-                        </Link>
-                        <Link href="/p/contact" className="text-slate-600 hover:text-slate-900 px-3 py-2 rounded-md text-sm font-medium">
-                            {t('nav.contact')}
-                        </Link>
-
-                        <div className="flex items-center space-x-2 border-l pl-4 ml-4">
-                            <button onClick={() => setLang('uk')} className={`text-sm font-medium ${lang === 'uk' ? 'text-primary-600' : 'text-slate-400'}`}>UA</button>
-                            <span className="text-slate-300">|</span>
-                            <button onClick={() => setLang('ru')} className={`text-sm font-medium ${lang === 'ru' ? 'text-primary-600' : 'text-slate-400'}`}>RU</button>
-                            <span className="text-slate-300">|</span>
-                            <button onClick={() => setLang('en')} className={`text-sm font-medium ${lang === 'en' ? 'text-primary-600' : 'text-slate-400'}`}>EN</button>
                         </div>
+                        <div className="flex flex-col">
+                            <span className="font-black text-2xl tracking-tighter leading-none">
+                                <span className="text-white">FUJI</span>
+                                <span className="text-white/90 font-light">.MIR</span>
+                            </span>
+                            <span className="text-[10px] text-white/80 uppercase tracking-[0.2em] font-bold mt-1">
+                                {t('hero.title') || 'Online Photo Lab'}
+                            </span>
+                        </div>
+                    </Link>
 
-                        <Button size="sm" className="hidden md:flex">
-                            {t('nav.signin')}
-                        </Button>
+                    <div className="hidden md:flex items-center gap-8 text-sm font-bold">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+                                <span className="text-lg">📞</span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-white/70 text-[10px] uppercase leading-none mb-1">Contact Us</span>
+                                <span className="leading-none">{getSetting('contact_phone', '(099) 215-03-17')}</span>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <button onClick={() => setLang('uk')} className={`hover:text-white transition-colors ${lang === 'uk' ? 'text-white underline underline-offset-4' : 'text-white/60'}`}>UA</button>
+                            <button onClick={() => setLang('ru')} className={`hover:text-white transition-colors ${lang === 'ru' ? 'text-white underline underline-offset-4' : 'text-white/60'}`}>RU</button>
+                            <button onClick={() => setLang('en')} className={`hover:text-white transition-colors ${lang === 'en' ? 'text-white underline underline-offset-4' : 'text-white/60'}`}>EN</button>
+                        </div>
                     </div>
 
-                    <div className="-mr-2 flex items-center sm:hidden">
+                    <div className="md:hidden">
                         <button
                             onClick={() => setIsOpen(!isOpen)}
-                            className="inline-flex items-center justify-center p-2 rounded-md text-slate-400 hover:text-slate-500 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
+                            className="p-2 text-white hover:bg-white/10 rounded-md"
                         >
-                            <span className="sr-only">Open main menu</span>
-                            {isOpen ? <X className="block h-6 w-6" /> : <Menu className="block h-6 w-6" />}
+                            {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
                         </button>
                     </div>
                 </div>
             </div>
 
+            {/* Bottom Tier: Tan Menu Bar */}
+            <div className="bg-[#c5b98e] border-b border-[#a69269]/30 hidden md:block">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex items-center justify-between h-11">
+                        <div className="flex space-x-1">
+                            {navLinks.map((link) => (
+                                <Link
+                                    key={link.href}
+                                    href={link.href}
+                                    className={cn(
+                                        "px-5 h-11 flex items-center text-sm font-bold transition-all uppercase tracking-wide",
+                                        link.primary
+                                            ? "bg-[#e31e24] text-white hover:bg-[#c31a1f] shadow-inner"
+                                            : "text-[#4c4c4c] hover:bg-[#a69269]/20 hover:text-black"
+                                    )}
+                                >
+                                    {link.label}
+                                </Link>
+                            ))}
+                        </div>
+                        <Link href="/fujiadmin" className="text-[10px] items-center text-[#4c4c4c]/50 hover:text-black font-bold uppercase transition-colors">
+                            Admin Panel
+                        </Link>
+                    </div>
+                </div>
+            </div>
+
+            {/* Mobile Menu */}
             {isOpen && (
-                <div className="sm:hidden mobile-menu">
-                    <div className="pt-2 pb-3 space-y-1">
-                        <Link href="/upload" className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800">
-                            {t('nav.upload')}
-                        </Link>
-                        <Link href="/pricing" className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800">
-                            {t('nav.pricing')}
-                        </Link>
-                        <Link href="/p/about" className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800">
-                            {t('nav.about')}
-                        </Link>
-                        <Link href="/p/contact" className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800">
-                            {t('nav.contact')}
-                        </Link>
+                <div className="md:hidden bg-[#f3f1e9] border-b border-tan-dark overflow-hidden transition-all">
+                    <div className="px-2 pt-2 pb-3 space-y-1">
+                        {navLinks.map((link) => (
+                            <Link
+                                key={link.href}
+                                href={link.href}
+                                onClick={() => setIsOpen(false)}
+                                className={cn(
+                                    "block px-3 py-3 rounded-md text-base font-bold uppercase tracking-wide",
+                                    link.primary
+                                        ? "bg-accent text-white"
+                                        : "text-[#4c4c4c] hover:bg-tan/20"
+                                )}
+                            >
+                                {link.label}
+                            </Link>
+                        ))}
                     </div>
                 </div>
             )}

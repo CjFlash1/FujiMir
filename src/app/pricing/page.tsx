@@ -32,67 +32,73 @@ export default function PricingPage() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50/50">
-            <header className="bg-primary-900 text-white py-20 mb-12 relative overflow-hidden">
+        <div className="min-h-screen bg-[#f3f1e9]">
+            <header className="bg-gradient-to-b from-[#00b352] to-[#009846] text-white py-16 mb-12 relative overflow-hidden shadow-lg">
                 <div className="max-w-7xl mx-auto px-4 relative z-10 text-center">
-                    <h1 className="text-5xl font-extrabold mb-4">{t('nav.pricing')}</h1>
-                    <p className="text-xl text-primary-100 max-w-2xl mx-auto opacity-90">
+                    <h1 className="text-5xl font-black mb-4 uppercase tracking-tight">{t('nav.pricing')}</h1>
+                    <p className="text-xl text-white/90 max-w-2xl mx-auto font-medium">
                         {t('Professional photo printing with high-quality Fuji materials. Choose your size and options below.')}
                     </p>
                 </div>
-                <div className="absolute inset-0 bg-gradient-to-br from-primary-800 to-transparent" />
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
             </header>
 
             <div className="max-w-7xl mx-auto px-4 pb-24">
-                {config?.sizes?.map((size: any) => (
-                    <Card key={size.id} className="overflow-hidden border-slate-200 hover:shadow-lg transition-shadow">
-                        <CardHeader className="bg-slate-50 border-b border-slate-100">
-                            <CardTitle className="flex justify-between items-center text-slate-900">
-                                <span>{size.name}</span>
-                                <span className="text-primary-600">{size.basePrice} ₴</span>
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-6">
-                            <ul className="space-y-3">
-                                {size.discounts?.map((d: any) => (
-                                    <li key={d.minQuantity} className="flex justify-between items-center text-sm text-slate-600">
-                                        <span>{d.minQuantity}+ {t('prints')}</span>
-                                        <span className="font-semibold text-primary-700">{d.price} ₴</span>
-                                    </li>
-                                ))}
-                                {size.discounts?.length === 0 && (
-                                    <li className="text-sm text-slate-400 italic">No bulk discounts available for this size yet.</li>
-                                )}
-                            </ul>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
-
-            <section className="mt-20">
-                <h2 className="text-2xl font-bold text-slate-900 mb-8 flex items-center gap-2">
-                    <Table className="w-6 h-6 text-primary-600" />
-                    {t('Extra Options')}
-                </h2>
-                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                    <table className="w-full text-left">
-                        <thead className="bg-slate-50 text-slate-500 uppercase text-xs font-semibold">
-                            <tr>
-                                <th className="px-6 py-4">{t('Option')}</th>
-                                <th className="px-6 py-4">{t('Price')}</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {config?.options?.map((opt: any) => (
-                                <tr key={opt.id} className="hover:bg-slate-50/50">
-                                    <td className="px-6 py-4 font-medium text-slate-900">{opt.name}</td>
-                                    <td className="px-6 py-4 text-primary-600 font-semibold">+{opt.price} ₴</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {config?.sizes?.map((size: any) => (
+                        <Card key={size.id} className="overflow-hidden border-[#c5b98e]/50 hover:shadow-xl transition-shadow bg-white rounded-2xl">
+                            <CardHeader className="bg-[#f0ede4] border-b border-[#c5b98e]/30">
+                                <CardTitle className="flex justify-between items-center">
+                                    <span className="text-2xl font-black text-[#4c4c4c]">{size.name}</span>
+                                    <span className="text-[#e31e24] text-2xl font-black">{size.basePrice} ₴</span>
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-6">
+                                <ul className="space-y-4">
+                                    {size.discounts?.map((d: any) => (
+                                        <li key={d.minQuantity} className="flex justify-between items-center p-3 rounded-lg bg-[#f9f8f4] border border-transparent hover:border-[#c5b98e]/30 transition-colors">
+                                            <span className="text-[#4c4c4c] font-bold">{d.minQuantity}+ {t('prints')}</span>
+                                            <span className="font-black text-[#009846]">{d.price} ₴</span>
+                                        </li>
+                                    ))}
+                                    {size.discounts?.length === 0 && (
+                                        <li className="text-sm text-slate-400 italic text-center py-4">
+                                            {t('No bulk discounts available')}
+                                        </li>
+                                    )}
+                                </ul>
+                            </CardContent>
+                        </Card>
+                    ))}
                 </div>
-            </section>
+
+                <section className="mt-24 max-w-4xl mx-auto">
+                    <h2 className="text-3xl font-black text-[#009846] mb-8 flex items-center gap-3 uppercase tracking-tight">
+                        <div className="w-10 h-10 bg-[#009846] text-white rounded-lg flex items-center justify-center">
+                            <Table className="w-6 h-6" />
+                        </div>
+                        {t('Extra Options')}
+                    </h2>
+                    <div className="bg-white rounded-2xl border border-[#c5b98e]/50 overflow-hidden shadow-lg">
+                        <table className="w-full text-left">
+                            <thead className="bg-[#c5b98e] text-white uppercase text-sm font-black">
+                                <tr>
+                                    <th className="px-8 py-5">{t('Option')}</th>
+                                    <th className="px-8 py-5">{t('Price')}</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-[#c5b98e]/20">
+                                {config?.options?.map((opt: any) => (
+                                    <tr key={opt.id} className="hover:bg-[#f9f8f4] transition-colors">
+                                        <td className="px-8 py-5 font-bold text-[#4c4c4c]">{t(opt.name)}</td>
+                                        <td className="px-8 py-5 text-[#e31e24] font-black">+{opt.price} ₴</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
         </div>
     );
 }

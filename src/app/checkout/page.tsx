@@ -252,18 +252,16 @@ export default function CheckoutPage() {
                                                 <span>{item.options.size} {item.options.paper} x{item.options.quantity}</span>
                                                 <span>{calculateItemTotal(item).toFixed(2)} ₴</span>
                                             </div>
-                                            <div className="flex flex-wrap gap-2 mt-1">
-                                                {item.options.options?.border && (
-                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-100 uppercase">
-                                                        {t('Border')}
-                                                    </span>
-                                                )}
-                                                {item.options.options?.magnetic && (
-                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-100 uppercase">
-                                                        {t('Magnet')}
-                                                    </span>
-                                                )}
-                                            </div>
+                                            {item.options.options?.border && (
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-[#009846]/10 text-[#009846] border border-[#009846]/20 uppercase">
+                                                    {t('Border')}
+                                                </span>
+                                            )}
+                                            {item.options.options?.magnetic && (
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-[#e31e24]/10 text-[#e31e24] border border-[#e31e24]/20 uppercase">
+                                                    {t('Magnet')}
+                                                </span>
+                                            )}
                                         </div>
                                     ))}
                                     {activeGift && (
