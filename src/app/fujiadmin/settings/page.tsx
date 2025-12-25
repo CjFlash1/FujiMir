@@ -4,42 +4,56 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import { Loader2, Save, Globe, Phone, Mail, Instagram, Facebook } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
-const SETTING_GROUPS = [
-    {
-        title: "General Information",
-        description: "Basic site configuration and metadata.",
-        items: [
-            { key: "site_name", label: "Site Name", icon: Globe, placeholder: "e.g. Fujimir Photo Center" },
-            { key: "contact_email", label: "Support Email", icon: Mail, placeholder: "contact@fujimir.com.ua" },
-            { key: "contact_phone", label: "Contact Phone", icon: Phone, placeholder: "+380..." },
-        ]
-    },
-    {
-        title: "Social Links",
-        description: "Links to your social media profiles.",
-        items: [
-            { key: "social_instagram", label: "Instagram URL", icon: Instagram, placeholder: "https://instagram.com/..." },
-            { key: "social_facebook", label: "Facebook URL", icon: Facebook, placeholder: "https://facebook.com/..." },
-        ]
-    },
-    {
-        title: "Direct Messengers",
-        description: "Configure floating buttons or contact links.",
-        items: [
-            { key: "viber_link", label: "Viber Link/Number", icon: Phone, placeholder: "viber://chat?number=..." },
-            { key: "telegram_link", label: "Telegram Username/Link", icon: Globe, placeholder: "https://t.me/..." },
-            { key: "viber_active", label: "Enable Viber (true/false)", icon: Globe, placeholder: "true" },
-            { key: "telegram_active", label: "Enable Telegram (true/false)", icon: Globe, placeholder: "true" },
-        ]
-    }
-];
+interface SettingItem {
+    key: string;
+    label: string;
+    icon: any;
+    placeholder?: string;
+    type?: 'text' | 'boolean';
+}
 
 export default function SettingsPage() {
+    const { t } = useTranslation();
     const [settings, setSettings] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState<string | null>(null);
+
+    const SETTING_GROUPS = [
+        {
+            title: t('settings.general'),
+            description: t('settings.general_desc'),
+            items: [
+                { key: "site_name", label: t('settings.site_name'), icon: Globe, placeholder: "e.g. Fujimir Photo Center" },
+                { key: "contact_email", label: t('settings.support_email'), icon: Mail, placeholder: "contact@fujimir.com.ua" },
+                { key: "contact_phone1", label: t('settings.contact_phone1'), icon: Phone, placeholder: "+380..." },
+                { key: "contact_phone2", label: t('settings.contact_phone2'), icon: Phone, placeholder: "+380..." },
+                { key: "contact_address", label: t('settings.contact_address'), icon: Globe, placeholder: "Address..." },
+                { key: "contact_schedule", label: t('settings.contact_schedule'), icon: Globe, placeholder: "Schedule..." },
+            ]
+        },
+        {
+            title: t('settings.social'),
+            description: t('settings.social_desc'),
+            items: [
+                { key: "social_instagram", label: t('settings.instagram'), icon: Instagram, placeholder: "https://instagram.com/..." },
+                { key: "social_facebook", label: t('settings.facebook'), icon: Facebook, placeholder: "https://facebook.com/..." },
+            ]
+        },
+        {
+            title: t('settings.messengers'),
+            description: t('settings.messengers_desc'),
+            items: [
+                { key: "viber_link", label: t('settings.viber'), icon: Phone, placeholder: "viber://chat?number=..." },
+                { key: "telegram_link", label: t('settings.telegram'), icon: Globe, placeholder: "https://t.me/..." },
+                { key: "viber_active", label: t('settings.viber_active'), icon: Globe, type: 'boolean' as const },
+                { key: "telegram_active", label: t('settings.telegram_active'), icon: Globe, type: 'boolean' as const },
+            ]
+        }
+    ];
 
     useEffect(() => {
         fetchSettings();
@@ -88,7 +102,7 @@ export default function SettingsPage() {
 
     return (
         <div className="max-w-4xl space-y-6">
-            <h1 className="text-2xl font-bold">Global Settings</h1>
+            <h1 className="text-2xl font-bold">{t('admin.settings')}</h1>
 
             {SETTING_GROUPS.map((group) => (
                 <Card key={group.title}>
@@ -104,24 +118,43 @@ export default function SettingsPage() {
                                     {item.label}
                                 </label>
                                 <div className="flex gap-2">
-                                    <Input
-                                        placeholder={item.placeholder}
-                                        value={settings[item.key] || ""}
-                                        onChange={(e) => setSettings({ ...settings, [item.key]: e.target.value })}
-                                        className="flex-1"
-                                    />
-                                    <Button
-                                        onClick={() => handleSave(item.key, settings[item.key])}
-                                        disabled={saving === item.key}
-                                        variant="outline"
-                                        size="sm"
-                                    >
-                                        {saving === item.key ? (
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                        ) : (
-                                            <Save className="w-4 h-4" />
-                                        )}
-                                    </Button>
+                                    {item.type === 'boolean' ? (
+                                        <div className="flex items-center gap-3 pt-1">
+                                            <Switch
+                                                checked={settings[item.key] === 'true'}
+                                                onCheckedChange={(checked) => {
+                                                    const val = checked ? 'true' : 'false';
+                                                    setSettings((prev) => ({ ...prev, [item.key]: val }));
+                                                    handleSave(item.key, val);
+                                                }}
+                                            />
+                                            <span className={`text-xs font-bold uppercase tracking-wider ${settings[item.key] === 'true' ? 'text-green-600' : 'text-slate-400'}`}>
+                                                {settings[item.key] === 'true' ? 'ON' : 'OFF'}
+                                            </span>
+                                            {saving === item.key && <Loader2 className="w-3 h-3 animate-spin text-slate-400 ml-2" />}
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <Input
+                                                placeholder={item.placeholder}
+                                                value={settings[item.key] || ""}
+                                                onChange={(e) => setSettings({ ...settings, [item.key]: e.target.value })}
+                                                className="flex-1"
+                                            />
+                                            <Button
+                                                onClick={() => handleSave(item.key, settings[item.key])}
+                                                disabled={saving === item.key}
+                                                variant="outline"
+                                                size="sm"
+                                            >
+                                                {saving === item.key ? (
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                ) : (
+                                                    <Save className="w-4 h-4" />
+                                                )}
+                                            </Button>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         ))}

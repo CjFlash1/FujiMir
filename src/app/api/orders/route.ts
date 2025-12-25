@@ -8,8 +8,13 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { customer, items, total } = body;
 
-        // Generate a random order number
-        const orderNumber = `ORD-${Date.now().toString().slice(-6)}`;
+        // Generate sequential order number
+        const lastOrder = await prisma.order.findFirst({
+            orderBy: { id: 'desc' },
+            select: { id: true }
+        });
+        const nextId = (lastOrder?.id || 0) + 1;
+        const orderNumber = nextId.toString();
 
         const order = await prisma.order.create({
             data: {

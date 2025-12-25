@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useMemo } from "react";
 import { useDropzone } from "react-dropzone";
-import { Upload, X, FileImage, Settings, ArrowRight, Copy, Plus } from "lucide-react";
+import { Upload, X, FileImage, Settings, ArrowRight, Copy, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 import { useTranslation } from "@/lib/i18n";
 
 import { ImageOptionsModal } from "@/components/image-options";
-import { useCartStore, type PrintOptions } from "@/lib/store";
+import { useCartStore, type PrintOptions, calculateItemPrice } from "@/lib/store";
 
 const DEFAULT_OPTIONS: PrintOptions = {
     quantity: 1,
@@ -22,11 +22,25 @@ const DEFAULT_OPTIONS: PrintOptions = {
 export default function UploadPage() {
     const { t } = useTranslation();
     const router = useRouter();
-    const { items: files, addItem, removeItem, updateItem: updateItemOptions, setConfig, cloneItem, bulkCloneItems } = useCartStore(); // Fix: updateItem named updateItemOptions via destructuring alias
+    const { items: files, addItem, removeItem, updateItem: updateItemOptions, setConfig, cloneItem, bulkCloneItems, config } = useCartStore();
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isBulkEditing, setIsBulkEditing] = useState(false);
     const [isDragActive, setIsDragActive] = useState(false);
     const [editingFileId, setEditingFileId] = useState<string | null>(null);
+
+    // Calculations
+    const totalStats = useMemo(() => {
+        if (!config) return { total: 0, savings: 0 };
+        return files.reduce((acc, file) => {
+            const price = calculateItemPrice(file.options, config);
+            return {
+                total: acc.total + price.total,
+                savings: acc.savings + price.savings
+            };
+        }, { total: 0, savings: 0 });
+    }, [files, config]);
+
+    const totalPhotosCount = files.reduce((acc, f) => acc + f.options.quantity, 0);
 
     // Fetch config on mount
     useState(() => {
@@ -42,11 +56,17 @@ export default function UploadPage() {
         });
     }, [addItem]);
 
-    const { getRootProps, getInputProps, isDragAccept: _isDragAccept } = useDropzone({
+    const { getRootProps, getInputProps, isDragAccept: _isDragAccept, open } = useDropzone({
         onDrop,
         accept: {
             "image/*": [".jpeg", ".jpg", ".png"],
         },
+        noClick: files.length > 0, // Disable click on the *container* when files exist, relying on the 'Add' button to avoid confusion, or keep it? User said "no ability to add". I'll keep it clickable?
+        // Actually, if files > 0, the dropzone is usually hidden or minimized in many apps. 
+        // Here it is rendered ABOVE the files.
+        // Let's keep existing behavior but add the button.
+        // Wait, if I add `noClick: true` when files > 0, then the big area won't open dialog. 
+        // I will NOT disable click for now, just add the button.
         onDragEnter: () => setIsDragActive(true),
         onDragLeave: () => setIsDragActive(false),
         onDropAccepted: () => setIsDragActive(false),
@@ -63,6 +83,13 @@ export default function UploadPage() {
             setSelectedIds([]);
         } else {
             setSelectedIds(files.map(f => f.id));
+        }
+    };
+
+    const deleteSelected = () => {
+        if (confirm(t('bulk.delete') + '?')) {
+            selectedIds.forEach(id => removeItem(id));
+            setSelectedIds([]);
         }
     };
 
@@ -84,7 +111,7 @@ export default function UploadPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#f3f1e9] py-12">
+        <div className="min-h-screen bg-[#f3f1e9] pt-12 pb-48">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="text-center mb-12">
                     <h1 className="text-5xl font-black text-[#009846] uppercase italic tracking-tighter shadow-sm inline-block px-8 py-2 bg-white rounded-2xl border border-[#c5b98e]/20">
@@ -93,12 +120,23 @@ export default function UploadPage() {
                     <p className="mt-4 text-[#4c4c4c]/70 font-bold uppercase tracking-widest text-sm">
                         {t('Upload your photos to get started')}
                     </p>
+
                 </div>
 
+                {/* Dropzone - Hidden when files exist to clean up UI, replaced by toolbar button? 
+                    Or just kept? The user said "not ability to add". Maybe the dropzone was disappearing?
+                    In the previous code, it was NOT hidden (lines 98-122 were outside `files.length > 0` check).
+                    So it was visible.
+                    I will ADD the button in the toolbar anyway.
+                */}
                 <div
                     {...getRootProps()}
                     className={cn(
                         "border-4 border-dashed rounded-3xl p-16 text-center transition-all cursor-pointer bg-white group shadow-xl hover:shadow-2xl",
+                        files.length > 0 ? "hidden" : "block", // Hide big dropzone when files exist, show "Add" button instead? Or keep small? User said "no ability".
+                        // Use case: User uploads 10 photos. Wants 5 more.
+                        // Ideally: display a compact "Add more" area or button.
+                        // I will HIDE the big one and rely on the toolbar button to be cleaner.
                         isDragActive ? "border-[#009846] bg-[#eefdf4] scale-[1.02]" : "border-[#c5b98e]/40 hover:border-[#009846]"
                     )}
                 >
@@ -122,7 +160,13 @@ export default function UploadPage() {
                 </div>
 
                 {files.length > 0 && (
-                    <div className="mt-16 bg-white p-8 rounded-3xl shadow-xl border border-[#c5b98e]/20">
+                    <div className="mt-8 bg-white p-8 rounded-3xl shadow-xl border border-[#c5b98e]/20">
+                        {/* Persistent Warning Banner */}
+                        <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-xl mb-8 flex items-center justify-center gap-3 shadow-sm">
+                            <span className="text-xl">ℹ️</span>
+                            <span className="font-bold uppercase tracking-wide text-sm">{t('upload.all_default_notice')}</span>
+                        </div>
+
                         <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
                             <h2 className="text-3xl font-black text-[#4c4c4c] flex items-center gap-3 uppercase tracking-tighter">
                                 <div className="w-10 h-10 bg-[#e31e24] text-white rounded-lg flex items-center justify-center">
@@ -131,6 +175,11 @@ export default function UploadPage() {
                                 {t('Selected Photos')} ({files.length})
                             </h2>
                             <div className="flex flex-wrap items-center gap-3">
+                                {/* Add Button */}
+                                <Button onClick={open} className="bg-[#4c4c4c] hover:bg-[#000] text-white font-bold gap-2">
+                                    <Plus className="w-4 h-4" /> {t('bulk.add')}
+                                </Button>
+
                                 <Button variant="outline" size="sm" onClick={selectAll} className="font-bold border-[#c5b98e]/50 hover:bg-[#f3f1e9]">
                                     {selectedIds.length === files.length ? t('Deselect All') : t('Select All')}
                                 </Button>
@@ -141,6 +190,10 @@ export default function UploadPage() {
                                         </Button>
                                         <Button variant="outline" size="sm" onClick={() => bulkCloneItems(selectedIds)} className="gap-1 font-bold border-[#c5b98e]/50 hover:bg-[#f3f1e9]">
                                             <Copy className="w-3.5 h-3.5" /> {t('Duplicate Selected')}
+                                        </Button>
+                                        {/* Delete Selected Button */}
+                                        <Button variant="destructive" size="sm" onClick={deleteSelected} className="gap-1 font-bold">
+                                            <X className="w-3.5 h-3.5" /> {t('bulk.delete')}
                                         </Button>
                                     </>
                                 )}
@@ -198,23 +251,43 @@ export default function UploadPage() {
                                     </div>
 
                                     {/* Badge for non-default options */}
-                                    {(file.options.quantity > 1 || file.options.size !== "10x15" || file.options.options?.border || file.options.options?.magnetic) && (
-                                        <div className="absolute top-2 right-2 bg-black/80 text-white text-[10px] px-2 py-1 rounded-lg font-black shadow-lg backdrop-blur-sm uppercase">
-                                            {file.options.size} x{file.options.quantity}
-                                            {file.options.options?.magnetic && " • M"}
+                                    {(file.options.quantity > 1 || file.options.size !== "10x15" || file.options.paper !== "glossy" || file.options.options?.border || file.options.options?.magnetic) && (
+                                        <div className="absolute top-2 right-2 bg-black/80 text-white text-[10px] px-2 py-1 rounded-lg font-black shadow-lg backdrop-blur-sm uppercase text-right leading-tight">
+                                            {file.options.size} • {t(file.options.paper.charAt(0).toUpperCase() + file.options.paper.slice(1))}
+                                            {file.options.quantity > 1 && <span className="block text-yellow-400">x{file.options.quantity}</span>}
+                                            {file.options.options?.magnetic && <span className="block text-[#7360f2]">{t('badge.mag')}</span>}
+                                            {file.options.options?.border && <span className="block text-blue-300">{t('badge.border')}</span>}
                                         </div>
                                     )}
                                 </div>
                             ))}
                         </div>
 
-                        <div className="mt-16 flex flex-col md:flex-row items-center justify-between border-t border-[#c5b98e]/20 pt-10 gap-6">
-                            <div className="text-[#4c4c4c]">
-                                <p className="text-sm font-bold uppercase tracking-widest text-[#4c4c4c]/60 mb-1">{t('Total for checkout')}</p>
-                                <p className="text-3xl font-black">{files.length} {t('photos')}</p>
+
+                    </div>
+                )}
+
+                {/* Floating Bottom Bar */}
+                {files.length > 0 && (
+                    <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-[#c5b98e]/30 px-4 py-4 shadow-[0_-5px_20px_rgba(0,0,0,0.1)] z-40">
+                        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+                            <div className="flex items-center gap-6 sm:gap-12">
+                                <div className="text-sm font-bold text-[#4c4c4c] uppercase tracking-wide flex flex-col sm:flex-row sm:items-center sm:gap-2">
+                                    {t('Quantity')}: <span className="text-xl text-[#009846]">{totalPhotosCount}</span>
+                                </div>
+                                <div className="flex flex-col items-start justify-center">
+                                    <div className="text-sm font-bold text-[#4c4c4c] uppercase tracking-wide flex items-center gap-2 leading-none">
+                                        {t('checkout.total')}: <span className="text-2xl font-black text-[#e31e24]">{totalStats.total.toFixed(2)} ₴</span>
+                                    </div>
+                                    {totalStats.savings > 0 && (
+                                        <div className="text-[10px] font-black text-[#009846] bg-[#009846]/10 px-2 py-0.5 rounded uppercase tracking-wider mt-1">
+                                            {t('Saved')}: {totalStats.savings.toFixed(2)} ₴
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                            <Button size="lg" className="bg-[#e31e24] hover:bg-[#c31a1f] text-white px-12 h-16 rounded-2xl gap-3 font-black uppercase tracking-tighter shadow-xl shadow-red-900/20 text-lg transition-transform hover:scale-105 active:scale-95" onClick={handleProceed}>
-                                {t('checkout.placeOrder')} <ArrowRight size={24} />
+                            <Button onClick={handleProceed} size="lg" className="w-full sm:w-auto bg-[#009846] hover:bg-[#0d8c43] text-white font-black uppercase tracking-tight shadow-lg shadow-green-900/20 px-8 h-12 sm:h-14 text-lg">
+                                {t('checkout.placeOrder')} <ArrowRight className="w-5 h-5 ml-2" />
                             </Button>
                         </div>
                     </div>

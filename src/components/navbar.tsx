@@ -73,47 +73,58 @@ export function Navbar() {
                         </div>
                     </Link>
 
-                    {/* Desktop Contact & Socials */}
-                    <div className="hidden lg:flex items-center gap-6 xl:gap-8">
-                        {/* Address */}
-                        <a href={mapLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 group hover:opacity-90 transition-opacity">
-                            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors shrink-0">
-                                <span className="text-xl">📍</span>
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="text-white/70 text-[10px] uppercase leading-none mb-1 font-bold">{currentLabels.address}</span>
-                                <span className="leading-tight text-sm font-medium max-w-[150px] underline decoration-white/30 underline-offset-2 hover:decoration-white/80 transition-all">{address}</span>
-                            </div>
-                        </a>
-
-                        {/* Phone */}
-                        <div className="flex items-center gap-3 group">
-                            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors shrink-0">
-                                <span className="text-xl">📞</span>
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="text-white/70 text-[10px] uppercase leading-none mb-1 font-bold">{currentLabels.contact}</span>
-                                <span className="leading-tight text-lg font-bold whitespace-nowrap">{phone}</span>
+                    {/* Desktop Extended Info */}
+                    <div className="hidden lg:flex items-center gap-6">
+                        {/* Info Block */}
+                        <div className="flex flex-col items-end text-right gap-1 text-sm leading-tight text-white/90">
+                            <a
+                                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(getSetting('contact_address') || address)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 hover:text-white transition-colors group/addr"
+                            >
+                                <span className="font-medium max-w-[250px] border-b border-transparent group-hover/addr:border-white/50">{getSetting('contact_address') || address}</span>
+                                <span className="text-lg">📍</span>
+                            </a>
+                            <div className="flex items-center gap-2 text-xs opacity-90">
+                                <span>{getSetting('contact_schedule') || t('header.schedule_default')}</span>
+                                <span className="text-sm">🕒</span>
                             </div>
                         </div>
 
-                        {/* Social Buttons */}
-                        <div className="flex items-center gap-2">
-                            {/* Viber */}
-                            <a href={`viber://chat?number=${phone.replace(/\D/g, '')}`} className="w-10 h-10 rounded-full bg-[#7360f2] flex items-center justify-center hover:scale-110 transition-transform shadow-lg" title="Viber">
-                                <svg viewBox="0 0 24 24" className="w-6 h-6 fill-white"><path d="M17.57 1.54C16.94.88 15.9 0 14.54 0c-1.37 0-1.8.88-2.54 2-1.12 1.63-.44 2.82-.44 2.82l1.39 1.34s-.45 1.5-1.54 3.19C10.32 10.95 9 12.06 9 12.06l-1.4-1.34s-1.19-.68-2.82.44c-1.12.75-2 1.18-2 2.54 0 1.36.88 2.4 1.54 3.03 2.14 2.14 5.75 3.39 9.38 3.39 4.3 0 7.31-2.12 9.38-4.22.66-.64 1.54-1.68 1.54-3.04 0-1.36-.88-1.79-2-2.54-1.63-1.12-2.82-.44-2.82-.44l-1.34 1.4s-1.5-.45-3.19-1.54c-1.61-1.04-2.73-2.35-2.73-2.35l1.34-1.39s.68-1.2-.44-2.83C12.35 1.74 11.9.89 10.54.89c-1.36 0-1.79.88-2.54 2-.75 1.12-1.18 2.54-1.18 2.54s0 1.94.89 3.88c.89 1.93 2.12 3.81 3.56 5.25 1.44 1.44 3.32 2.67 5.25 3.56 1.94.89 3.88.89 3.88.89s1.42-.43 2.54-1.18c1.12-.75 2-1.18 2-2.54s-.88-1.8-2-2.54l-2.82-1.39s-1.22-.44-.45 1.12c.75 1.63-.44 2.82-.44 2.82z" /></svg>
-                            </a>
-                            {/* Telegram */}
-                            <a href={`https://t.me/+${phone.replace(/\D/g, '')}`} target="_blank" className="w-10 h-10 rounded-full bg-[#0088cc] flex items-center justify-center hover:scale-110 transition-transform shadow-lg" title="Telegram">
-                                <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.14-.3.26-.54.26l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.941z" /></svg>
-                            </a>
+                        {/* Contact Block */}
+                        <div className="flex flex-col items-end text-right gap-1">
+                            <div className="flex items-center gap-2">
+                                <div className="flex flex-col font-bold text-lg leading-none">
+                                    <a href={`tel:${getSetting('contact_phone1') || '(099) 215-03-17'}`} className="hover:text-white/80">{getSetting('contact_phone1') || '(099) 215-03-17'}</a>
+                                    <a href={`tel:${getSetting('contact_phone2') || '(098) 492-73-87'}`} className="hover:text-white/80">{getSetting('contact_phone2') || '(098) 492-73-87'}</a>
+                                </div>
+                                <span className="text-2xl">📞</span>
+                            </div>
+                            <a href={`mailto:${getSetting('contact_email') || 'fujimir@ukr.net'}`} className="text-sm hover:underline opacity-90">{getSetting('contact_email') || 'fujimir@ukr.net'}</a>
                         </div>
+
+                        {/* Socials */}
+                        {(getSetting('viber_active') === 'true' || getSetting('telegram_active') === 'true') && (
+                            <div className="flex items-center gap-2 border-l border-white/20 pl-6 h-10">
+                                {getSetting('viber_active') === 'true' && (
+                                    <a href={getSetting('viber_link') || `viber://chat?number=${(getSetting('contact_phone1') || phone).replace(/\D/g, '')}`} className="w-8 h-8 rounded-full bg-[#7360f2] flex items-center justify-center hover:scale-110 transition-transform">
+                                        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white"><path d="M17.57 1.54C16.94.88 15.9 0 14.54 0c-1.37 0-1.8.88-2.54 2-1.12 1.63-.44 2.82-.44 2.82l1.39 1.34s-.45 1.5-1.54 3.19C10.32 10.95 9 12.06 9 12.06l-1.4-1.34s-1.19-.68-2.82.44c-1.12.75-2 1.18-2 2.54 0 1.36.88 2.4 1.54 3.03 2.14 2.14 5.75 3.39 9.38 3.39 4.3 0 7.31-2.12 9.38-4.22.66-.64 1.54-1.68 1.54-3.04 0-1.36-.88-1.79-2-2.54-1.63-1.12-2.82-.44-2.82-.44l-1.34 1.4s-1.5-.45-3.19-1.54c-1.61-1.04-2.73-2.35-2.73-2.35l1.34-1.39s.68-1.2-.44-2.83C12.35 1.74 11.9.89 10.54.89c-1.36 0-1.79.88-2.54 2-.75 1.12-1.18 2.54-1.18 2.54s0 1.94.89 3.88c.89 1.93 2.12 3.81 3.56 5.25 1.44 1.44 3.32 2.67 5.25 3.56 1.94.89 3.88.89 3.88.89s1.42-.43 2.54-1.18c1.12-.75 2-1.18 2-2.54s-.88-1.8-2-2.54l-2.82-1.39s-1.22-.44-.45 1.12c.75 1.63-.44 2.82-.44 2.82z" /></svg>
+                                    </a>
+                                )}
+                                {getSetting('telegram_active') === 'true' && (
+                                    <a href={getSetting('telegram_link') || `https://t.me/+${(getSetting('contact_phone1') || phone).replace(/\D/g, '')}`} className="w-8 h-8 rounded-full bg-[#0088cc] flex items-center justify-center hover:scale-110 transition-transform">
+                                        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.14-.3.26-.54.26l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.941z" /></svg>
+                                    </a>
+                                )}
+                            </div>
+                        )}
 
                         {/* Lang */}
-                        <div className="flex items-center gap-2 text-xs font-bold border-l border-white/20 pl-6 ml-2">
-                            <button onClick={() => setLang('uk')} className={`transition-colors ${lang === 'uk' ? 'text-white' : 'text-white/50 hover:text-white'}`}>UA</button>
-                            <button onClick={() => setLang('ru')} className={`transition-colors ${lang === 'ru' ? 'text-white' : 'text-white/50 hover:text-white'}`}>RU</button>
-                            <button onClick={() => setLang('en')} className={`transition-colors ${lang === 'en' ? 'text-white' : 'text-white/50 hover:text-white'}`}>EN</button>
+                        <div className="flex items-center gap-2 text-xs font-bold border-l border-white/20 pl-6 h-10">
+                            <button onClick={() => setLang('uk')} className={`transition-colors ${lang === 'uk' ? 'text-white scale-110' : 'text-white/60 hover:text-white'}`}>UA</button>
+                            <button onClick={() => setLang('ru')} className={`transition-colors ${lang === 'ru' ? 'text-white scale-110' : 'text-white/60 hover:text-white'}`}>RU</button>
+                            <button onClick={() => setLang('en')} className={`transition-colors ${lang === 'en' ? 'text-white scale-110' : 'text-white/60 hover:text-white'}`}>EN</button>
                         </div>
                     </div>
 

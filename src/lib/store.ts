@@ -109,3 +109,40 @@ export const useCartStore = create<CartState>()(
         }
     )
 );
+
+export const calculateItemPrice = (options: PrintOptions, config: ProductConfig) => {
+    const sizeObj = config.sizes.find(s => s.name === options.size);
+    if (!sizeObj) return { unitPrice: 0, total: 0, savings: 0 };
+
+    let baseUnitPrice = sizeObj.basePrice;
+    let finalUnitPrice = sizeObj.basePrice;
+
+    // Apply volume discount
+    if (sizeObj.discounts && sizeObj.discounts.length > 0) {
+        const applicableDiscount = [...sizeObj.discounts]
+            .sort((a, b) => b.minQuantity - a.minQuantity)
+            .find(d => options.quantity >= d.minQuantity);
+
+        if (applicableDiscount) {
+            finalUnitPrice = applicableDiscount.price;
+        }
+    }
+
+    // Add option prices
+    let optionsPrice = 0;
+    Object.entries(options.options || {}).forEach(([slug, isActive]) => {
+        if (isActive) {
+            const opt = config.options.find(o => o.slug === slug);
+            if (opt) optionsPrice += opt.price;
+        }
+    });
+
+    baseUnitPrice += optionsPrice;
+    finalUnitPrice += optionsPrice;
+
+    const total = finalUnitPrice * options.quantity;
+    const totalWithoutDiscount = baseUnitPrice * options.quantity;
+    const savings = totalWithoutDiscount - total;
+
+    return { unitPrice: finalUnitPrice, total, savings };
+};

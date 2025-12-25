@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Edit2, Check, X } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 interface PaperType {
     id: number;
@@ -85,7 +86,17 @@ export default function PaperPage() {
                                 <td className="px-6 py-4"><input className="w-full text-sm p-1 border rounded" placeholder="Name" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} /></td>
                                 <td className="px-6 py-4"><input className="w-full text-sm p-1 border rounded" placeholder="slug" value={editForm.slug} onChange={e => setEditForm({ ...editForm, slug: e.target.value })} /></td>
                                 <td className="px-6 py-4"><input className="w-full text-sm p-1 border rounded" placeholder="Description" value={editForm.description || ''} onChange={e => setEditForm({ ...editForm, description: e.target.value })} /></td>
-                                <td className="px-6 py-4">New</td>
+                                <td className="px-6 py-4">
+                                    <div className="flex items-center gap-2">
+                                        <Switch
+                                            checked={editForm.isActive !== false}
+                                            onCheckedChange={(checked) => setEditForm({ ...editForm, isActive: checked })}
+                                        />
+                                        <span className="text-[10px] font-bold uppercase text-slate-500">
+                                            {editForm.isActive !== false ? 'Active' : 'Inactive'}
+                                        </span>
+                                    </div>
+                                </td>
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex justify-end gap-2">
                                         <button onClick={handleSave} className="p-1.5 text-primary-600 hover:bg-white rounded transition-colors"><Check className="w-4 h-4" /></button>
@@ -112,10 +123,22 @@ export default function PaperPage() {
                                     )}
                                 </td>
                                 <td className="px-6 py-4">
-                                    {paper.isActive ? (
-                                        <span className="px-2 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-full">ACTIVE</span>
+                                    {editingId === paper.id ? (
+                                        <div className="flex items-center gap-2">
+                                            <Switch
+                                                checked={editForm.isActive}
+                                                onCheckedChange={(checked) => setEditForm({ ...editForm, isActive: checked })}
+                                            />
+                                            <span className="text-[10px] font-bold uppercase text-slate-500">
+                                                {editForm.isActive ? 'Active' : 'Inactive'}
+                                            </span>
+                                        </div>
                                     ) : (
-                                        <span className="px-2 py-1 bg-slate-100 text-slate-500 text-[10px] font-bold rounded-full">INACTIVE</span>
+                                        paper.isActive ? (
+                                            <span className="px-2 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-full">ACTIVE</span>
+                                        ) : (
+                                            <span className="px-2 py-1 bg-slate-100 text-slate-500 text-[10px] font-bold rounded-full">INACTIVE</span>
+                                        )
                                     )}
                                 </td>
                                 <td className="px-6 py-4 text-right">
