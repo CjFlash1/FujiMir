@@ -1,5 +1,8 @@
-# Base image
-FROM node:20-alpine AS base
+# Base image - Using slim (Debian-based) for Prisma compatibility
+FROM node:20-slim AS base
+
+# Install OpenSSL for Prisma
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -19,9 +22,6 @@ COPY . .
 RUN npx prisma generate
 
 # Build Next.js
-# Disable type checks for faster build in specific envs if needed, but normally keep them
-# ENV NEXT_IGNORE_ESLINT=1
-# ENV NEXT_IGNORE_TYPECHECKS=1
 RUN npm run build
 
 # Production image, copy all the files and run next
@@ -31,8 +31,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 # Don't run as root
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN groupadd --system --gid 1001 nodejs
+RUN useradd --system --uid 1001 nextjs
 
 # Copy public assets (including logo.png etc)
 COPY --from=builder /app/public ./public
@@ -43,8 +43,9 @@ RUN mkdir -p ./public/uploads && chown nextjs:nodejs ./public/uploads
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy Prisma schema and migrations for runtime check/deploy
+# Copy Prisma schema and client for runtime
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 
 # Set user
 USER nextjs
@@ -54,6 +55,5 @@ ENV PORT=3000
 # Update hostname to 0.0.0.0 for Docker networking
 ENV HOSTNAME="0.0.0.0"
 
-# Start the application (migrate and start)
-# Note: For SQLite, we might want to run migrations on startup
+# Start the application
 CMD ["node", "server.js"]
