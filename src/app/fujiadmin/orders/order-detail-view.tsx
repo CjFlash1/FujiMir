@@ -119,7 +119,15 @@ export function OrderDetailView({ order }: { order: any }) {
         if (orderSummary.borders > 0) optionsArr.push('Борд: ' + orderSummary.borders);
         const optionsStr = optionsArr.length > 0 ? optionsArr.join(', ') : '-';
 
-        const deliveryMethodDisplay = order.deliveryMethod === 'PICKUP' ? 'Самовивіз' : order.deliveryMethod;
+        // Get delivery method translation
+        const deliveryMethodDisplay =
+            order.deliveryMethod === 'pickup' || order.deliveryMethod === 'PICKUP'
+                ? t('checkout.pickup')
+                : order.deliveryMethod === 'local'
+                    ? t('checkout.local')
+                    : order.deliveryMethod === 'novaposhta'
+                        ? t('checkout.novaposhta')
+                        : order.deliveryMethod;
 
         const giftSection = order.notes ?
             '<div class="gift"><b>🎁</b> ' + order.notes + '</div>' : '';
@@ -309,7 +317,13 @@ export function OrderDetailView({ order }: { order: any }) {
                         <div className="grid grid-cols-3 text-sm">
                             <span className="text-slate-500">{t('admin.method')}:</span>
                             <span className="col-span-2 font-medium">
-                                {order.deliveryMethod === 'PICKUP' ? t('checkout.pickup') : t('checkout.novaposhta')}
+                                {order.deliveryMethod === 'pickup' || order.deliveryMethod === 'PICKUP'
+                                    ? t('checkout.pickup')
+                                    : order.deliveryMethod === 'local'
+                                        ? t('checkout.local')
+                                        : order.deliveryMethod === 'novaposhta'
+                                            ? t('checkout.novaposhta')
+                                            : order.deliveryMethod}
                             </span>
                         </div>
                         <div className="grid grid-cols-3 text-sm">

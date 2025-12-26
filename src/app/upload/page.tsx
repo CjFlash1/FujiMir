@@ -231,20 +231,23 @@ export default function UploadPage() {
                                         </p>
                                     </div>
 
-                                    {/* Settings Badge */}
-                                    <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded-md flex flex-col items-end gap-0.5 border border-white/10 shadow-sm z-10 pointer-events-none">
-                                        <span className="font-bold tracking-wide">{file.options.size}</span>
-                                        <span className="text-gray-200 capitalize opacity-90">{t(file.options.paper)}</span>
+                                    {/* Unified Settings Badge - Always visible */}
+                                    <div className="absolute top-2 right-2 bg-black/80 text-white text-[10px] px-2 py-1 rounded-lg font-black shadow-lg backdrop-blur-sm uppercase text-right leading-tight z-10 pointer-events-none">
+                                        {file.options.size} • {t(file.options.paper.charAt(0).toUpperCase() + file.options.paper.slice(1))}
+                                        {file.options.quantity > 1 && <span className="block text-yellow-400">x{file.options.quantity}</span>}
+                                        {file.options.options?.magnetic && <span className="block text-[#7360f2]">{t('badge.mag')}</span>}
+                                        {file.options.options?.border && <span className="block text-blue-300">{t('badge.border')}</span>}
                                     </div>
 
                                     {/* Selection Checkbox */}
                                     <div className={cn(
-                                        "absolute top-3 left-3 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all",
+                                        "absolute top-3 left-3 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all z-10",
                                         selectedIds.includes(file.id) ? "bg-[#e31e24] border-[#e31e24] scale-110 shadow-lg" : "bg-white/90 border-[#c5b98e]/40"
                                     )}>
                                         {selectedIds.includes(file.id) && <div className="w-2.5 h-2.5 bg-white rounded-full" />}
                                     </div>
 
+                                    {/* Hover Actions */}
                                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
                                         <button
                                             onClick={(e) => {
@@ -267,16 +270,6 @@ export default function UploadPage() {
                                             <Settings className="w-5 h-5" />
                                         </button>
                                     </div>
-
-                                    {/* Badge for non-default options */}
-                                    {(file.options.quantity > 1 || file.options.size !== "10x15" || file.options.paper !== "glossy" || file.options.options?.border || file.options.options?.magnetic) && (
-                                        <div className="absolute top-2 right-2 bg-black/80 text-white text-[10px] px-2 py-1 rounded-lg font-black shadow-lg backdrop-blur-sm uppercase text-right leading-tight">
-                                            {file.options.size} • {t(file.options.paper.charAt(0).toUpperCase() + file.options.paper.slice(1))}
-                                            {file.options.quantity > 1 && <span className="block text-yellow-400">x{file.options.quantity}</span>}
-                                            {file.options.options?.magnetic && <span className="block text-[#7360f2]">{t('badge.mag')}</span>}
-                                            {file.options.options?.border && <span className="block text-blue-300">{t('badge.border')}</span>}
-                                        </div>
-                                    )}
                                 </div>
                             ))}
                         </div>

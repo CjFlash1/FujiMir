@@ -130,12 +130,22 @@ async function main() {
         { key: 'checkout.delivery_method', val: { uk: 'Спосіб доставки', en: 'Delivery Method', ru: 'Способ доставки' } },
         { key: 'checkout.pickup', val: { uk: 'Самовивіз', en: 'Pickup', ru: 'Самовывоз' } },
         { key: 'checkout.novaposhta', val: { uk: 'Нова Пошта', en: 'Nova Poshta', ru: 'Новая Почта' } },
+        { key: 'checkout.local', val: { uk: 'Місцева доставка', en: 'Local Delivery', ru: 'Местная доставка' } },
         { key: 'checkout.address_branch', val: { uk: 'Адреса доставки / № Відділення', en: 'Delivery Address / Branch #', ru: 'Адрес доставки / № Отделения' } },
         { key: 'checkout.empty', val: { uk: 'Ваш кошик порожній.', en: 'Your cart is empty.', ru: 'Ваша корзина пуста.' } },
         { key: 'checkout.back', val: { uk: 'Назад до завантаження', en: 'Back to Upload', ru: 'Назад к загрузке' } },
         { key: 'checkout.order_confirmed', val: { uk: 'Замовлення підтверджено!', en: 'Order Confirmed!', ru: 'Заказ подтвержден!' } },
         { key: 'checkout.return_home', val: { uk: 'На головну', en: 'Return Home', ru: 'На главную' } },
+        { key: 'checkout.fullname_hint', val: { uk: 'Для Нової Пошти вкажіть повне ПІБ', en: 'For Nova Poshta, provide full name', ru: 'Для Новой Почты укажите полное ФИО' } },
         { key: 'Saved', val: { uk: 'Економія', en: 'Saved', ru: 'Экономия' } },
+
+        // Nova Poshta
+        { key: 'np.city', val: { uk: 'Місто', en: 'City', ru: 'Город' } },
+        { key: 'np.city_placeholder', val: { uk: 'Введіть назву міста...', en: 'Enter city name...', ru: 'Введите название города...' } },
+        { key: 'np.warehouse', val: { uk: 'Відділення / Поштомат', en: 'Branch / Postamat', ru: 'Отделение / Почтомат' } },
+        { key: 'np.warehouse_placeholder', val: { uk: 'Пошук відділення або поштомату...', en: 'Search branch or postamat...', ru: 'Поиск отделения или почтомата...' } },
+        { key: 'np.no_results', val: { uk: 'Нічого не знайдено', en: 'No results found', ru: 'Ничего не найдено' } },
+        { key: 'checkout.delivery_address', val: { uk: 'Адреса доставки', en: 'Delivery Address', ru: 'Адрес доставки' } },
 
         // Admin
         { key: 'admin.dashboard', val: { uk: 'Панель', en: 'Dashboard', ru: 'Панель' } },

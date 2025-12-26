@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { ArrowLeft, Loader2, CheckCircle2, Upload, Gift, Truck, Image as ImageIcon } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "@/lib/i18n";
+import { NovaPoshtaSelector } from "@/components/novaposhta-selector";
 
 type GiftChoice = 'FREE_DELIVERY' | 'FREE_MAGNET';
 type MagnetOption = 'upload' | 'existing' | 'comment';
@@ -386,6 +387,11 @@ export default function CheckoutPage() {
                                                 }}
                                                 className={nameError ? "border-red-500 focus-visible:ring-red-500" : ""}
                                             />
+                                            {formData.deliveryMethod === 'novaposhta' && (
+                                                <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                                                    ⚠️ {t('checkout.fullname_hint')}
+                                                </p>
+                                            )}
                                             {nameError && <p className="text-sm text-red-500 mt-1">{nameError}</p>}
                                         </div>
                                         <div className="space-y-2">
@@ -415,55 +421,82 @@ export default function CheckoutPage() {
                                         />
                                     </div>
 
-                                    <div className="space-y-2">
+                                    <div className="space-y-3">
                                         <label className="text-sm font-medium">{t('checkout.delivery_method')}</label>
-                                        <div className="grid grid-cols-1 gap-3">
-                                            {loadingDelivery ? (
-                                                <div className="text-center text-sm text-slate-500 py-4">{t('Loading')}...</div>
-                                            ) : (
-                                                deliveryOptions.map((option) => (
-                                                    <button
-                                                        key={option.id}
-                                                        type="button"
-                                                        onClick={() => setFormData({ ...formData, deliveryMethod: option.slug })}
-                                                        className={`p-3 border rounded-lg text-left transition-colors flex justify-between items-center ${formData.deliveryMethod === option.slug
-                                                            ? "border-primary-600 bg-primary-50 text-primary-900"
-                                                            : "border-slate-200 hover:border-slate-300"
-                                                            }`}
-                                                    >
-                                                        <div className="flex flex-col">
-                                                            <span className="font-medium">{option.name}</span>
-                                                            {option.description && <span className="text-xs text-slate-500 mt-0.5">{option.description}</span>}
-                                                        </div>
-                                                        <div className="text-sm font-bold whitespace-nowrap ml-4">
-                                                            {giftChoice === 'FREE_DELIVERY' && option.price > 0
-                                                                ? <span className="text-green-600">{t('checkout.free')}</span>
-                                                                : (option.price > 0 ? `${option.price} ${t('general.currency')}` : null)
-                                                            }
-                                                        </div>
-                                                    </button>
-                                                ))
-                                            )}
-                                        </div>
-                                    </div>
 
-                                    {/* Address Field for ALL methods except Pickup */}
-                                    {formData.deliveryMethod !== "pickup" && (
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium">{t('checkout.address_branch')}</label>
-                                            <Input
-                                                id="checkout-address"
-                                                placeholder={t('checkout.address_branch')}
-                                                value={formData.deliveryAddress}
-                                                onChange={(e) => {
-                                                    setFormData({ ...formData, deliveryAddress: e.target.value });
-                                                    if (addressError) setAddressError(null);
-                                                }}
-                                                className={addressError ? "border-red-500 focus-visible:ring-red-500" : ""}
-                                            />
-                                            {addressError && <p className="text-sm text-red-500 mt-1">{addressError}</p>}
-                                        </div>
-                                    )}
+                                        {loadingDelivery ? (
+                                            <div className="text-center text-sm text-slate-500 py-4">{t('Loading')}...</div>
+                                        ) : (
+                                            <div className="space-y-3">
+                                                {/* Sort: pickup first, then local, then novaposhta */}
+                                                {[...deliveryOptions]
+                                                    .sort((a, b) => {
+                                                        const order: Record<string, number> = { pickup: 0, local: 1, novaposhta: 2 };
+                                                        return (order[a.slug] ?? 99) - (order[b.slug] ?? 99);
+                                                    })
+                                                    .map((option) => (
+                                                        <div key={option.id} className="space-y-2">
+                                                            {/* Delivery Option Button */}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setFormData({ ...formData, deliveryMethod: option.slug, deliveryAddress: "" });
+                                                                    if (addressError) setAddressError(null);
+                                                                }}
+                                                                className={`w-full p-3 border rounded-lg text-left transition-colors flex justify-between items-center ${formData.deliveryMethod === option.slug
+                                                                    ? "border-primary-600 bg-primary-50 text-primary-900"
+                                                                    : "border-slate-200 hover:border-slate-300"
+                                                                    }`}
+                                                            >
+                                                                <div className="flex flex-col">
+                                                                    <span className="font-medium">{option.name}</span>
+                                                                    {option.description && <span className="text-xs text-slate-500 mt-0.5">{option.description}</span>}
+                                                                </div>
+                                                                <div className="text-sm font-bold whitespace-nowrap ml-4">
+                                                                    {giftChoice === 'FREE_DELIVERY' && option.price > 0
+                                                                        ? <span className="text-green-600">{t('checkout.free')}</span>
+                                                                        : (option.price > 0 ? `${option.price} ${t('general.currency')}` : null)
+                                                                    }
+                                                                </div>
+                                                            </button>
+
+                                                            {/* Inline Address Field - shown only when this option is selected */}
+                                                            {formData.deliveryMethod === option.slug && option.slug === "local" && (
+                                                                <div className="ml-4 pl-4 border-l-2 border-primary-200 animate-in slide-in-from-top-1 duration-200">
+                                                                    <label className="text-sm font-medium text-slate-600 block mb-1.5">{t('checkout.delivery_address')}</label>
+                                                                    <Input
+                                                                        id="checkout-address"
+                                                                        placeholder={t('checkout.delivery_address')}
+                                                                        value={formData.deliveryAddress}
+                                                                        onChange={(e) => {
+                                                                            setFormData({ ...formData, deliveryAddress: e.target.value });
+                                                                            if (addressError) setAddressError(null);
+                                                                        }}
+                                                                        className={addressError ? "border-red-500 focus-visible:ring-red-500" : ""}
+                                                                    />
+                                                                    {addressError && <p className="text-sm text-red-500 mt-1">{addressError}</p>}
+                                                                </div>
+                                                            )}
+
+                                                            {formData.deliveryMethod === option.slug && option.slug === "novaposhta" && (
+                                                                <div className="ml-4 pl-4 border-l-2 border-primary-200 animate-in slide-in-from-top-1 duration-200">
+                                                                    <NovaPoshtaSelector
+                                                                        value={formData.deliveryAddress}
+                                                                        onChange={(value) => {
+                                                                            setFormData({ ...formData, deliveryAddress: value });
+                                                                            if (addressError) setAddressError(null);
+                                                                        }}
+                                                                        error={addressError}
+                                                                        onClearError={() => setAddressError(null)}
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))
+                                                }
+                                            </div>
+                                        )}
+                                    </div>
                                 </form>
                             </CardContent>
                         </Card>
