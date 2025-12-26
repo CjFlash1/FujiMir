@@ -3,14 +3,15 @@ import { NextResponse } from "next/server";
 
 export async function PUT(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id } = await params;
         const body = await request.json();
         const { status } = body;
 
         const order = await prisma.order.update({
-            where: { id: parseInt(params.id) },
+            where: { id: parseInt(id) },
             data: { status }
         });
 

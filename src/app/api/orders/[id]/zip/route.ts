@@ -6,10 +6,11 @@ import { join } from "path";
 
 export async function GET(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const orderId = parseInt(params.id);
+        const { id } = await params;
+        const orderId = parseInt(id);
         const order = await prisma.order.findUnique({
             where: { id: orderId },
             include: { items: true },
