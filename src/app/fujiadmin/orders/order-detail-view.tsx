@@ -20,6 +20,18 @@ interface PartsInfo {
     parts: DownloadPart[];
 }
 
+// Helper to parse files from JSON and get file info
+function getFilesFromItem(item: any): { server: string; original: string }[] {
+    if (!item.files) return [];
+    try {
+        const parsed = JSON.parse(item.files);
+        if (Array.isArray(parsed)) {
+            return parsed.filter((f: any) => f.server);
+        }
+    } catch (e) { }
+    return [];
+}
+
 export function OrderDetailView({ order }: { order: any }) {
     const { t } = useTranslation();
     const router = useRouter();
@@ -205,17 +217,17 @@ export function OrderDetailView({ order }: { order: any }) {
                 </div>
             )}
 
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
-                <div className="flex items-center gap-4">
+            <div className="flex flex-col gap-4 border-b border-slate-200 pb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                     <Link href="/fujiadmin/orders">
                         <Button variant="outline" size="sm" className="gap-2">
                             <ArrowLeft className="w-4 h-4" /> {t('admin.back_to_orders')}
                         </Button>
                     </Link>
                     <div>
-                        <div className="flex items-center gap-3">
-                            <h1 className="text-2xl font-bold text-slate-900">{t('admin.order_number')} #{order.orderNumber}</h1>
-                            <span className="bg-yellow-100 text-yellow-800 text-sm font-medium px-3 py-1 rounded-full uppercase tracking-wide">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <h1 className="text-xl md:text-2xl font-bold text-slate-900">{t('admin.order_number')} #{order.orderNumber}</h1>
+                            <span className="bg-yellow-100 text-yellow-800 text-xs md:text-sm font-medium px-2 md:px-3 py-1 rounded-full uppercase tracking-wide">
                                 {t(order.status)}
                             </span>
                         </div>
@@ -225,18 +237,21 @@ export function OrderDetailView({ order }: { order: any }) {
                     </div>
                 </div>
 
-                <div className="flex gap-2 relative">
+                <div className="flex flex-wrap gap-2 relative">
                     <div className="relative">
-                        <Button onClick={handleDownloadAll} className="gap-2 bg-blue-600 hover:bg-blue-700">
+                        <Button onClick={handleDownloadAll} className="gap-2 bg-blue-600 hover:bg-blue-700 text-xs md:text-sm">
                             <Archive className="w-4 h-4" />
-                            {partsInfo && partsInfo.totalParts > 1 ? (
-                                <>
-                                    {t('Download Archive')} ({partsInfo.totalParts} {partsInfo.totalParts === 1 ? 'часть' : 'частей'})
-                                    <ChevronDown className="w-4 h-4 ml-1" />
-                                </>
-                            ) : (
-                                t('Download Archive')
-                            )}
+                            <span className="hidden sm:inline">
+                                {partsInfo && partsInfo.totalParts > 1 ? (
+                                    <>
+                                        {t('Download Archive')} ({partsInfo.totalParts} {partsInfo.totalParts === 1 ? 'часть' : 'частей'})
+                                        <ChevronDown className="w-4 h-4 ml-1" />
+                                    </>
+                                ) : (
+                                    t('Download Archive')
+                                )}
+                            </span>
+                            <span className="sm:hidden">ZIP</span>
                         </Button>
                         {showPartsDropdown && partsInfo && partsInfo.totalParts > 1 && (
                             <div className="absolute top-full left-0 mt-2 bg-white border border-slate-200 rounded-lg shadow-lg z-10 min-w-[250px]">
@@ -265,15 +280,15 @@ export function OrderDetailView({ order }: { order: any }) {
                             </div>
                         )}
                     </div>
-                    <Button onClick={handlePrint} variant="outline" className="gap-2">
+                    <Button onClick={handlePrint} variant="outline" className="gap-2 text-xs md:text-sm">
                         <Printer className="w-4 h-4" />
-                        {t('Print')}
+                        <span className="hidden sm:inline">{t('Print')}</span>
                     </Button>
-                    <Button variant="destructive" onClick={handleDelete} disabled={isDeleting} className="gap-2">
+                    <Button variant="destructive" onClick={handleDelete} disabled={isDeleting} className="gap-2 text-xs md:text-sm">
                         {isDeleting ? t('admin.deleting') : (
                             <>
                                 <Trash2 className="w-4 h-4" />
-                                {t('Delete Order')}
+                                <span className="hidden sm:inline">{t('Delete Order')}</span>
                             </>
                         )}
                     </Button>
@@ -363,84 +378,98 @@ export function OrderDetailView({ order }: { order: any }) {
                     </div>
                 </div>
                 <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left">
+                    <table className="w-full text-sm text-left min-w-[600px]">
                         <thead className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold">
                             <tr>
-                                <th className="px-6 py-3 w-20">{t('admin.preview')}</th>
-                                <th className="px-6 py-3">{t('admin.file_info')}</th>
-                                <th className="px-6 py-3">{t('admin.print_options')}</th>
-                                <th className="px-6 py-3 text-right">{t('admin.action')}</th>
+                                <th className="px-3 md:px-6 py-3 w-20">{t('admin.preview')}</th>
+                                <th className="px-3 md:px-6 py-3">{t('admin.file_info')}</th>
+                                <th className="px-3 md:px-6 py-3">{t('admin.print_options')}</th>
+                                <th className="px-3 md:px-6 py-3 text-right">{t('admin.action')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {order.items.slice(0, itemsToShow).map((item: any) => (
-                                <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                                    <td className="px-6 py-4">
-                                        {item.serverFileName ? (
-                                            <div
-                                                className="w-16 h-16 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden relative cursor-pointer group"
-                                                onClick={() => setPreviewImage(`/uploads/${item.serverFileName}`)}
-                                            >
-                                                <img
-                                                    src={`/uploads/${item.serverFileName}`}
-                                                    alt="Preview"
-                                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform"
-                                                />
-                                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                            {order.items.slice(0, itemsToShow).map((item: any) => {
+                                const files = getFilesFromItem(item);
+                                const firstFile = files[0];
+                                return (
+                                    <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                                        <td className="px-3 md:px-6 py-4">
+                                            {firstFile ? (
+                                                <div
+                                                    className="w-14 h-14 md:w-16 md:h-16 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden relative cursor-pointer group"
+                                                    onClick={() => setPreviewImage(`/uploads/${firstFile.server}`)}
+                                                >
+                                                    <img
+                                                        src={`/uploads/${firstFile.server}`}
+                                                        alt="Preview"
+                                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+                                                    />
+                                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                                                    {files.length > 1 && (
+                                                        <div className="absolute bottom-0 right-0 bg-slate-900/80 text-white text-[10px] px-1 rounded-tl">
+                                                            +{files.length - 1}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div className="w-14 h-14 md:w-16 md:h-16 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center">
+                                                    <FileImage className="w-6 h-6 md:w-8 md:h-8 text-slate-300" />
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td className="px-3 md:px-6 py-4">
+                                            <div className="font-medium text-slate-900 truncate max-w-[120px] md:max-w-[200px]" title={firstFile?.original || item.fileName || "Unknown"}>
+                                                {firstFile?.original || item.fileName || "photo.jpg"}
                                             </div>
-                                        ) : (
-                                            <div className="w-16 h-16 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center">
-                                                <FileImage className="w-8 h-8 text-slate-300" />
+                                            {firstFile && (
+                                                <div className="text-xs text-slate-400 font-mono mt-1 truncate max-w-[120px] md:max-w-[200px]">
+                                                    {firstFile.server}
+                                                </div>
+                                            )}
+                                            {files.length > 1 && (
+                                                <div className="text-xs text-blue-600 mt-1">
+                                                    {files.length} файлів
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td className="px-3 md:px-6 py-4">
+                                            <div className="flex flex-col gap-1">
+                                                <span className="font-bold text-slate-700 text-xs md:text-sm">
+                                                    {item.options?.size || item.size} • {t(item.options?.paper || item.paper)}
+                                                </span>
+                                                <span className="text-slate-500 text-xs">
+                                                    {t('Quantity')}: <span className="font-medium text-slate-900">{item.options?.quantity || 1}</span>
+                                                </span>
+                                                <div className="flex gap-1 md:gap-2 mt-1 flex-wrap">
+                                                    {item.options?.options?.magnetic && (
+                                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700 uppercase tracking-wide">
+                                                            {t('badge.mag')}
+                                                        </span>
+                                                    )}
+                                                    {item.options?.options?.border && (
+                                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 uppercase tracking-wide">
+                                                            {t('badge.border')}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
-                                        )}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="font-medium text-slate-900 truncate max-w-[200px]" title={item.fileName || "Unknown"}>
-                                            {item.fileName || "photo.jpg"}
-                                        </div>
-                                        {item.serverFileName && (
-                                            <div className="text-xs text-slate-400 font-mono mt-1 truncate max-w-[200px]">
-                                                {item.serverFileName}
-                                            </div>
-                                        )}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex flex-col gap-1">
-                                            <span className="font-bold text-slate-700">
-                                                {item.options.size} • {t(item.options.paper)}
-                                            </span>
-                                            <span className="text-slate-500">
-                                                {t('Quantity')}: <span className="font-medium text-slate-900">{item.options.quantity}</span>
-                                            </span>
-                                            <div className="flex gap-2 mt-1">
-                                                {item.options.options?.magnetic && (
-                                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700 uppercase tracking-wide">
-                                                        {t('badge.mag')}
-                                                    </span>
-                                                )}
-                                                {item.options.options?.border && (
-                                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 uppercase tracking-wide">
-                                                        {t('badge.border')}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        {item.serverFileName && (
-                                            <a
-                                                href={`/uploads/${item.serverFileName}`}
-                                                download={item.fileName ? item.fileName.replace(/\.[^.]+$/, '') + '.jpg' : 'photo.jpg'}
-                                                target="_blank"
-                                                className="inline-flex items-center justify-center px-4 py-2 border border-slate-200 shadow-sm text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                                            >
-                                                <Download className="w-4 h-4 mr-2" />
-                                                {t('admin.download')}
-                                            </a>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
+                                        </td>
+                                        <td className="px-3 md:px-6 py-4 text-right">
+                                            {firstFile && (
+                                                <a
+                                                    href={`/uploads/${firstFile.server}`}
+                                                    download={firstFile.original || 'photo.jpg'}
+                                                    target="_blank"
+                                                    className="inline-flex items-center justify-center px-2 md:px-4 py-2 border border-slate-200 shadow-sm text-xs md:text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                                                >
+                                                    <Download className="w-4 h-4 md:mr-2" />
+                                                    <span className="hidden md:inline">{t('admin.download')}</span>
+                                                </a>
+                                            )}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>

@@ -11,7 +11,9 @@ import {
     FileText,
     LogOut,
     Globe,
-    HelpCircle
+    HelpCircle,
+    Menu,
+    X
 } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -22,20 +24,37 @@ export function AdminSidebar() {
     const { t } = useTranslation();
     const [width, setWidth] = useState(260);
     const [isResizing, setIsResizing] = useState(false);
+    const [isMobileOpen, setIsMobileOpen] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
 
-    const startResizing = useCallback(() => setIsResizing(true), []);
+    // Detect mobile
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+            if (window.innerWidth >= 768) {
+                setIsMobileOpen(false);
+            }
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    const startResizing = useCallback(() => {
+        if (!isMobile) setIsResizing(true);
+    }, [isMobile]);
     const stopResizing = useCallback(() => setIsResizing(false), []);
 
     const resize = useCallback(
         (mouseMoveEvent: MouseEvent) => {
-            if (isResizing) {
+            if (isResizing && !isMobile) {
                 const newWidth = mouseMoveEvent.clientX;
-                if (newWidth > 64 && newWidth < 600) { // Min 64 (icon width approx) or higher
+                if (newWidth > 64 && newWidth < 400) {
                     setWidth(newWidth);
                 }
             }
         },
-        [isResizing]
+        [isResizing, isMobile]
     );
 
     useEffect(() => {
@@ -64,13 +83,21 @@ export function AdminSidebar() {
         { name: t("admin.config"), href: "/fujiadmin/config/sizes", icon: Settings },
     ];
 
-    return (
-        <div
-            className="relative flex flex-col gap-y-5 overflow-y-auto bg-slate-900 px-6 pb-4 min-h-screen text-white shrink-0"
-            style={{ width: width }}
-        >
-            <div className="flex h-16 shrink-0 items-center overflow-hidden whitespace-nowrap">
-                <span className="text-xl font-bold tracking-tight">Fujimir Admin</span>
+    const handleNavClick = () => {
+        if (isMobile) {
+            setIsMobileOpen(false);
+        }
+    };
+
+    const SidebarContent = () => (
+        <>
+            <div className="flex h-14 shrink-0 items-center justify-between overflow-hidden whitespace-nowrap">
+                <span className="text-lg font-bold tracking-tight">Fujimir Admin</span>
+                {isMobile && (
+                    <button onClick={() => setIsMobileOpen(false)} className="p-2 text-slate-400 hover:text-white">
+                        <X className="w-5 h-5" />
+                    </button>
+                )}
             </div>
             <nav className="flex flex-1 flex-col">
                 <ul role="list" className="flex flex-1 flex-col gap-y-7">
@@ -82,6 +109,7 @@ export function AdminSidebar() {
                                     <li key={item.name}>
                                         <Link
                                             href={item.href}
+                                            onClick={handleNavClick}
                                             className={cn(
                                                 isActive
                                                     ? "bg-slate-800 text-white"
@@ -89,8 +117,8 @@ export function AdminSidebar() {
                                                 "group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 whitespace-nowrap overflow-hidden"
                                             )}
                                         >
-                                            <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
-                                            {item.name}
+                                            <item.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+                                            <span className="truncate">{item.name}</span>
                                         </Link>
                                     </li>
                                 );
@@ -100,20 +128,58 @@ export function AdminSidebar() {
                     <li className="mt-auto">
                         <Link
                             href="/"
+                            onClick={handleNavClick}
                             className="group -mx-2 flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 text-slate-400 hover:bg-slate-800 hover:text-white whitespace-nowrap overflow-hidden"
                         >
-                            <LogOut className="h-6 w-6 shrink-0" aria-hidden="true" />
+                            <LogOut className="h-5 w-5 shrink-0" aria-hidden="true" />
                             {t('admin.signout')}
                         </Link>
                     </li>
                 </ul>
             </nav>
+        </>
+    );
 
-            {/* Resize Handle */}
+    return (
+        <>
+            {/* Mobile Menu Button - Fixed at top */}
+            {isMobile && !isMobileOpen && (
+                <button
+                    onClick={() => setIsMobileOpen(true)}
+                    className="fixed top-4 left-4 z-50 p-2 bg-slate-900 text-white rounded-lg shadow-lg md:hidden"
+                >
+                    <Menu className="w-6 h-6" />
+                </button>
+            )}
+
+            {/* Mobile Overlay */}
+            {isMobile && isMobileOpen && (
+                <div
+                    className="fixed inset-0 bg-black/50 z-40 md:hidden"
+                    onClick={() => setIsMobileOpen(false)}
+                />
+            )}
+
+            {/* Sidebar - Desktop: fixed width, Mobile: overlay */}
             <div
-                onMouseDown={startResizing}
-                className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary-500 transition-colors z-50 ${isResizing ? 'bg-primary-600 w-1.5' : 'bg-slate-800/50'}`}
-            />
-        </div>
+                className={cn(
+                    "flex flex-col gap-y-5 overflow-y-auto bg-slate-900 px-4 pb-4 text-white shrink-0 transition-transform duration-200",
+                    isMobile
+                        ? `fixed inset-y-0 left-0 z-50 w-64 ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}`
+                        : "relative min-h-screen"
+                )}
+                style={isMobile ? undefined : { width: width }}
+            >
+                <SidebarContent />
+
+                {/* Resize Handle - Desktop only */}
+                {!isMobile && (
+                    <div
+                        onMouseDown={startResizing}
+                        className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary-500 transition-colors z-50 ${isResizing ? 'bg-primary-600 w-1.5' : 'bg-slate-800/50'}`}
+                    />
+                )}
+            </div>
+        </>
     );
 }
