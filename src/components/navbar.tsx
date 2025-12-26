@@ -93,15 +93,17 @@ export function Navbar() {
                         </div>
 
                         {/* Contact Block */}
-                        <div className="flex flex-col items-end text-right gap-1">
-                            <div className="flex items-center gap-2">
-                                <div className="flex flex-col font-bold text-lg leading-none">
-                                    <a href={`tel:${getSetting('contact_phone1') || '(099) 215-03-17'}`} className="hover:text-white/80">{getSetting('contact_phone1') || '(099) 215-03-17'}</a>
-                                    <a href={`tel:${getSetting('contact_phone2') || '(098) 492-73-87'}`} className="hover:text-white/80">{getSetting('contact_phone2') || '(098) 492-73-87'}</a>
-                                </div>
-                                <span className="text-2xl">📞</span>
+                        <div className="grid grid-cols-[auto_auto] gap-x-3 gap-y-2 items-center">
+                            <div className="flex flex-col items-center gap-0.5">
+                                <a href={`tel:${getSetting('contact_phone1') || '(099) 215-03-17'}`} className="font-bold text-lg leading-none hover:text-white transition-colors">{getSetting('contact_phone1') || '(099) 215-03-17'}</a>
+                                <a href={`tel:${getSetting('contact_phone2') || '(098) 492-73-87'}`} className="font-bold text-lg leading-none hover:text-white transition-colors">{getSetting('contact_phone2') || '(098) 492-73-87'}</a>
                             </div>
-                            <a href={`mailto:${getSetting('contact_email') || 'fujimir@ukr.net'}`} className="text-sm hover:underline opacity-90">{getSetting('contact_email') || 'fujimir@ukr.net'}</a>
+                            <span className="text-2xl leading-none">📞</span>
+
+                            <a href={`mailto:${getSetting('contact_email') || 'fujimir@ukr.net'}`} className="font-bold text-sm border-b border-transparent hover:border-white/50 hover:text-white transition-colors justify-self-center">
+                                {getSetting('contact_email') || 'fujimir@ukr.net'}
+                            </a>
+                            <span className="text-xl leading-none">✉️</span>
                         </div>
 
                         {/* Socials */}
@@ -131,14 +133,20 @@ export function Navbar() {
                     {/* Mobile Controls */}
                     <div className="flex items-center gap-4 lg:hidden">
                         {/* Mobile Socials (Visible on bar) */}
-                        <div className="flex items-center gap-2">
-                            <a href={`viber://chat?number=${phone.replace(/\D/g, '')}`} className="w-8 h-8 rounded-full bg-[#7360f2] flex items-center justify-center active:scale-95 transition-transform">
-                                <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white"><path d="M17.57 1.54C16.94.88 15.9 0 14.54 0c-1.37 0-1.8.88-2.54 2-1.12 1.63-.44 2.82-.44 2.82l1.39 1.34s-.45 1.5-1.54 3.19C10.32 10.95 9 12.06 9 12.06l-1.4-1.34s-1.19-.68-2.82.44c-1.12.75-2 1.18-2 2.54 0 1.36.88 2.4 1.54 3.03 2.14 2.14 5.75 3.39 9.38 3.39 4.3 0 7.31-2.12 9.38-4.22.66-.64 1.54-1.68 1.54-3.04 0-1.36-.88-1.79-2-2.54-1.63-1.12-2.82-.44-2.82-.44l-1.34 1.4s-1.5-.45-3.19-1.54c-1.61-1.04-2.73-2.35-2.73-2.35l1.34-1.39s.68-1.2-.44-2.83C12.35 1.74 11.9.89 10.54.89c-1.36 0-1.79.88-2.54 2-.75 1.12-1.18 2.54-1.18 2.54s0 1.94.89 3.88c.89 1.93 2.12 3.81 3.56 5.25 1.44 1.44 3.32 2.67 5.25 3.56 1.94.89 3.88.89 3.88.89s1.42-.43 2.54-1.18c1.12-.75 2-1.18 2-2.54s-.88-1.8-2-2.54l-2.82-1.39s-1.22-.44-.45 1.12c.75 1.63-.44 2.82-.44 2.82z" /></svg>
-                            </a>
-                            <a href={`https://t.me/+${phone.replace(/\D/g, '')}`} className="w-8 h-8 rounded-full bg-[#0088cc] flex items-center justify-center active:scale-95 transition-transform">
-                                <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.14-.3.26-.54.26l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.941z" /></svg>
-                            </a>
-                        </div>
+                        {(getSetting('viber_active') === 'true' || getSetting('telegram_active') === 'true') && (
+                            <div className="flex items-center gap-2">
+                                {getSetting('viber_active') === 'true' && (
+                                    <a href={getSetting('viber_link') || `viber://chat?number=${(getSetting('contact_phone1') || phone).replace(/\D/g, '')}`} className="w-8 h-8 rounded-full bg-[#7360f2] flex items-center justify-center active:scale-95 transition-transform">
+                                        <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white"><path d="M17.57 1.54C16.94.88 15.9 0 14.54 0c-1.37 0-1.8.88-2.54 2-1.12 1.63-.44 2.82-.44 2.82l1.39 1.34s-.45 1.5-1.54 3.19C10.32 10.95 9 12.06 9 12.06l-1.4-1.34s-1.19-.68-2.82.44c-1.12.75-2 1.18-2 2.54 0 1.36.88 2.4 1.54 3.03 2.14 2.14 5.75 3.39 9.38 3.39 4.3 0 7.31-2.12 9.38-4.22.66-.64 1.54-1.68 1.54-3.04 0-1.36-.88-1.79-2-2.54-1.63-1.12-2.82-.44-2.82-.44l-1.34 1.4s-1.5-.45-3.19-1.54c-1.61-1.04-2.73-2.35-2.73-2.35l1.34-1.39s.68-1.2-.44-2.83C12.35 1.74 11.9.89 10.54.89c-1.36 0-1.79.88-2.54 2-.75 1.12-1.18 2.54-1.18 2.54s0 1.94.89 3.88c.89 1.93 2.12 3.81 3.56 5.25 1.44 1.44 3.32 2.67 5.25 3.56 1.94.89 3.88.89 3.88.89s1.42-.43 2.54-1.18c1.12-.75 2-1.18 2-2.54s-.88-1.8-2-2.54l-2.82-1.39s-1.22-.44-.45 1.12c.75 1.63-.44 2.82-.44 2.82z" /></svg>
+                                    </a>
+                                )}
+                                {getSetting('telegram_active') === 'true' && (
+                                    <a href={getSetting('telegram_link') || `https://t.me/+${(getSetting('contact_phone1') || phone).replace(/\D/g, '')}`} className="w-8 h-8 rounded-full bg-[#0088cc] flex items-center justify-center active:scale-95 transition-transform">
+                                        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.14-.3.26-.54.26l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.941z" /></svg>
+                                    </a>
+                                )}
+                            </div>
+                        )}
 
                         <button
                             onClick={() => setIsOpen(!isOpen)}
@@ -178,26 +186,44 @@ export function Navbar() {
             {isOpen && (
                 <div className="md:hidden bg-[#f3f1e9] border-b border-tan-dark shadow-xl animate-in slide-in-from-top-2">
                     {/* Mobile Contact Info Block */}
-                    <div className="px-4 py-4 bg-[#e8e4d3] border-b border-[#c5b98e] space-y-3">
-                        <div className="flex items-start gap-3">
+                    <div className="px-4 py-4 bg-[#e8e4d3] border-b border-[#c5b98e] space-y-4">
+                        <div className="flex items-start gap-4">
                             <span className="text-xl">📍</span>
                             <div className="flex flex-col">
-                                <span className="text-xs uppercase font-bold text-[#4c4c4c]/60">{currentLabels.address}</span>
-                                <a href={mapLink} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-[#1a1a1a] underline decoration-black/20 underline-offset-2">{address}</a>
-                            </div>
-                        </div>
-                        <div className="flex items-start gap-3">
-                            <span className="text-xl">📞</span>
-                            <div className="flex flex-col">
-                                <span className="text-xs uppercase font-bold text-[#4c4c4c]/60">{currentLabels.contact}</span>
-                                <a href={`tel:${phone}`} className="text-sm font-bold text-[#1a1a1a]">{phone}</a>
+                                <span className="text-[10px] uppercase font-bold text-[#4c4c4c]/60 mb-0.5">{currentLabels.address}</span>
+                                <a href={mapLink} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-[#1a1a1a] underline decoration-black/20 underline-offset-2 leading-tight">{getSetting('contact_address') || address}</a>
                             </div>
                         </div>
 
-                        <div className="flex gap-4 pt-2">
-                            <button onClick={() => setLang('uk')} className={`text-sm font-bold ${lang === 'uk' ? 'text-[#009846] underline' : 'text-[#4c4c4c]'}`}>UA</button>
-                            <button onClick={() => setLang('ru')} className={`text-sm font-bold ${lang === 'ru' ? 'text-[#009846] underline' : 'text-[#4c4c4c]'}`}>RU</button>
-                            <button onClick={() => setLang('en')} className={`text-sm font-bold ${lang === 'en' ? 'text-[#009846] underline' : 'text-[#4c4c4c]'}`}>EN</button>
+                        <div className="flex items-start gap-4">
+                            <span className="text-xl">🕒</span>
+                            <div className="flex flex-col">
+                                <span className="text-[10px] uppercase font-bold text-[#4c4c4c]/60 mb-0.5">Schedule</span>
+                                <span className="text-sm font-bold text-[#1a1a1a] leading-tight">{getSetting('contact_schedule') || t('header.schedule_default')}</span>
+                            </div>
+                        </div>
+
+                        <div className="flex items-start gap-4">
+                            <span className="text-xl">📞</span>
+                            <div className="flex flex-col gap-1">
+                                <span className="text-[10px] uppercase font-bold text-[#4c4c4c]/60 mb-0.5">{currentLabels.contact}</span>
+                                <a href={`tel:${getSetting('contact_phone1') || '(099) 215-03-17'}`} className="text-lg font-bold text-[#1a1a1a] leading-none">{getSetting('contact_phone1') || '(099) 215-03-17'}</a>
+                                <a href={`tel:${getSetting('contact_phone2') || '(098) 492-73-87'}`} className="text-lg font-bold text-[#1a1a1a] leading-none">{getSetting('contact_phone2') || '(098) 492-73-87'}</a>
+                            </div>
+                        </div>
+
+                        <div className="flex items-start gap-4">
+                            <span className="text-xl">✉️</span>
+                            <div className="flex flex-col">
+                                <span className="text-[10px] uppercase font-bold text-[#4c4c4c]/60 mb-0.5">Email</span>
+                                <a href={`mailto:${getSetting('contact_email') || 'fujimir@ukr.net'}`} className="text-sm font-bold text-[#1a1a1a] underline decoration-black/20 underline-offset-2">{getSetting('contact_email') || 'fujimir@ukr.net'}</a>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-2 pt-2 border-t border-[#c5b98e]/50 mt-2">
+                            <button onClick={() => setLang('uk')} className={`px-3 py-1 text-sm font-bold rounded ${lang === 'uk' ? 'bg-[#009846] text-white' : 'text-[#4c4c4c] bg-white/50'}`}>UA</button>
+                            <button onClick={() => setLang('ru')} className={`px-3 py-1 text-sm font-bold rounded ${lang === 'ru' ? 'bg-[#009846] text-white' : 'text-[#4c4c4c] bg-white/50'}`}>RU</button>
+                            <button onClick={() => setLang('en')} className={`px-3 py-1 text-sm font-bold rounded ${lang === 'en' ? 'bg-[#009846] text-white' : 'text-[#4c4c4c] bg-white/50'}`}>EN</button>
                         </div>
                     </div>
 

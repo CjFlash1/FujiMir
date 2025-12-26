@@ -6,15 +6,37 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { customer, items, total } = body;
+        const { customer, items, total, notes, giftChoice } = body;
 
-        // Generate sequential order number
-        const lastOrder = await prisma.order.findFirst({
-            orderBy: { id: 'desc' },
-            select: { id: true }
+        // Generate sequential order number via OrderSequence table (RAW SQL)
+        let orderNumber: string;
+        try {
+            // Check current sequence
+            const seqs = await prisma.$queryRaw<Array<{ id: number, currentValue: number }>>`SELECT id, currentValue FROM OrderSequence LIMIT 1`;
+
+            if (seqs && seqs.length > 0) {
+                const id = seqs[0].id;
+                // Update (Increment)
+                await prisma.$executeRaw`UPDATE OrderSequence SET currentValue = currentValue + 1 WHERE id = ${id}`;
+                // Fetch Updated Value
+                const updated = await prisma.$queryRaw<Array<{ currentValue: number }>>`SELECT currentValue FROM OrderSequence WHERE id = ${id}`;
+                orderNumber = updated[0].currentValue.toString();
+            } else {
+                // Insert Intial (10001) if table empty
+                await prisma.$executeRaw`INSERT INTO OrderSequence (currentValue) VALUES (10001)`;
+                orderNumber = "10001";
+            }
+        } catch (e) {
+            console.error("Order sequence error (raw)", e);
+            orderNumber = Date.now().toString();
+        }
+
+        // Sort items so gift magnet comes first
+        const sortedItems = [...items].sort((a, b) => {
+            if (a.isGiftMagnet && !b.isGiftMagnet) return -1;
+            if (!a.isGiftMagnet && b.isGiftMagnet) return 1;
+            return 0;
         });
-        const nextId = (lastOrder?.id || 0) + 1;
-        const orderNumber = nextId.toString();
 
         const order = await prisma.order.create({
             data: {
@@ -25,16 +47,22 @@ export async function POST(request: Request) {
                 customerEmail: customer.email,
                 deliveryMethod: customer.deliveryMethod,
                 deliveryAddress: customer.deliveryAddress,
+                notes: notes || null,
                 items: {
-                    create: items.map((item: any) => ({
+                    create: sortedItems.map((item: any) => ({
                         type: "PRINT",
-                        name: `${item.options.size} ${item.options.paper}`,
+                        name: item.isGiftMagnet
+                            ? `🎁 FREE MAGNET: ${item.options.size}`
+                            : `${item.options.size} ${item.options.paper}`,
                         quantity: item.options.quantity,
                         price: item.priceSnapshot,
                         subtotal: item.priceSnapshot * item.options.quantity,
                         size: item.options.size,
                         paper: item.options.paper,
-                        options: JSON.stringify(item.options.options || {}),
+                        options: JSON.stringify({
+                            ...item.options.options,
+                            isGiftMagnet: item.isGiftMagnet || false,
+                        }),
                         files: JSON.stringify([{
                             original: item.fileName,
                             server: item.serverFileName

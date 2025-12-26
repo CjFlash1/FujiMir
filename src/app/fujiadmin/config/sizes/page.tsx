@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Edit2, Check, X } from "lucide-react";
 
+import { useTranslation } from "@/lib/i18n";
+
 interface PrintSize {
     id: number;
     name: string;
@@ -15,6 +17,7 @@ interface PrintSize {
 }
 
 export default function SizesPage() {
+    const { t } = useTranslation();
     const [sizes, setSizes] = useState<PrintSize[]>([]);
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editForm, setEditForm] = useState<Partial<PrintSize>>({});
@@ -133,7 +136,7 @@ export default function SizesPage() {
                                     {editingId === size.id ? (
                                         <input className="w-20 p-1 border rounded" value={editForm.basePrice} onChange={e => setEditForm({ ...editForm, basePrice: parseFloat(e.target.value) })} />
                                     ) : (
-                                        <span className="font-semibold">{size.basePrice} ₴</span>
+                                        <span className="font-semibold">{size.basePrice} {t('general.currency')}</span>
                                     )}
                                 </td>
                                 <td className="px-6 py-4">

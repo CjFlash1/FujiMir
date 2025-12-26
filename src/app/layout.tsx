@@ -11,11 +11,87 @@ const manrope = Manrope({
 
 import { prisma } from "@/lib/prisma";
 
-export async function generateMetadata() {
+export async function generateMetadata(): Promise<Metadata> {
   const siteName = await prisma.setting.findUnique({ where: { key: 'site_name' } });
+  const siteNameValue = siteName?.value || "FUJI-Світ";
+
+  // Fetch verification codes from settings
+  const googleVerification = await prisma.setting.findUnique({ where: { key: 'google_verification' } });
+  const yandexVerification = await prisma.setting.findUnique({ where: { key: 'yandex_verification' } });
+  const bingVerification = await prisma.setting.findUnique({ where: { key: 'bing_verification' } });
+
   return {
-    title: siteName?.value || "Fujimir | Online Photo Printing",
-    description: "Professional photo printing service in Ukraine. High quality prints, fast delivery.",
+    title: {
+      default: `${siteNameValue} | Друк фотографій онлайн у Дніпрі`,
+      template: `%s | ${siteNameValue}`,
+    },
+    description: "Професійний друк фотографій онлайн у Дніпрі. Висока якість друку на обладнанні Fuji Frontier 500. Швидка доставка по Україні. Знижки від 100 фото.",
+    keywords: [
+      // Ukrainian
+      "друк фотографій", "друк фото онлайн", "фотодрук Дніпро", "фото на магніті",
+      "фото на документи", "фоторамки", "фотоплівка", "проявка плівки",
+      // Russian
+      "печать фотографий", "печать фото онлайн", "фотопечать Днепр", "фото на магните",
+      "фото на документы", "фоторамки", "фотопленка", "проявка пленки",
+      // English
+      "photo printing", "photo print online", "Dnipro photo lab", "photo magnets",
+      "passport photos", "photo frames", "film development",
+      // Brand
+      "Fuji", "FUJI-Світ", "FUJI-Мір", "Fujimir", "Frontier 500",
+    ],
+    authors: [{ name: siteNameValue }],
+    creator: siteNameValue,
+    publisher: siteNameValue,
+    formatDetection: {
+      email: false,
+      telephone: false,
+    },
+    metadataBase: new URL('https://fujimir.com.ua'),
+    alternates: {
+      canonical: '/',
+      languages: {
+        'uk-UA': '/uk',
+        'ru-RU': '/ru',
+        'en-US': '/en',
+      },
+    },
+    openGraph: {
+      type: 'website',
+      locale: 'uk_UA',
+      url: 'https://fujimir.com.ua',
+      siteName: siteNameValue,
+      title: `${siteNameValue} | Друк фотографій онлайн у Дніпрі`,
+      description: "Професійний друк фотографій онлайн у Дніпрі. Висока якість друку на обладнанні Fuji Frontier 500.",
+      images: [
+        {
+          url: '/og-image.jpg',
+          width: 1200,
+          height: 630,
+          alt: siteNameValue,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${siteNameValue} | Друк фотографій онлайн`,
+      description: "Професійний друк фотографій онлайн у Дніпрі",
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
+    },
+    verification: {
+      google: googleVerification?.value || undefined,
+      yandex: yandexVerification?.value || undefined,
+      other: bingVerification?.value ? { 'msvalidate.01': bingVerification.value } : undefined,
+    },
   };
 }
 

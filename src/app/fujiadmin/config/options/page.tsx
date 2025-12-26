@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Edit2, Check, X } from "lucide-react";
 
+import { useTranslation } from "@/lib/i18n";
+
 interface PrintOption {
     id: number;
     name: string;
@@ -14,6 +16,7 @@ interface PrintOption {
 }
 
 export default function OptionsPage() {
+    const { t } = useTranslation();
     const [options, setOptions] = useState<PrintOption[]>([]);
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editForm, setEditForm] = useState<Partial<PrintOption>>({});
@@ -126,7 +129,7 @@ export default function OptionsPage() {
                                     {editingId === option.id ? (
                                         <input className="w-24 p-1 border rounded" value={editForm.price} onChange={e => setEditForm({ ...editForm, price: parseFloat(e.target.value) })} />
                                     ) : (
-                                        <span className="font-semibold">{option.price} {option.priceType === 'FIXED' ? '₴' : '%'}</span>
+                                        <span className="font-semibold">{option.price} {option.priceType === 'FIXED' ? t('general.currency') : '%'}</span>
                                     )}
                                 </td>
                                 <td className="px-6 py-4">

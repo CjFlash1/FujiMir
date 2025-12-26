@@ -15,7 +15,7 @@ export async function GET() {
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { title, slug, content, description, isActive } = body;
+        const { title, slug, content, description, isActive, lang } = body;
 
         const page = await prisma.page.create({
             data: {
@@ -23,14 +23,15 @@ export async function POST(req: Request) {
                 slug,
                 content,
                 description,
-                isActive: isActive ?? true
+                isActive: isActive ?? true,
+                lang: lang || 'uk'
             }
         });
 
         return NextResponse.json(page);
     } catch (error: any) {
         if (error.code === 'P2002') {
-            return NextResponse.json({ error: "Slug must be unique" }, { status: 400 });
+            return NextResponse.json({ error: "Slug and Language combination must be unique" }, { status: 400 });
         }
         return NextResponse.json({ error: "Failed to create page" }, { status: 500 });
     }
@@ -39,7 +40,7 @@ export async function POST(req: Request) {
 export async function PUT(req: Request) {
     try {
         const body = await req.json();
-        const { id, title, slug, content, description, isActive } = body;
+        const { id, title, slug, content, description, isActive, lang } = body;
 
         const page = await prisma.page.update({
             where: { id: Number(id) },
@@ -48,7 +49,8 @@ export async function PUT(req: Request) {
                 slug,
                 content,
                 description,
-                isActive
+                isActive,
+                lang
             }
         });
 

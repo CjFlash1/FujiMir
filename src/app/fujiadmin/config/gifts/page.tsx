@@ -6,7 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Plus, Trash2, Save } from "lucide-react";
 
+import { useTranslation } from "@/lib/i18n";
+
 export default function GiftsConfig() {
+    const { t } = useTranslation();
     const [gifts, setGifts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState<number | null>(null);
@@ -90,7 +93,7 @@ export default function GiftsConfig() {
                 </CardHeader>
                 <CardContent className="flex gap-4 items-end">
                     <div className="flex-1 space-y-2">
-                        <label className="text-xs font-semibold uppercase text-slate-500">Min Order Amount (₴)</label>
+                        <label className="text-xs font-semibold uppercase text-slate-500">Min Order Amount ({t('general.currency')})</label>
                         <Input
                             type="number"
                             placeholder="e.g. 1000"

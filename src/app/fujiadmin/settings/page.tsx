@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Save, Globe, Phone, Mail, Instagram, Facebook } from "lucide-react";
+import { Loader2, Save, Globe, Phone, Mail, Instagram, Facebook, Search } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 
 interface SettingItem {
@@ -51,6 +51,15 @@ export default function SettingsPage() {
                 { key: "telegram_link", label: t('settings.telegram'), icon: Globe, placeholder: "https://t.me/..." },
                 { key: "viber_active", label: t('settings.viber_active'), icon: Globe, type: 'boolean' as const },
                 { key: "telegram_active", label: t('settings.telegram_active'), icon: Globe, type: 'boolean' as const },
+            ]
+        },
+        {
+            title: t('settings.seo'),
+            description: t('settings.seo_desc'),
+            items: [
+                { key: "google_verification", label: t('settings.google_verification'), icon: Search, placeholder: "google-site-verification code" },
+                { key: "yandex_verification", label: t('settings.yandex_verification'), icon: Search, placeholder: "yandex-verification code" },
+                { key: "bing_verification", label: t('settings.bing_verification'), icon: Search, placeholder: "msvalidate.01 code" },
             ]
         }
     ];

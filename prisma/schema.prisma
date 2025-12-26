@@ -26,6 +26,7 @@ model Order {
   customerEmail  String?
   deliveryAddress String?
   deliveryMethod String      @default("PICKUP") // PICKUP, POST
+  notes          String?     // Gift choice and other notes
   
   items          OrderItem[]
   
@@ -98,6 +99,24 @@ model PrintOption {
   slug        String   @unique // "border", "magnetic"
   priceType   String   // "FIXED", "PERCENT", "PER_AREA"? -> Simplified: "FIXED" usually
   price       Float    // 0 for border, 10 for magnetic
+  isActive    Boolean  @default(true)
+}
+
+// Separate pricing grid for magnets (not additive, but total price)
+model MagnetPrice {
+  id          Int      @id @default(autoincrement())
+  sizeSlug    String   // "10x15", "13x18", etc. - references PrintSize.slug
+  price       Float    // Total price for magnet (e.g., 35.00 for 10x15)
+  isActive    Boolean  @default(true)
+}
+
+// Delivery options and pricing
+model DeliveryOption {
+  id          Int      @id @default(autoincrement())
+  slug        String   @unique // "local", "novaposhta"
+  name        String   // "Доставка по м. Дніпро", "Нова Пошта"
+  price       Float    // 150 for local, 0 for novaposhta (customer pays separately)
+  description String?  // Additional info
   isActive    Boolean  @default(true)
 }
 
@@ -191,4 +210,9 @@ model HelpArticleTranslation {
   content       String      // HTML
 
   @@unique([helpArticleId, lang])
+}
+
+model OrderSequence {
+  id           Int @id @default(autoincrement())
+  currentValue Int @default(10000)
 }

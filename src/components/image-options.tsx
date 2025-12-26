@@ -1,6 +1,6 @@
 "use client";
 
-import { useCartStore } from "@/lib/store";
+import { useCartStore, calculateItemPrice } from "@/lib/store";
 import { Button } from "./ui/button";
 import { X, Tag } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
@@ -27,42 +27,7 @@ export function ImageOptionsModal({ isOpen, onClose, currentOptions, onSave }: a
 
     const priceInfo = useMemo(() => {
         if (!config || !opts) return { total: 0, savings: 0, unitPrice: 0 };
-
-        const sizeObj = config.sizes.find(s => s.name === opts.size);
-        if (!sizeObj) return { total: 0, savings: 0, unitPrice: 0 };
-
-        let baseUnitPrice = sizeObj.basePrice;
-        let finalUnitPrice = sizeObj.basePrice;
-
-        // Apply volume discount
-        if (sizeObj.discounts && sizeObj.discounts.length > 0) {
-            const applicableDiscount = [...sizeObj.discounts]
-                .sort((a, b) => b.minQuantity - a.minQuantity)
-                .find(d => opts.quantity >= d.minQuantity);
-
-            if (applicableDiscount) {
-                finalUnitPrice = applicableDiscount.price;
-            }
-        }
-
-        // Add option prices
-        let optionsPrice = 0;
-        Object.entries(opts.options || {}).forEach(([slug, isActive]) => {
-            if (isActive) {
-                const opt = config.options.find(o => o.slug === slug);
-                if (opt) optionsPrice += opt.price;
-            }
-        });
-
-        baseUnitPrice += optionsPrice;
-        finalUnitPrice += optionsPrice;
-
-        const total = finalUnitPrice * opts.quantity;
-        const totalWithoutDiscount = baseUnitPrice * opts.quantity;
-        const savings = totalWithoutDiscount - total;
-
-        return { total, savings, unitPrice: finalUnitPrice };
-
+        return calculateItemPrice(opts, config);
     }, [opts, config]);
 
     if (!isOpen) return null;
@@ -151,18 +116,32 @@ export function ImageOptionsModal({ isOpen, onClose, currentOptions, onSave }: a
                         <div className="space-y-3">
                             <label className="text-sm font-medium text-slate-700">{t('Extras')}</label>
                             <div className="flex flex-wrap gap-2">
-                                {config.options.map((opt) => (
-                                    <button
-                                        key={opt.id}
-                                        onClick={() => handleOptionToggle(opt.slug)}
-                                        className={`py-1.5 px-3 text-sm border rounded-full transition-all ${opts.options?.[opt.slug]
-                                            ? "border-emerald-600 bg-emerald-50 text-emerald-700 font-medium"
-                                            : "border-slate-200 hover:border-slate-300 text-slate-600"
-                                            }`}
-                                    >
-                                        {t(opt.name)} (+{opt.price} ₴)
-                                    </button>
-                                ))}
+                                {config.options.map((opt) => {
+                                    let displayPrice = opt.price;
+                                    // Custom display logic for Magnet option
+                                    if (opt.slug === 'magnetic' && config.magnetPrices) {
+                                        const mp = config.magnetPrices.find(m => m.sizeSlug === opts.size);
+                                        const sizeObj = config.sizes.find(s => s.name === opts.size);
+                                        if (mp && sizeObj) {
+                                            displayPrice = mp.price - sizeObj.basePrice;
+                                        }
+                                    }
+
+                                    const showPrice = displayPrice > 0 && opt.slug !== 'magnetic';
+
+                                    return (
+                                        <button
+                                            key={opt.id}
+                                            onClick={() => handleOptionToggle(opt.slug)}
+                                            className={`py-1.5 px-3 text-sm border rounded-full transition-all ${opts.options?.[opt.slug]
+                                                ? "border-emerald-600 bg-emerald-50 text-emerald-700 font-medium"
+                                                : "border-slate-200 hover:border-slate-300 text-slate-600"
+                                                }`}
+                                        >
+                                            {t(opt.name)} {showPrice ? `(+${displayPrice.toFixed(0)} ${t('general.currency')})` : ''}
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
                     )}

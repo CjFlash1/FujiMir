@@ -52,7 +52,7 @@ export default function CMSPages() {
     };
 
     const handleDelete = async (id: number) => {
-        // Removed window.confirm to avoid blocking issues
+        if (!confirm('Вы уверены, что хотите удалить эту страницу?')) return;
         try {
             await fetch(`/api/fujiadmin/cms/pages?id=${id}`, { method: "DELETE" });
             fetchPages();
@@ -122,6 +122,23 @@ export default function CMSPages() {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
+                                    <label className="text-sm font-semibold uppercase text-slate-500">Language</label>
+                                    <div className="flex gap-2">
+                                        {['uk', 'en', 'ru'].map(lang => (
+                                            <button
+                                                key={lang}
+                                                onClick={() => setEditingPage({ ...editingPage, lang })}
+                                                className={`px-3 py-1.5 rounded-md text-sm font-bold uppercase transition-colors border ${editingPage.lang === lang
+                                                    ? 'bg-slate-800 text-white border-slate-800'
+                                                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                                                    }`}
+                                            >
+                                                {lang}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
                                     <label className="text-sm font-semibold uppercase text-slate-500">URL Slug</label>
                                     <Input
                                         placeholder="e.g. terms-of-service"
@@ -159,7 +176,7 @@ export default function CMSPages() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold">Informational Pages</h1>
-                <Button onClick={() => setEditingPage({ title: "", slug: "", content: "", description: "", isActive: true })}>
+                <Button onClick={() => setEditingPage({ title: "", slug: "", content: "", description: "", isActive: true, lang: 'uk' })}>
                     <Plus className="w-4 h-4 mr-2" /> New Page
                 </Button>
             </div>
@@ -172,20 +189,29 @@ export default function CMSPages() {
                                 <div className="flex items-center gap-4">
                                     <div className={`w-2 h-2 rounded-full ${page.isActive ? 'bg-green-500' : 'bg-slate-300'}`} />
                                     <div>
-                                        <h3 className="font-semibold text-slate-900">{page.title}</h3>
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="font-semibold text-slate-900">{page.title}</h3>
+                                            <span className="px-1.5 py-0.5 rounded text-[10px] uppercase font-bold bg-slate-100 text-slate-500 border border-slate-200">
+                                                {page.lang || 'RU'}
+                                            </span>
+                                        </div>
                                         <p className="text-sm text-slate-500">/{page.slug}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-1">
-                                    <Button variant="ghost" size="icon" title="View Public Page">
-                                        <Eye className="w-4 h-4 text-slate-400" />
-                                    </Button>
+                                    <a href={`/p/${page.slug}`} target="_blank" rel="noopener noreferrer">
+                                        <Button variant="ghost" size="icon" title="View Public Page">
+                                            <Eye className="w-4 h-4 text-slate-400" />
+                                        </Button>
+                                    </a>
                                     <Button variant="ghost" size="icon" onClick={() => setEditingPage(page)}>
                                         <Edit2 className="w-4 h-4 text-slate-400" />
                                     </Button>
-                                    <Button variant="ghost" size="icon" className="hover:text-red-500" onClick={() => handleDelete(page.id)}>
-                                        <Trash2 className="w-4 h-4" />
-                                    </Button>
+                                    {!['about', 'contact', 'delivery'].includes(page.slug) && (
+                                        <Button variant="ghost" size="icon" className="hover:text-red-500" onClick={() => handleDelete(page.id)}>
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
                         ))}
@@ -197,6 +223,6 @@ export default function CMSPages() {
                     </div>
                 </CardContent>
             </Card>
-        </div>
+        </div >
     );
 }

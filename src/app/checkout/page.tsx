@@ -1,29 +1,125 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useCartStore, calculateItemPrice } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { ArrowLeft, Loader2, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Loader2, CheckCircle2, Upload, Gift, Truck, Image as ImageIcon } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "@/lib/i18n";
 
+type GiftChoice = 'FREE_DELIVERY' | 'FREE_MAGNET';
+type MagnetOption = 'upload' | 'existing' | 'comment';
+
+interface DeliveryOption {
+    id: number;
+    slug: string; // 'local', 'novaposhta', 'pickup'
+    name: string;
+    price: number;
+    description: string | null;
+}
+
 export default function CheckoutPage() {
     const router = useRouter();
-    const { items, clearCart, config } = useCartStore();
+    const { items, clearCart, config, checkoutForm, setCheckoutForm } = useCartStore();
     const { t } = useTranslation();
+    const magnetFileRef = useRef<HTMLInputElement>(null);
+
+    const [deliveryOptions, setDeliveryOptions] = useState<DeliveryOption[]>([]);
+    const [loadingDelivery, setLoadingDelivery] = useState(true);
+
     const [formData, setFormData] = useState({
         name: "",
         phone: "",
         email: "",
         deliveryAddress: "",
-        deliveryMethod: "PICKUP",
+        deliveryMethod: "pickup", // Default to lowercase slug
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [orderComplete, setOrderComplete] = useState<string | null>(null);
     const [phoneError, setPhoneError] = useState<string | null>(null);
+    const [nameError, setNameError] = useState<string | null>(null);
+    const [addressError, setAddressError] = useState<string | null>(null);
+    const [giftError, setGiftError] = useState<string | null>(null);
+
+    // Gift selection state
+    const [giftChoice, setGiftChoice] = useState<GiftChoice | null>(null);
+    const [magnetOption, setMagnetOption] = useState<MagnetOption | null>(null);
+    const [magnetPhotoId, setMagnetPhotoId] = useState<string | null>(null); // ID from existing photos
+    const [magnetFile, setMagnetFile] = useState<File | null>(null);
+    const [magnetComment, setMagnetComment] = useState<string>("");
+
+    // Sync with store
+    useEffect(() => {
+        if (checkoutForm.name || checkoutForm.phone || checkoutForm.deliveryMethod) {
+            setFormData(prev => ({
+                ...prev,
+                ...checkoutForm
+            }));
+        }
+    }, []);
+
+    useEffect(() => {
+        setCheckoutForm(formData);
+    }, [formData, setCheckoutForm]);
+
+    useEffect(() => {
+        // Fetch delivery options
+        fetch('/api/fujiadmin/config/delivery')
+            .then(res => res.json())
+            .then(data => {
+                setDeliveryOptions(data);
+                // Set default to pickup if available, or first option
+                const pickup = data.find((d: any) => d.slug === 'pickup');
+                // Only set default if store didn't provide a method (or it's pickup anyway)
+                if (pickup && (!checkoutForm.deliveryMethod || checkoutForm.deliveryMethod === 'pickup')) {
+                    // Keep existing logic or strictly respect store? 
+                    // Since hydration happens in parallel allow setState to potentially overwrite if store was empty?
+                    // Actually, hydration is in separate useEffect.
+                    // We should only set default if formData.deliveryMethod is "pickup" (initial) AND we want to ensure valid default.
+                    // But store might have set it to "novaposhta".
+                    // Safe approach: check if formData.deliveryMethod matches pickup (initial default)
+                    // But formData is closure-captured here (it's [], so formData is initial state).
+                    // We rely on 'setFormData(prev...)'
+                    setFormData(prev => {
+                        if (prev.deliveryMethod === 'pickup' && !checkoutForm.deliveryMethod) {
+                            return { ...prev, deliveryMethod: pickup.slug };
+                        }
+                        return prev;
+                    });
+                }
+                setLoadingDelivery(false);
+            })
+            .catch(err => {
+                console.error("Failed to fetch delivery options", err);
+                setLoadingDelivery(false);
+            });
+    }, []);
+
+    const groupedItems = useMemo(() => {
+        if (!config) return [];
+        const groups = new Map();
+        items.forEach(item => {
+            const key = JSON.stringify({
+                size: item.options.size,
+                paper: item.options.paper,
+                options: item.options.options || {}
+            });
+            if (!groups.has(key)) {
+                groups.set(key, {
+                    count: 0,
+                    options: item.options,
+                    subtotal: 0
+                });
+            }
+            const group = groups.get(key);
+            group.count += item.options.quantity;
+            group.subtotal += calculateItemPrice(item.options, config).total;
+        });
+        return Array.from(groups.values());
+    }, [items, config]);
 
     const totalStats = items.reduce((acc, item) => {
         if (!config) return acc;
@@ -34,17 +130,67 @@ export default function CheckoutPage() {
         };
     }, { total: 0, savings: 0 });
 
+    // Delivery calculation
+    const activeDeliveryOption = deliveryOptions.find(d => d.slug === formData.deliveryMethod);
+    const deliveryPriceRaw = activeDeliveryOption?.price || 0;
+    const deliveryPrice = (giftChoice === 'FREE_DELIVERY') ? 0 : deliveryPriceRaw;
+    const finalTotal = totalStats.total + deliveryPrice;
+
     const activeGift = config?.gifts
         ?.filter(g => totalStats.total >= g.minAmount)
         ?.sort((a, b) => b.minAmount - a.minAmount)[0];
 
+    // Helper function to scroll to error
+    const scrollToError = (elementId: string) => {
+        setTimeout(() => {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                element.focus();
+            }
+        }, 100);
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Validation
+        // Reset errors
+        setNameError(null);
+        setPhoneError(null);
+        setAddressError(null);
+        setGiftError(null);
+
+        // Custom validation
+        if (!formData.name.trim()) {
+            setNameError(t('validation.required_field'));
+            scrollToError('checkout-name');
+            return;
+        }
+
         const phoneDigits = formData.phone.replace(/\D/g, '');
         if (phoneDigits.length < 10) {
             setPhoneError(t('checkout.phone_error'));
+            scrollToError('checkout-phone');
+            return;
+        }
+
+        if (formData.deliveryMethod !== 'pickup' && !formData.deliveryAddress.trim()) {
+            setAddressError(t('validation.required_field'));
+            scrollToError('checkout-address');
+            return;
+        }
+
+        // Check if gift is available but not selected
+        if (activeGift && !giftChoice) {
+            setGiftError(t('gift.select_required'));
+            scrollToError('gift-section');
+            return;
+        }
+
+        // Check magnet comments
+        if (giftChoice === 'FREE_MAGNET' && magnetOption === 'comment' && !magnetComment.trim()) {
+            setGiftError(t('validation.required_field'));
+            scrollToError('gift-section');
             return;
         }
 
@@ -56,12 +202,12 @@ export default function CheckoutPage() {
             const uniqueFiles = Array.from(new Set(items.map(i => i.file).filter(Boolean))) as File[];
 
             for (const file of uniqueFiles) {
-                const formData = new FormData();
-                formData.append("file", file);
+                const formDataUpload = new FormData();
+                formDataUpload.append("file", file);
 
                 const uploadRes = await fetch("/api/upload", {
                     method: "POST",
-                    body: formData
+                    body: formDataUpload
                 });
 
                 if (!uploadRes.ok) throw new Error(`Upload failed for ${file.name}`);
@@ -69,23 +215,82 @@ export default function CheckoutPage() {
                 uploadedFilesMap.set(file, { server: fileName, original: originalName });
             }
 
-            // 2. Create Order
+            // 2. Upload magnet photo if provided
+            let magnetFileData: { server: string, original: string } | null = null;
+            if (giftChoice === 'FREE_MAGNET' && magnetOption === 'upload' && magnetFile) {
+                const magnetFormData = new FormData();
+                magnetFormData.append("file", magnetFile);
+
+                const magnetUploadRes = await fetch("/api/upload", {
+                    method: "POST",
+                    body: magnetFormData
+                });
+
+                if (magnetUploadRes.ok) {
+                    const { fileName, originalName } = await magnetUploadRes.json();
+                    magnetFileData = { server: fileName, original: originalName };
+                }
+            }
+
+            // 3. Build notes with gift info
+            let orderNotes = "";
+            if (activeDeliveryOption) {
+                orderNotes += `🚚 Доставка: ${activeDeliveryOption.name}`;
+                if (giftChoice === 'FREE_DELIVERY' && activeDeliveryOption.price > 0) orderNotes += ` (БЕЗКОШТОВНО ЗА БОНУС)`;
+                orderNotes += `\n`;
+            }
+
+            if (activeGift && giftChoice) {
+                if (giftChoice === 'FREE_DELIVERY') {
+                    orderNotes += `🎁 ПОДАРУНОК: БЕЗКОШТОВНА ДОСТАВКА\n`;
+                } else if (giftChoice === 'FREE_MAGNET') {
+                    orderNotes += `🎁 ПОДАРУНОК: БЕЗКОШТОВНИЙ МАГНІТ 10x15\n`;
+                    if (magnetOption === 'upload' && magnetFileData) {
+                        orderNotes += `📷 Нове фото (завантажено): ${magnetFileData.original}`;
+                    } else if (magnetOption === 'existing' && magnetPhotoId) {
+                        const selectedItem = items.find(i => i.id === magnetPhotoId);
+                        orderNotes += `📷 Фото з замовлення: ${selectedItem?.file?.name || magnetPhotoId}`;
+                    } else if (magnetOption === 'comment' && magnetComment) {
+                        orderNotes += `💬 Коментар клієнта: ${magnetComment}`;
+                    }
+                }
+            }
+
+            // 4. Prepare order items - put magnet photo first if exists
+            let orderItems = items.map(item => {
+                const fileData = item.file ? uploadedFilesMap.get(item.file) : null;
+                return {
+                    id: item.id,
+                    options: item.options,
+                    fileName: fileData?.original || item.file?.name,
+                    serverFileName: fileData?.server,
+                    priceSnapshot: config ? calculateItemPrice(item.options, config).unitPrice : 0,
+                    isGiftMagnet: magnetOption === 'existing' && magnetPhotoId === item.id,
+                };
+            });
+
+            // Add uploaded magnet as a separate item if uploaded
+            if (giftChoice === 'FREE_MAGNET' && magnetOption === 'upload' && magnetFileData) {
+                orderItems = [{
+                    id: 'gift-magnet-' + Date.now(),
+                    options: { size: '10x15', paper: 'glossy', quantity: 1, options: { magnetic: true } },
+                    fileName: magnetFileData.original,
+                    serverFileName: magnetFileData.server,
+                    priceSnapshot: 0,
+                    isGiftMagnet: true,
+                }, ...orderItems];
+            }
+
+            // 5. Create Order
             const response = await fetch("/api/orders", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     customer: formData,
-                    items: items.map(item => {
-                        const fileData = item.file ? uploadedFilesMap.get(item.file) : null;
-                        return {
-                            id: item.id,
-                            options: item.options,
-                            fileName: fileData?.original || item.file?.name,
-                            serverFileName: fileData?.server,
-                            priceSnapshot: config ? calculateItemPrice(item.options, config).unitPrice : 0,
-                        };
-                    }),
-                    total: totalStats.total
+                    items: orderItems,
+                    total: finalTotal, // Use final total with delivery
+                    notes: orderNotes,
+                    giftChoice: giftChoice,
                 }),
             });
 
@@ -141,9 +346,9 @@ export default function CheckoutPage() {
                     <ArrowLeft className="w-4 h-4 mr-2" /> {t('checkout.back')}
                 </Link>
 
-                <div className="grid md:grid-cols-3 gap-8">
-                    {/* Form */}
-                    <div className="md:col-span-2">
+                <div className="grid lg:grid-cols-12 gap-8">
+                    {/* Form - Compact Left Column */}
+                    <div className="lg:col-span-5 space-y-6">
                         <Card>
                             <CardHeader>
                                 <CardTitle>{t('checkout.shipping_contact')}</CardTitle>
@@ -154,16 +359,21 @@ export default function CheckoutPage() {
                                         <div className="space-y-2">
                                             <label className="text-sm font-medium">{t('checkout.name')}</label>
                                             <Input
-                                                required
+                                                id="checkout-name"
                                                 placeholder={t('checkout.name')}
                                                 value={formData.name}
-                                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                                onChange={(e) => {
+                                                    setFormData({ ...formData, name: e.target.value });
+                                                    if (nameError) setNameError(null);
+                                                }}
+                                                className={nameError ? "border-red-500 focus-visible:ring-red-500" : ""}
                                             />
+                                            {nameError && <p className="text-sm text-red-500 mt-1">{nameError}</p>}
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-sm font-medium">{t('checkout.phone')}</label>
                                             <Input
-                                                required
+                                                id="checkout-phone"
                                                 type="tel"
                                                 placeholder="+380..."
                                                 value={formData.phone}
@@ -189,39 +399,51 @@ export default function CheckoutPage() {
 
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium">{t('checkout.delivery_method')}</label>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <button
-                                                type="button"
-                                                onClick={() => setFormData({ ...formData, deliveryMethod: "PICKUP" })}
-                                                className={`p-4 border rounded-lg text-center transition-colors ${formData.deliveryMethod === "PICKUP"
-                                                    ? "border-primary-600 bg-primary-50 text-primary-900 font-medium"
-                                                    : "border-slate-200 hover:border-slate-300"
-                                                    }`}
-                                            >
-                                                {t('checkout.pickup')}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setFormData({ ...formData, deliveryMethod: "POST" })}
-                                                className={`p-4 border rounded-lg text-center transition-colors ${formData.deliveryMethod === "POST"
-                                                    ? "border-primary-600 bg-primary-50 text-primary-900 font-medium"
-                                                    : "border-slate-200 hover:border-slate-300"
-                                                    }`}
-                                            >
-                                                {t('checkout.novaposhta')}
-                                            </button>
+                                        <div className="grid grid-cols-1 gap-3">
+                                            {loadingDelivery ? (
+                                                <div className="text-center text-sm text-slate-500 py-4">{t('Loading')}...</div>
+                                            ) : (
+                                                deliveryOptions.map((option) => (
+                                                    <button
+                                                        key={option.id}
+                                                        type="button"
+                                                        onClick={() => setFormData({ ...formData, deliveryMethod: option.slug })}
+                                                        className={`p-3 border rounded-lg text-left transition-colors flex justify-between items-center ${formData.deliveryMethod === option.slug
+                                                            ? "border-primary-600 bg-primary-50 text-primary-900"
+                                                            : "border-slate-200 hover:border-slate-300"
+                                                            }`}
+                                                    >
+                                                        <div className="flex flex-col">
+                                                            <span className="font-medium">{option.name}</span>
+                                                            {option.description && <span className="text-xs text-slate-500 mt-0.5">{option.description}</span>}
+                                                        </div>
+                                                        <div className="text-sm font-bold whitespace-nowrap ml-4">
+                                                            {giftChoice === 'FREE_DELIVERY' && option.price > 0
+                                                                ? <span className="text-green-600">{t('checkout.free')}</span>
+                                                                : (option.price > 0 ? `${option.price} ${t('general.currency')}` : null)
+                                                            }
+                                                        </div>
+                                                    </button>
+                                                ))
+                                            )}
                                         </div>
                                     </div>
 
-                                    {formData.deliveryMethod === "POST" && (
+                                    {/* Address Field for ALL methods except Pickup */}
+                                    {formData.deliveryMethod !== "pickup" && (
                                         <div className="space-y-2">
                                             <label className="text-sm font-medium">{t('checkout.address_branch')}</label>
                                             <Input
-                                                required
+                                                id="checkout-address"
                                                 placeholder={t('checkout.address_branch')}
                                                 value={formData.deliveryAddress}
-                                                onChange={(e) => setFormData({ ...formData, deliveryAddress: e.target.value })}
+                                                onChange={(e) => {
+                                                    setFormData({ ...formData, deliveryAddress: e.target.value });
+                                                    if (addressError) setAddressError(null);
+                                                }}
+                                                className={addressError ? "border-red-500 focus-visible:ring-red-500" : ""}
                                             />
+                                            {addressError && <p className="text-sm text-red-500 mt-1">{addressError}</p>}
                                         </div>
                                     )}
                                 </form>
@@ -229,48 +451,196 @@ export default function CheckoutPage() {
                         </Card>
                     </div>
 
-                    {/* Application Summary */}
-                    <div className="md:col-span-1">
-                        <Card>
+                    {/* Application Summary - Expanded Right Column */}
+                    <div className="lg:col-span-7">
+                        <Card className="h-full">
                             <CardHeader>
                                 <CardTitle>{t('checkout.summary')}</CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="space-y-2">
-                                    {items.map(item => (
-                                        <div key={item.id} className="flex flex-col border-b border-slate-100 last:border-0 pb-2 mb-2">
-                                            <div className="flex justify-between text-sm font-medium text-slate-900">
-                                                <span>{item.options.size} {item.options.paper} x{item.options.quantity}</span>
-                                                <span>{(config ? calculateItemPrice(item.options, config).total : 0).toFixed(2)} ₴</span>
+                            <CardContent className="space-y-6">
+                                <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
+                                    {/* Grouped Items Summary */}
+                                    {groupedItems.map((group: any, idx) => (
+                                        <div key={idx} className="flex flex-col border-b border-slate-100 last:border-0 pb-3 mb-3">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <div className="font-medium text-slate-900">
+                                                        {t('Size')} {group.options.size}, {t(group.options.paper)}
+                                                    </div>
+                                                    <div className="text-sm text-slate-500">
+                                                        {group.count} {t('pcs')}
+                                                    </div>
+                                                </div>
+                                                <div className="font-bold">
+                                                    {group.subtotal.toFixed(2)} {t('general.currency')}
+                                                </div>
                                             </div>
-                                            {item.options.options?.border && (
-                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-[#009846]/10 text-[#009846] border border-[#009846]/20 uppercase">
-                                                    {t('badge.border') || t('Border')}
-                                                </span>
-                                            )}
-                                            {item.options.options?.magnetic && (
-                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-[#e31e24]/10 text-[#e31e24] border border-[#e31e24]/20 uppercase">
-                                                    {t('badge.mag') || t('Magnet')}
-                                                </span>
-                                            )}
+                                            <div className="flex flex-wrap gap-2 mt-1">
+                                                {group.options.options?.border && (
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-[#009846]/10 text-[#009846] border border-[#009846]/20 uppercase">
+                                                        {t('badge.border') || t('Border')}
+                                                    </span>
+                                                )}
+                                                {group.options.options?.magnetic && (
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-[#e31e24]/10 text-[#e31e24] border border-[#e31e24]/20 uppercase">
+                                                        {t('badge.mag') || t('Magnet')}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     ))}
-                                    {activeGift && (
-                                        <div className="flex justify-between text-sm font-medium text-green-600 bg-green-50 p-2 rounded border border-green-200">
-                                            <span>{t('checkout.bonus')}: {activeGift.giftName}</span>
-                                            <span>{t('checkout.free')}</span>
-                                        </div>
-                                    )}
                                 </div>
-                                <div className="border-t pt-4 flex justify-between items-start">
-                                    <span className="font-semibold text-lg mt-1">{t('checkout.total')}</span>
-                                    <div className="text-right">
-                                        <div className="font-bold text-xl text-primary-600">{totalStats.total.toFixed(2)} ₴</div>
-                                        {totalStats.savings > 0 && (
-                                            <div className="text-xs font-bold text-green-600 mt-1">
-                                                {t('Saved')}: {totalStats.savings.toFixed(2)} ₴
+
+
+
+                                {/* ... Gift Section ... */}
+                                {activeGift && (
+                                    <div id="gift-section" className={`bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border-2 ${giftError ? 'border-red-400' : 'border-green-300'} space-y-3`}>
+                                        <div className="flex items-center gap-2 text-green-700 font-bold">
+                                            <Gift className="w-5 h-5" />
+                                            {t('gift.title')}
+                                        </div>
+                                        <p className="text-sm text-green-600">{t('gift.choose')}</p>
+                                        {giftError && <p className="text-sm text-red-500 font-medium">{giftError}</p>}
+
+                                        {/* Gift Choice Buttons */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => { setGiftChoice('FREE_DELIVERY'); setMagnetOption(null); setGiftError(null); }}
+                                                className={`p-3 rounded-lg border-2 text-left transition-all flex items-center gap-3 ${giftChoice === 'FREE_DELIVERY'
+                                                    ? 'border-green-500 bg-green-100 text-green-800'
+                                                    : 'border-gray-200 hover:border-green-300'
+                                                    }`}
+                                            >
+                                                <Truck className="w-5 h-5" />
+                                                <span className="font-medium">{t('gift.free_delivery')}</span>
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => { setGiftChoice('FREE_MAGNET'); setGiftError(null); }}
+                                                className={`p-3 rounded-lg border-2 text-left transition-all flex items-center gap-3 ${giftChoice === 'FREE_MAGNET'
+                                                    ? 'border-purple-500 bg-purple-100 text-purple-800'
+                                                    : 'border-gray-200 hover:border-purple-300'
+                                                    }`}
+                                            >
+                                                <ImageIcon className="w-5 h-5" />
+                                                <span className="font-medium">{t('gift.free_magnet')}</span>
+                                            </button>
+                                        </div>
+
+                                        {/* Magnet Options (if magnet selected) */}
+                                        {giftChoice === 'FREE_MAGNET' && (
+                                            <div className="mt-3 space-y-2 pl-4 border-l-2 border-purple-300">
+                                                <p className="text-xs text-purple-600 font-medium uppercase">{t('gift.free_magnet')} — {t('gift.select_photo')}:</p>
+
+                                                {/* Option 1: Upload new photo */}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { setMagnetOption('upload'); magnetFileRef.current?.click(); }}
+                                                    className={`w-full p-2 rounded border text-left text-sm flex items-center gap-2 ${magnetOption === 'upload' ? 'border-purple-400 bg-purple-50' : 'border-gray-200 hover:border-purple-200'
+                                                        }`}
+                                                >
+                                                    <Upload className="w-4 h-4" />
+                                                    {t('gift.magnet_upload')}
+                                                    {magnetFile && <span className="text-xs text-green-600 ml-auto">✓ {magnetFile.name.slice(0, 15)}...</span>}
+                                                </button>
+                                                <input
+                                                    ref={magnetFileRef}
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) {
+                                                            setMagnetFile(file);
+                                                            setMagnetOption('upload');
+                                                        }
+                                                    }}
+                                                />
+
+                                                {/* Option 2: Select from existing - simple dropdown */}
+                                                <div className={`p-2 rounded border ${magnetOption === 'existing' ? 'border-purple-400 bg-purple-50' : 'border-gray-200'}`}>
+                                                    <label className="text-sm flex items-center gap-2 mb-1">
+                                                        <input
+                                                            type="radio"
+                                                            name="magnetOption"
+                                                            checked={magnetOption === 'existing'}
+                                                            onChange={() => setMagnetOption('existing')}
+                                                        />
+                                                        {t('gift.magnet_existing')}
+                                                    </label>
+                                                    {magnetOption === 'existing' && (
+                                                        <select
+                                                            className="w-full p-2 border rounded text-sm mt-1"
+                                                            value={magnetPhotoId || ''}
+                                                            onChange={(e) => setMagnetPhotoId(e.target.value)}
+                                                        >
+                                                            <option value="">-- {t('gift.select_photo')} --</option>
+                                                            {items.slice(0, 50).map((item, idx) => (
+                                                                <option key={item.id} value={item.id}>
+                                                                    #{idx + 1}: {item.file?.name?.slice(0, 30) || `${t('Photo')} ${idx + 1}`}
+                                                                </option>
+                                                            ))}
+                                                            {items.length > 50 && <option disabled>... {t('and_more')} {items.length - 50} {t('фото')}</option>}
+                                                        </select>
+                                                    )}
+                                                </div>
+
+                                                {/* Option 3: Leave a comment */}
+                                                <div className={`p-2 rounded border ${magnetOption === 'comment' ? 'border-purple-400 bg-purple-50' : 'border-gray-200'}`}>
+                                                    <label className="text-sm flex items-center gap-2 mb-1">
+                                                        <input
+                                                            type="radio"
+                                                            name="magnetOption"
+                                                            checked={magnetOption === 'comment'}
+                                                            onChange={() => setMagnetOption('comment')}
+                                                        />
+                                                        {t('gift.magnet_comment')}
+                                                    </label>
+                                                    {magnetOption === 'comment' && (
+                                                        <Input
+                                                            className="mt-1"
+                                                            placeholder={t('gift.magnet_photo_placeholder')}
+                                                            value={magnetComment}
+                                                            onChange={(e) => setMagnetComment(e.target.value)}
+                                                        />
+                                                    )}
+                                                </div>
                                             </div>
                                         )}
+                                    </div>
+                                )}
+
+                                <div className="border-t pt-4 space-y-2">
+                                    <div className="flex justify-between items-center text-sm text-slate-600">
+                                        <span>{t('pricing.photo_print')}</span>
+                                        <span className="font-medium">{totalStats.total.toFixed(2)} {t('general.currency')}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-sm text-slate-600">
+                                        <span>{t('pricing.delivery')}: {activeDeliveryOption?.name}</span>
+                                        <span className={`font-medium ${giftChoice === 'FREE_DELIVERY' || activeDeliveryOption?.slug === 'pickup' ? 'text-green-600' : ''}`}>
+                                            {giftChoice === 'FREE_DELIVERY'
+                                                ? t('checkout.free')
+                                                : (deliveryPrice > 0
+                                                    ? `${deliveryPrice.toFixed(2)} ${t('general.currency')}`
+                                                    : (activeDeliveryOption?.slug === 'pickup' ? t('checkout.free') : t('pricing.by_tariff'))
+                                                )
+                                            }
+                                        </span>
+                                    </div>
+
+                                    <div className="flex justify-between items-start pt-2 border-t mt-2">
+                                        <span className="font-semibold text-lg mt-1">{t('checkout.total')}</span>
+                                        <div className="text-right">
+                                            <div className="font-bold text-xl text-primary-600">{finalTotal.toFixed(2)} {t('general.currency')}</div>
+                                            {totalStats.savings > 0 && (
+                                                <div className="text-xs font-bold text-green-600 mt-1">
+                                                    {t('Saved')}: {totalStats.savings.toFixed(2)} {t('general.currency')}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </CardContent>
@@ -292,9 +662,9 @@ export default function CheckoutPage() {
                                 </Button>
                             </CardFooter>
                         </Card>
-                    </div>
-                </div>
-            </div>
-        </div>
+                    </div >
+                </div >
+            </div >
+        </div >
     );
 }

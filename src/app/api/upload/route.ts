@@ -4,6 +4,114 @@ import { join } from "path";
 import crypto from "crypto";
 import sharp from "sharp";
 
+// === VALIDATION CONFIG ===
+const ALLOWED_MIME_TYPES = [
+    // Standard web formats
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/gif',
+    'image/webp',
+    'image/avif',
+    // Other common formats
+    'image/bmp',
+    'image/x-ms-bmp',
+    'image/tiff',
+    'image/x-tiff',
+    // Apple formats (Sharp supports HEIC/HEIF natively)
+    'image/heic',
+    'image/heif',
+    'image/heic-sequence',
+    'image/heif-sequence',
+    // Vector (will be rasterized by Sharp)
+    'image/svg+xml',
+    // Icons
+    'image/x-icon',
+    'image/vnd.microsoft.icon',
+];
+
+const ALLOWED_EXTENSIONS = [
+    // Standard web
+    '.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif',
+    // Common
+    '.bmp', '.tiff', '.tif',
+    // Apple
+    '.heic', '.heif',
+    // Vector
+    '.svg',
+    // Icons
+    '.ico',
+];
+
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
+
+// Magic bytes signatures for common image formats
+const IMAGE_SIGNATURES: { bytes: number[]; offset?: number; mask?: number[] }[] = [
+    { bytes: [0xFF, 0xD8, 0xFF] },                          // JPEG
+    { bytes: [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A] }, // PNG
+    { bytes: [0x47, 0x49, 0x46, 0x38] },                    // GIF
+    { bytes: [0x42, 0x4D] },                                // BMP
+    { bytes: [0x49, 0x49, 0x2A, 0x00] },                    // TIFF (little-endian)
+    { bytes: [0x4D, 0x4D, 0x00, 0x2A] },                    // TIFF (big-endian)
+    { bytes: [0x00, 0x00, 0x01, 0x00] },                    // ICO
+    { bytes: [0x49, 0x49, 0x52, 0x4F] },                    // ORF (Olympus)
+];
+
+function isValidImageSignature(buffer: Buffer, mimeType: string, extension: string): boolean {
+    // Check basic signatures
+    for (const sig of IMAGE_SIGNATURES) {
+        const offset = sig.offset || 0;
+        if (buffer.length < offset + sig.bytes.length) continue;
+
+        let match = true;
+        for (let i = 0; i < sig.bytes.length; i++) {
+            if (buffer[offset + i] !== sig.bytes[i]) {
+                match = false;
+                break;
+            }
+        }
+        if (match) return true;
+    }
+
+    // HEIC/HEIF/AVIF (ftyp box)
+    if (buffer.length > 12) {
+        const ftypCheck = buffer.toString('ascii', 4, 8);
+        if (ftypCheck === 'ftyp') {
+            const brand = buffer.toString('ascii', 8, 12).toLowerCase();
+            if (['heic', 'heix', 'hevc', 'mif1', 'avif', 'avis', 'msf1'].includes(brand)) {
+                return true;
+            }
+        }
+    }
+
+    // WebP (RIFF....WEBP)
+    if (buffer.length > 12) {
+        const riff = buffer.toString('ascii', 0, 4);
+        const webp = buffer.toString('ascii', 8, 12);
+        if (riff === 'RIFF' && webp === 'WEBP') {
+            return true;
+        }
+    }
+
+    // SVG (text-based, check for XML/SVG markers)
+    if (extension === '.svg' || mimeType === 'image/svg+xml') {
+        const start = buffer.toString('utf8', 0, Math.min(1000, buffer.length));
+        if (start.includes('<svg') || start.includes('<?xml')) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function isJpegFile(buffer: Buffer): boolean {
+    // Check JPEG magic bytes: FF D8 FF
+    return buffer.length >= 3 &&
+        buffer[0] === 0xFF &&
+        buffer[1] === 0xD8 &&
+        buffer[2] === 0xFF;
+}
+
 // Helper for transliteration and sanitization
 function sanitizeFilename(name: string): string {
     const translitMap: Record<string, string> = {
@@ -20,9 +128,7 @@ function sanitizeFilename(name: string): string {
     };
 
     let result = name.split('').map(char => translitMap[char] || char).join('');
-    // Replace spaces with underscores
     result = result.replace(/\s+/g, '_');
-    // Remove non-latin/non-numeric chars except dot, underscore, dash
     result = result.replace(/[^a-zA-Z0-9._-]/g, '');
     return result;
 }
@@ -36,10 +142,39 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
         }
 
+        // === VALIDATION 1: File size ===
+        if (file.size > MAX_FILE_SIZE) {
+            return NextResponse.json({
+                error: `File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024}MB`
+            }, { status: 400 });
+        }
+
+        // === VALIDATION 2: MIME type ===
+        const mimeType = file.type.toLowerCase();
+        if (!ALLOWED_MIME_TYPES.includes(mimeType)) {
+            return NextResponse.json({
+                error: `Invalid file type: ${file.type}. Please upload an image file.`
+            }, { status: 400 });
+        }
+
+        // === VALIDATION 3: File extension ===
+        const extension = '.' + (file.name.split('.').pop()?.toLowerCase() || '');
+        if (!ALLOWED_EXTENSIONS.includes(extension)) {
+            return NextResponse.json({
+                error: `Invalid file extension: ${extension}. Please upload an image file.`
+            }, { status: 400 });
+        }
+
         const bytes = await file.arrayBuffer();
         const buffer = Buffer.from(bytes);
 
-        // Always use .jpg extension for the saved file
+        // === VALIDATION 4: Magic bytes (file signature) ===
+        if (!isValidImageSignature(buffer, mimeType, extension)) {
+            return NextResponse.json({
+                error: "File content does not match a valid image format. File may be corrupted or fake."
+            }, { status: 400 });
+        }
+
         const fileName = `${crypto.randomUUID()}.jpg`;
         const uploadsDir = join(process.cwd(), "public", "uploads");
         const path = join(uploadsDir, fileName);
@@ -47,28 +182,42 @@ export async function POST(req: Request) {
         // Ensure directory exists
         await mkdir(uploadsDir, { recursive: true });
 
-        // Process with sharp:
-        // 1. toFormat('jpeg') - convert to JPG
-        // 2. jpeg({ quality: 90 }) - set quality
-        // 3. flatten({ background: { r: 255, g: 255, b: 255 } }) - remove transparency (important for PNG)
-        // 4. toBuffer() - get the processed bytes
-        const processedBuffer = await sharp(buffer)
-            .flatten({ background: { r: 255, g: 255, b: 255 } }) // Handle PNG transparency
-            .rotate() // Auto-rotate based on EXIF
-            .toColorspace('srgb') // Ensure standard RGB color space
-            .toFormat('jpeg', { quality: 90, progressive: true })
-            .toBuffer();
+        let finalBuffer: Buffer;
 
-        await writeFile(path, processedBuffer);
-        console.log(`File converted and saved to ${path}`);
+        // === CHECK IF ORIGINAL JPEG ===
+        if (isJpegFile(buffer)) {
+            // JPG files: save original without any processing
+            finalBuffer = buffer;
+            console.log(`JPEG file saved as-is (original quality): ${path}`);
+        } else {
+            // Non-JPG files: convert to JPEG with 100% quality
+            finalBuffer = await sharp(buffer)
+                .flatten({ background: { r: 255, g: 255, b: 255 } }) // Handle transparency
+                .rotate() // Auto-rotate based on EXIF
+                .toColorspace('srgb') // Ensure standard RGB color space
+                .toFormat('jpeg', { quality: 100, progressive: true })
+                .toBuffer();
+            console.log(`Image converted to JPEG (100% quality): ${path}`);
+        }
+
+        await writeFile(path, finalBuffer);
 
         return NextResponse.json({
             success: true,
             fileName: fileName,
-            originalName: sanitizeFilename(file.name)
+            originalName: sanitizeFilename(file.name),
+            wasConverted: !isJpegFile(buffer)
         });
     } catch (error: any) {
         console.error("Upload/Processing error:", error);
+
+        // Check if it's a sharp processing error (invalid image data)
+        if (error.message?.includes('Input buffer') || error.message?.includes('unsupported image format')) {
+            return NextResponse.json({
+                error: "Could not process image. The file may be corrupted or in an unsupported format. RAW camera files require additional system libraries."
+            }, { status: 400 });
+        }
+
         return NextResponse.json({ error: `Upload failed: ${error.message}` }, { status: 500 });
     }
 }

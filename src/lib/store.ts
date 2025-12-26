@@ -11,6 +11,7 @@ export type ProductConfig = {
     papers: { id: number; name: string; slug: string }[];
     options: { id: number; name: string; slug: string; price: number }[];
     gifts: { id: number; minAmount: number; giftName: string }[];
+    magnetPrices?: { id: number; sizeSlug: string; price: number }[];
 };
 
 export type PrintOptions = {
@@ -23,14 +24,25 @@ export type PrintOptions = {
 export type CartItem = {
     id: string; // Unique ID (file.name + timestamp)
     file?: File; // Not persisted
+    name: string; // Original filename (persisted)
     preview: string; // Blob URL
     options: PrintOptions;
+}
+
+interface CheckoutFormState {
+    name: string;
+    phone: string;
+    email: string;
+    deliveryAddress: string;
+    deliveryMethod: string;
 }
 
 interface CartState {
     items: CartItem[];
     config: ProductConfig | null;
+    checkoutForm: CheckoutFormState;
     setConfig: (config: ProductConfig) => void;
+    setCheckoutForm: (form: Partial<CheckoutFormState>) => void;
     addItem: (file: File, defaultOptions: PrintOptions) => void;
     updateItem: (id: string, options: Partial<PrintOptions>) => void;
     removeItem: (id: string) => void;
@@ -39,17 +51,36 @@ interface CartState {
     clearCart: () => void;
 }
 
+const DEFAULT_CLONE_OPTIONS: PrintOptions = {
+    quantity: 1,
+    size: "10x15",
+    paper: "glossy",
+    options: {},
+};
+
 export const useCartStore = create<CartState>()(
     persist(
-        (set) => ({
+        (set, get) => ({
             items: [],
             config: null,
+            checkoutForm: {
+                name: "",
+                phone: "",
+                email: "",
+                deliveryAddress: "",
+                deliveryMethod: "pickup",
+            },
             setConfig: (config) => set({ config }),
+            setCheckoutForm: (form) =>
+                set((state) => ({
+                    checkoutForm: { ...state.checkoutForm, ...form },
+                })),
             addItem: (file, options) => {
                 const id = `${file.name}-${Date.now()}`;
                 const newItem: CartItem = {
                     id,
                     file,
+                    name: file.name, // Save original name persistantly
                     preview: URL.createObjectURL(file),
                     options: options,
                 };
@@ -72,6 +103,7 @@ export const useCartStore = create<CartState>()(
                         id: newId,
                         file: itemToClone.file,
                         preview: itemToClone.preview,
+                        options: { ...DEFAULT_CLONE_OPTIONS } // Reset options
                     };
                     return { items: [...state.items, clonedItem] };
                 });
@@ -85,6 +117,7 @@ export const useCartStore = create<CartState>()(
                         id: `${item.id}-copy-${Math.random().toString(36).substring(7)}`,
                         file: item.file,
                         preview: item.preview,
+                        options: { ...DEFAULT_CLONE_OPTIONS } // Reset options
                     }));
                     return { items: [...state.items, ...clonedItems] };
                 }),
@@ -100,6 +133,7 @@ export const useCartStore = create<CartState>()(
                 // Don't persist File objects or Previews (they expire)
                 // In a real app, upload to server immediately or use IndexedDB
                 config: state.config,
+                checkoutForm: state.checkoutForm,
                 items: state.items.map(item => ({
                     ...item,
                     file: undefined, // Ensure file is not persisted
@@ -117,14 +151,25 @@ export const calculateItemPrice = (options: PrintOptions, config: ProductConfig)
     let baseUnitPrice = sizeObj.basePrice;
     let finalUnitPrice = sizeObj.basePrice;
 
-    // Apply volume discount
-    if (sizeObj.discounts && sizeObj.discounts.length > 0) {
-        const applicableDiscount = [...sizeObj.discounts]
-            .sort((a, b) => b.minQuantity - a.minQuantity)
-            .find(d => options.quantity >= d.minQuantity);
+    // Check if it is a magnet and we have a custom price for it
+    const isMagnet = options.options['magnetic'] === true;
+    const magnetPriceObj = isMagnet && config.magnetPrices
+        ? config.magnetPrices.find(mp => mp.sizeSlug === options.size)
+        : null;
 
-        if (applicableDiscount) {
-            finalUnitPrice = applicableDiscount.price;
+    if (magnetPriceObj) {
+        baseUnitPrice = magnetPriceObj.price;
+        finalUnitPrice = magnetPriceObj.price;
+    } else {
+        // Apply volume discount
+        if (sizeObj.discounts && sizeObj.discounts.length > 0) {
+            const applicableDiscount = [...sizeObj.discounts]
+                .sort((a, b) => b.minQuantity - a.minQuantity)
+                .find(d => options.quantity >= d.minQuantity);
+
+            if (applicableDiscount) {
+                finalUnitPrice = applicableDiscount.price;
+            }
         }
     }
 
@@ -132,6 +177,9 @@ export const calculateItemPrice = (options: PrintOptions, config: ProductConfig)
     let optionsPrice = 0;
     Object.entries(options.options || {}).forEach(([slug, isActive]) => {
         if (isActive) {
+            // If we used a custom magnet price, we don't add the fixed option price
+            if (slug === 'magnetic' && magnetPriceObj) return;
+
             const opt = config.options.find(o => o.slug === slug);
             if (opt) optionsPrice += opt.price;
         }

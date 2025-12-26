@@ -4,18 +4,26 @@ import { useTranslation } from "@/lib/i18n";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2 } from "lucide-react";
+import { Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface OrdersTableProps {
     orders: any[];
 }
 
+const ORDERS_PER_PAGE = 20;
+
 export function OrdersTable({ orders }: OrdersTableProps) {
     const { t } = useTranslation();
     const router = useRouter();
     const [selectedOrders, setSelectedOrders] = useState<Set<number>>(new Set());
     const [isDeleting, setIsDeleting] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+
+    // Pagination calculations
+    const totalPages = Math.ceil(orders.length / ORDERS_PER_PAGE);
+    const startIndex = (currentPage - 1) * ORDERS_PER_PAGE;
+    const paginatedOrders = orders.slice(startIndex, startIndex + ORDERS_PER_PAGE);
 
     const toggleSelectAll = () => {
         if (selectedOrders.size === orders.length) {
@@ -95,14 +103,14 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                             </tr>
                         </thead>
                         <tbody>
-                            {orders.length === 0 ? (
+                            {paginatedOrders.length === 0 ? (
                                 <tr>
                                     <td colSpan={9} className="px-6 py-8 text-center text-slate-500">
                                         {t('No orders found')}
                                     </td>
                                 </tr>
                             ) : (
-                                orders.map((order) => (
+                                paginatedOrders.map((order) => (
                                     <tr key={order.id} className="bg-white border-b border-slate-100 hover:bg-slate-50">
                                         <td className="px-6 py-4">
                                             <input
@@ -127,7 +135,7 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-slate-500">{order._count.items}</td>
-                                        <td className="px-6 py-4 font-medium text-slate-900">{order.totalAmount.toFixed(2)} ₴</td>
+                                        <td className="px-6 py-4 font-medium text-slate-900">{order.totalAmount.toFixed(2)} {t('general.currency')}</td>
                                         <td className="px-6 py-4">
                                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                                                 {order.status}
@@ -144,6 +152,62 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                         </tbody>
                     </table>
                 </div>
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                    <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+                        <div className="text-sm text-slate-500">
+                            Показано {startIndex + 1}–{Math.min(startIndex + ORDERS_PER_PAGE, orders.length)} из {orders.length} заказов
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className="gap-1"
+                            >
+                                <ChevronLeft className="w-4 h-4" />
+                                Назад
+                            </Button>
+                            <div className="flex items-center gap-1">
+                                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                    let pageNum;
+                                    if (totalPages <= 5) {
+                                        pageNum = i + 1;
+                                    } else if (currentPage <= 3) {
+                                        pageNum = i + 1;
+                                    } else if (currentPage >= totalPages - 2) {
+                                        pageNum = totalPages - 4 + i;
+                                    } else {
+                                        pageNum = currentPage - 2 + i;
+                                    }
+                                    return (
+                                        <button
+                                            key={pageNum}
+                                            onClick={() => setCurrentPage(pageNum)}
+                                            className={`w-8 h-8 text-sm font-medium rounded ${currentPage === pageNum
+                                                    ? 'bg-primary-600 text-white'
+                                                    : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                                                }`}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage === totalPages}
+                                className="gap-1"
+                            >
+                                Далі
+                                <ChevronRight className="w-4 h-4" />
+                            </Button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

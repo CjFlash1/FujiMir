@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useMemo } from "react";
+import { useCallback, useState, useMemo, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import { Upload, X, FileImage, Settings, ArrowRight, Copy, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,8 @@ export default function UploadPage() {
     const [isBulkEditing, setIsBulkEditing] = useState(false);
     const [isDragActive, setIsDragActive] = useState(false);
     const [editingFileId, setEditingFileId] = useState<string | null>(null);
+    const [photosToShow, setPhotosToShow] = useState(100); // Pagination
+    const PHOTOS_PER_PAGE = 100;
 
     // Calculations
     const totalStats = useMemo(() => {
@@ -43,12 +45,12 @@ export default function UploadPage() {
     const totalPhotosCount = files.reduce((acc, f) => acc + f.options.quantity, 0);
 
     // Fetch config on mount
-    useState(() => {
+    useEffect(() => {
         fetch('/api/products')
             .then(res => res.json())
             .then(data => setConfig(data))
             .catch(console.error);
-    });
+    }, [setConfig]);
 
     const onDrop = useCallback((acceptedFiles: File[]) => {
         acceptedFiles.forEach((file) => {
@@ -59,7 +61,7 @@ export default function UploadPage() {
     const { getRootProps, getInputProps, isDragAccept: _isDragAccept, open } = useDropzone({
         onDrop,
         accept: {
-            "image/*": [".jpeg", ".jpg", ".png"],
+            "image/*": [".jpeg", ".jpg", ".png", ".gif", ".webp", ".avif", ".bmp", ".tiff", ".tif", ".heic", ".heif", ".svg", ".ico"],
         },
         noClick: files.length > 0, // Disable click on the *container* when files exist, relying on the 'Add' button to avoid confusion, or keep it? User said "no ability to add". I'll keep it clickable?
         // Actually, if files > 0, the dropzone is usually hidden or minimized in many apps. 
@@ -149,9 +151,6 @@ export default function UploadPage() {
                             <p className="text-2xl font-black text-[#4c4c4c] uppercase tracking-tighter">
                                 {t('Drag & drop photos here, or click to select')}
                             </p>
-                            <p className="text-sm text-[#4c4c4c]/60 mt-2 font-bold uppercase">
-                                {t('Supports JPG, PNG • Best quality guaranteed')}
-                            </p>
                         </div>
                         <Button size="lg" className="mt-4 bg-[#009846] hover:bg-[#0d8c43] text-white px-8 h-14 rounded-xl font-black uppercase tracking-tight shadow-lg shadow-green-900/20">
                             {t('Select Files')}
@@ -204,7 +203,7 @@ export default function UploadPage() {
                         </div>
 
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
-                            {files.map((file) => (
+                            {files.slice(0, photosToShow).map((file) => (
                                 <div
                                     key={file.id}
                                     onClick={() => toggleSelection(file.id)}
@@ -215,9 +214,28 @@ export default function UploadPage() {
                                 >
                                     <img
                                         src={file.preview}
-                                        alt={file.file?.name || "Photo"}
+                                        alt={file.name || file.file?.name || "Photo"}
                                         className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                                        onError={(e) => {
+                                            // Handle broken blob URLs by hiding msg and showing placeholder background
+                                            e.currentTarget.style.opacity = '0';
+                                            // Ideally we'd show an icon, but CSS-only fallback is tricky with existing layout. 
+                                            // The bg color will show through.
+                                        }}
                                     />
+
+                                    {/* Constant Filename Display */}
+                                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-3 pb-2 pt-8 pointer-events-none z-10">
+                                        <p className="text-white text-[11px] font-bold truncate drop-shadow-sm font-mono tracking-tight opacity-90" title={file.name || file.file?.name}>
+                                            {file.name || file.file?.name || "IMG_..."}
+                                        </p>
+                                    </div>
+
+                                    {/* Settings Badge */}
+                                    <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded-md flex flex-col items-end gap-0.5 border border-white/10 shadow-sm z-10 pointer-events-none">
+                                        <span className="font-bold tracking-wide">{file.options.size}</span>
+                                        <span className="text-gray-200 capitalize opacity-90">{t(file.options.paper)}</span>
+                                    </div>
 
                                     {/* Selection Checkbox */}
                                     <div className={cn(
@@ -263,6 +281,26 @@ export default function UploadPage() {
                             ))}
                         </div>
 
+                        {/* Show More Button for pagination */}
+                        {files.length > photosToShow && (
+                            <div className="mt-6 text-center">
+                                <Button
+                                    variant="outline"
+                                    size="lg"
+                                    onClick={() => setPhotosToShow(prev => prev + PHOTOS_PER_PAGE)}
+                                    className="gap-2 font-bold uppercase tracking-tight"
+                                >
+                                    {t('Показати ще')} {Math.min(PHOTOS_PER_PAGE, files.length - photosToShow)} {t('фото')}
+                                </Button>
+                            </div>
+                        )}
+
+                        {/* Progress indicator for large uploads */}
+                        {files.length > 100 && (
+                            <div className="mt-4 text-center text-sm text-[#4c4c4c]/50 font-bold uppercase tracking-wide">
+                                {t('Показано')} {Math.min(photosToShow, files.length)} {t('з')} {files.length} {t('фото')}
+                            </div>
+                        )}
 
                     </div>
                 )}
@@ -277,11 +315,11 @@ export default function UploadPage() {
                                 </div>
                                 <div className="flex flex-col items-start justify-center">
                                     <div className="text-sm font-bold text-[#4c4c4c] uppercase tracking-wide flex items-center gap-2 leading-none">
-                                        {t('checkout.total')}: <span className="text-2xl font-black text-[#e31e24]">{totalStats.total.toFixed(2)} ₴</span>
+                                        {t('checkout.total')}: <span className="text-2xl font-black text-[#e31e24]">{totalStats.total.toFixed(2)} {t('general.currency')}</span>
                                     </div>
                                     {totalStats.savings > 0 && (
                                         <div className="text-[10px] font-black text-[#009846] bg-[#009846]/10 px-2 py-0.5 rounded uppercase tracking-wider mt-1">
-                                            {t('Saved')}: {totalStats.savings.toFixed(2)} ₴
+                                            {t('Saved')}: {totalStats.savings.toFixed(2)} {t('general.currency')}
                                         </div>
                                     )}
                                 </div>

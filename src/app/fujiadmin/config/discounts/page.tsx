@@ -6,7 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Plus, Trash2, Save } from "lucide-react";
 
+import { useTranslation } from "@/lib/i18n";
+
 export default function DiscountsConfig() {
+    const { t } = useTranslation();
     const [discounts, setDiscounts] = useState<any[]>([]);
     const [sizes, setSizes] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -102,7 +105,7 @@ export default function DiscountsConfig() {
                         >
                             <option value="">Select Size...</option>
                             {sizes.map(s => (
-                                <option key={s.id} value={s.id}>{s.name} (Base: {s.basePrice}₴)</option>
+                                <option key={s.id} value={s.id}>{s.name} (Base: {s.basePrice} {t('general.currency')})</option>
                             ))}
                         </select>
                     </div>
@@ -116,7 +119,7 @@ export default function DiscountsConfig() {
                         />
                     </div>
                     <div className="w-32 space-y-2">
-                        <label className="text-xs font-semibold uppercase text-slate-500">New price (₴)</label>
+                        <label className="text-xs font-semibold uppercase text-slate-500">New price ({t('general.currency')})</label>
                         <Input
                             type="number"
                             step="0.01"
@@ -139,7 +142,7 @@ export default function DiscountsConfig() {
                             <div key={discount.id} className="flex gap-4 items-center border-b pb-4 last:border-0 last:pb-0">
                                 <div className="flex-1">
                                     <div className="text-sm font-medium">{discount.printSize?.name}</div>
-                                    <div className="text-xs text-slate-500">Base Price: {discount.printSize?.basePrice} ₴</div>
+                                    <div className="text-xs text-slate-500">Base Price: {discount.printSize?.basePrice} {t('general.currency')}</div>
                                 </div>
                                 <div className="w-32">
                                     <div className="text-xs font-semibold uppercase text-slate-500 mb-1">Min Qty</div>

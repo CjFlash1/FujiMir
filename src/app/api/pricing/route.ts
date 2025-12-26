@@ -1,20 +1,16 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
+// Public API for getting pricing data
 export async function GET() {
     try {
-        const [sizes, papers, options, gifts, magnetPrices] = await Promise.all([
-            prisma.printSize.findMany({
-                where: { isActive: true },
-                include: { discounts: true },
-                orderBy: { basePrice: 'asc' }
-            }),
-            prisma.paperType.findMany({ where: { isActive: true } }),
-            prisma.printOption.findMany({ where: { isActive: true } }),
-            prisma.giftThreshold.findMany({ where: { isActive: true }, orderBy: { minAmount: 'asc' } }),
+        const [sizes, magnetPrices, deliveryOptions, discounts] = await Promise.all([
+            prisma.printSize.findMany({ where: { isActive: true }, orderBy: { basePrice: 'asc' } }),
             prisma.magnetPrice.findMany({ where: { isActive: true } }),
+            prisma.deliveryOption.findMany({ where: { isActive: true } }),
+            prisma.volumeDiscount.findMany({ include: { printSize: true } }),
         ]);
 
         // Natural sort for magnet prices (e.g. 9x13 < 10x15)
@@ -29,8 +25,14 @@ export async function GET() {
             return a.sizeSlug.localeCompare(b.sizeSlug, undefined, { numeric: true });
         });
 
-        return NextResponse.json({ sizes, papers, options, gifts, magnetPrices });
+        return NextResponse.json({
+            sizes,
+            magnetPrices,
+            deliveryOptions,
+            discounts,
+        });
     } catch (error) {
-        return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 });
+        console.error("Error fetching pricing data:", error);
+        return NextResponse.json({ sizes: [], magnetPrices: [], deliveryOptions: [], discounts: [] });
     }
 }

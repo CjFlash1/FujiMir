@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Settings, Maximize, FileText, PlusCircle, Globe, Gift, Percent } from "lucide-react";
+import { Settings, Maximize, FileText, PlusCircle, Globe, Gift, Percent, Magnet, Truck } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,8 @@ export default function ConfigLayout({ children }: { children: React.ReactNode }
         { name: t('config.sizes'), href: '/fujiadmin/config/sizes', icon: Maximize },
         { name: t('config.paper'), href: '/fujiadmin/config/paper', icon: FileText },
         { name: t('config.options'), href: '/fujiadmin/config/options', icon: PlusCircle },
+        { name: t('config.magnets'), href: '/fujiadmin/config/magnets', icon: Magnet },
+        { name: t('config.delivery'), href: '/fujiadmin/config/delivery', icon: Truck },
         { name: t('config.gifts'), href: '/fujiadmin/config/gifts', icon: Gift },
         { name: t('config.discounts'), href: '/fujiadmin/config/discounts', icon: Percent },
         { name: t('admin.translations'), href: '/fujiadmin/config/translations', icon: Globe },

@@ -2,16 +2,41 @@
 
 import { useTranslation } from "@/lib/i18n";
 import Link from "next/link";
-import { ArrowLeft, Download, FileImage, CreditCard, Truck, User, Trash2, Archive, X } from "lucide-react";
+import { ArrowLeft, Download, FileImage, CreditCard, Truck, User, Trash2, Archive, X, ChevronDown, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+
+interface DownloadPart {
+    part: number;
+    from: number;
+    to: number;
+}
+
+interface PartsInfo {
+    totalFiles: number;
+    totalParts: number;
+    photosPerPart: number;
+    parts: DownloadPart[];
+}
 
 export function OrderDetailView({ order }: { order: any }) {
     const { t } = useTranslation();
     const router = useRouter();
     const [isDeleting, setIsDeleting] = useState(false);
     const [previewImage, setPreviewImage] = useState<string | null>(null);
+    const [partsInfo, setPartsInfo] = useState<PartsInfo | null>(null);
+    const [showPartsDropdown, setShowPartsDropdown] = useState(false);
+    const [itemsToShow, setItemsToShow] = useState(50); // Pagination for items
+    const ITEMS_PER_PAGE = 50;
+
+    // Fetch parts info on mount
+    useEffect(() => {
+        fetch(`/api/admin/orders/${order.id}/parts`)
+            .then(res => res.json())
+            .then(data => setPartsInfo(data))
+            .catch(console.error);
+    }, [order.id]);
 
     const handleDelete = async () => {
         if (!confirm(t('Are you sure you want to delete this order? This action cannot be undone.'))) {
@@ -38,8 +63,21 @@ export function OrderDetailView({ order }: { order: any }) {
         }
     };
 
-    const handleDownloadZip = () => {
-        window.location.href = `/api/admin/orders/${order.id}/download`;
+    const handleDownloadPart = (part: number) => {
+        window.location.href = `/api/admin/orders/${order.id}/download?part=${part}`;
+        setShowPartsDropdown(false);
+    };
+
+    const handleDownloadAll = () => {
+        if (!partsInfo) return;
+
+        if (partsInfo.totalParts > 1) {
+            // Show dropdown for multiple parts
+            setShowPartsDropdown(!showPartsDropdown);
+        } else {
+            // Single part - download directly
+            handleDownloadPart(1);
+        }
     };
 
     return (
@@ -82,11 +120,46 @@ export function OrderDetailView({ order }: { order: any }) {
                     </div>
                 </div>
 
-                <div className="flex gap-2">
-                    <Button onClick={handleDownloadZip} className="gap-2 bg-blue-600 hover:bg-blue-700">
-                        <Archive className="w-4 h-4" />
-                        {t('Download Archive')}
-                    </Button>
+                <div className="flex gap-2 relative">
+                    <div className="relative">
+                        <Button onClick={handleDownloadAll} className="gap-2 bg-blue-600 hover:bg-blue-700">
+                            <Archive className="w-4 h-4" />
+                            {partsInfo && partsInfo.totalParts > 1 ? (
+                                <>
+                                    {t('Download Archive')} ({partsInfo.totalParts} {partsInfo.totalParts === 1 ? 'часть' : 'частей'})
+                                    <ChevronDown className="w-4 h-4 ml-1" />
+                                </>
+                            ) : (
+                                t('Download Archive')
+                            )}
+                        </Button>
+                        {showPartsDropdown && partsInfo && partsInfo.totalParts > 1 && (
+                            <div className="absolute top-full left-0 mt-2 bg-white border border-slate-200 rounded-lg shadow-lg z-10 min-w-[250px]">
+                                <div className="p-3 border-b border-slate-100">
+                                    <p className="text-sm font-medium text-slate-700">
+                                        Всего файлов: {partsInfo.totalFiles}
+                                    </p>
+                                    <p className="text-xs text-slate-500">
+                                        Разбито на {partsInfo.totalParts} частей по {partsInfo.photosPerPart} фото
+                                    </p>
+                                </div>
+                                <div className="py-1">
+                                    {partsInfo.parts.map((part) => (
+                                        <button
+                                            key={part.part}
+                                            onClick={() => handleDownloadPart(part.part)}
+                                            className="w-full px-4 py-2 text-left text-sm hover:bg-slate-50 flex items-center justify-between"
+                                        >
+                                            <span>Часть {part.part}</span>
+                                            <span className="text-slate-400 text-xs">
+                                                фото {part.from}–{part.to}
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                     <Button variant="destructive" onClick={handleDelete} disabled={isDeleting} className="gap-2">
                         {isDeleting ? t('admin.deleting') : (
                             <>
@@ -146,6 +219,21 @@ export function OrderDetailView({ order }: { order: any }) {
                 </div>
             </div>
 
+            {/* Gift / Notes Section - PROMINENT */}
+            {order.notes && (
+                <div className="bg-gradient-to-r from-green-50 to-emerald-100 p-6 rounded-xl border-2 border-green-400 shadow-lg">
+                    <div className="flex items-center gap-3 mb-4 text-green-800">
+                        <div className="p-2 bg-green-500 rounded-lg text-white">
+                            <Gift className="w-5 h-5" />
+                        </div>
+                        <h3 className="font-bold text-xl uppercase tracking-tight">🎁 ПОДАРУНОК / ПРИМІТКИ</h3>
+                    </div>
+                    <div className="bg-white/80 p-4 rounded-lg border border-green-300">
+                        <pre className="whitespace-pre-wrap text-lg font-medium text-green-900">{order.notes}</pre>
+                    </div>
+                </div>
+            )}
+
             {/* Order Items */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-slate-100 flex justify-between items-center">
@@ -156,7 +244,7 @@ export function OrderDetailView({ order }: { order: any }) {
                         <h3 className="font-semibold text-lg text-slate-900">{t('admin.items')} ({order.items.length})</h3>
                     </div>
                     <div className="text-lg font-bold text-slate-900">
-                        {t('admin.total')}: {order.totalAmount.toFixed(2)} ₴
+                        {t('admin.total')}: {order.totalAmount.toFixed(2)} {t('general.currency')}
                     </div>
                 </div>
                 <div className="overflow-x-auto">
@@ -170,7 +258,7 @@ export function OrderDetailView({ order }: { order: any }) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {order.items.map((item: any) => (
+                            {order.items.slice(0, itemsToShow).map((item: any) => (
                                 <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
                                     <td className="px-6 py-4">
                                         {item.serverFileName ? (
@@ -241,6 +329,24 @@ export function OrderDetailView({ order }: { order: any }) {
                         </tbody>
                     </table>
                 </div>
+                {/* Show more button for pagination */}
+                {order.items.length > itemsToShow && (
+                    <div className="p-4 border-t border-slate-100 text-center">
+                        <Button
+                            variant="outline"
+                            onClick={() => setItemsToShow(prev => prev + ITEMS_PER_PAGE)}
+                            className="gap-2"
+                        >
+                            Показать ещё {Math.min(ITEMS_PER_PAGE, order.items.length - itemsToShow)} из {order.items.length - itemsToShow} оставшихся
+                        </Button>
+                    </div>
+                )}
+                {/* Progress indicator */}
+                {order.items.length > 50 && (
+                    <div className="px-6 py-3 bg-slate-50 border-t border-slate-100 text-center text-sm text-slate-500">
+                        Показано {Math.min(itemsToShow, order.items.length)} из {order.items.length} фотографий
+                    </div>
+                )}
             </div>
         </div>
     );
