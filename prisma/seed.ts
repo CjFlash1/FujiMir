@@ -398,6 +398,18 @@ async function main() {
         create: { slug: 'pickup', name: 'Самовивіз', price: 0, description: 'вул. Європейська, 8', isActive: true }
     });
 
+    // 7.1 Gift Thresholds
+    console.log('Seeding Gift Thresholds...');
+    await prisma.giftThreshold.upsert({
+        where: { id: 1 },
+        update: {},
+        create: {
+            minAmount: 1200,
+            giftName: 'Подарок при замовленні від 1200 грн',
+            isActive: true
+        }
+    });
+
     // 8. Default Informational Pages (Multilingual)
     const pages = [
         // About US
