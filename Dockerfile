@@ -18,13 +18,19 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Generate Prisma Client (schema only for build)
+# Generate Prisma Client and create database schema
 ENV DATABASE_URL="file:./build.db"
 RUN npx prisma generate
 RUN npx prisma db push
 
-# Build Next.js (needs empty db for static pages)
+# Seed database with initial data (for build-time static pages)
+RUN npx tsx prisma/seed.ts
+
+# Build Next.js
 RUN npm run build
+
+# Rename build database to template db that will be copied if no volume exists
+RUN mv build.db template.db
 
 # Production image, copy all the files and run next
 FROM base AS runner
@@ -48,11 +54,12 @@ RUN mkdir -p ./public/uploads && chown -R nextjs:nodejs ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy Prisma schema, client and seed script for runtime initialization
+# Copy Prisma schema and client for runtime
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
+
+# Copy template database (will be used if no persistent volume is mounted)
+COPY --from=builder --chown=nextjs:nodejs /app/template.db ./template.db
 
 # Copy startup script
 COPY --chown=nextjs:nodejs docker-entrypoint.sh ./
