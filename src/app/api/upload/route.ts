@@ -221,3 +221,37 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: `Upload failed: ${error.message}` }, { status: 500 });
     }
 }
+
+export async function DELETE(req: Request) {
+    try {
+        const { searchParams } = new URL(req.url);
+        const fileName = searchParams.get("fileName");
+
+        if (!fileName) {
+            return NextResponse.json({ error: "Filename required" }, { status: 400 });
+        }
+
+        // Basic security check to prevent directory traversal
+        if (fileName.includes("..") || fileName.includes("/") || fileName.includes("\\")) {
+            return NextResponse.json({ error: "Invalid filename" }, { status: 400 });
+        }
+
+        const uploadsDir = join(process.cwd(), "public", "uploads");
+        const path = join(uploadsDir, fileName);
+
+        // Delete file using fs/promises unlink
+        const { unlink } = require('fs/promises');
+        await unlink(path);
+
+        console.log(`Deleted file: ${path}`);
+        return NextResponse.json({ success: true });
+    } catch (error: any) {
+        console.error("Delete error:", error);
+        // If file doesn't exist, technically it's a success? Or 404? 
+        // Let's return success to not break frontend flow if file was already gone.
+        if (error.code === 'ENOENT') {
+            return NextResponse.json({ success: true, message: "File already deleted" });
+        }
+        return NextResponse.json({ error: "Delete failed" }, { status: 500 });
+    }
+}

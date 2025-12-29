@@ -451,6 +451,16 @@ export function OrderDetailView({ order }: { order: any }) {
                                                             {t('badge.border')}
                                                         </span>
                                                     )}
+                                                    {item.options?.options?.cropping === 'fit' && (
+                                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700 uppercase tracking-wide shadow-sm border border-indigo-200">
+                                                            FIT-IN
+                                                        </span>
+                                                    )}
+                                                    {item.options?.options?.cropping === 'no_resize' && (
+                                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700 uppercase tracking-wide shadow-sm border border-purple-200">
+                                                            NO-RESIZE
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                         </td>

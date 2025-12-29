@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Manrope } from "next/font/google";
+import { Manrope, Caveat } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
@@ -7,6 +7,11 @@ import { Footer } from "@/components/footer";
 const manrope = Manrope({
   subsets: ["latin", "cyrillic"],
   variable: "--font-manrope",
+});
+
+const caveat = Caveat({
+  subsets: ["latin", "cyrillic"],
+  variable: "--font-caveat",
 });
 
 import { prisma } from "@/lib/prisma";
@@ -107,7 +112,7 @@ export default function RootLayout({
     <html lang="ru" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={`${manrope.variable} font-sans antialiased min-h-screen flex flex-col`}
+        className={`${manrope.variable} ${caveat.variable} font-sans antialiased min-h-screen flex flex-col`}
       >
         <SettingsProvider>
           <TranslationProvider>

@@ -43,7 +43,7 @@ export function ImageOptionsModal({ isOpen, onClose, currentOptions, onSave }: a
                     </button>
                 </div>
 
-                <div className="p-6 space-y-6">
+                <div className="flex-1 overflow-y-auto p-6 space-y-6 max-h-[60vh] sm:max-h-[70vh]">
                     {/* Size Selection */}
                     <div className="space-y-3">
                         <label className="text-sm font-medium text-slate-700">{t('Size')}</label>
@@ -111,12 +111,36 @@ export function ImageOptionsModal({ isOpen, onClose, currentOptions, onSave }: a
                         </div>
                     </div>
 
-                    {/* Extra Options */}
+                    {/* Additional Options (Cropping) */}
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                            <label className="text-sm font-medium text-slate-700">{t('image_options.additional', 'Дополнительно')}</label>
+                            <a
+                                href="/p/help/why-cropped#examples"
+                                target="_blank"
+                                className="text-slate-400 hover:text-primary-600 transition-colors"
+                                title={t("What is this?")}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-help-circle"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg>
+                            </a>
+                        </div>
+                        <select
+                            className="w-full p-2.5 border rounded-md text-sm bg-white focus:ring-2 focus:ring-primary-500 outline-none"
+                            value={opts.cropping || 'fill'}
+                            onChange={(e) => setOpts({ ...opts, cropping: e.target.value as any })}
+                        >
+                            <option value="fill">{t('image_options.free_cropping', 'Free Cropping (Произвольная обрезка)')}</option>
+                            <option value="fit">{t('image_options.fit_in', 'Не обрезать (FIT-IN)')}</option>
+                            <option value="no_resize">{t('image_options.no_resize', 'Без масштабирования (NO-RESIZE)')}</option>
+                        </select>
+                    </div>
+
+                    {/* Extra Options (Boolean toggles like Border/Magnet) */}
                     {config.options.length > 0 && (
                         <div className="space-y-3">
                             <label className="text-sm font-medium text-slate-700">{t('Extras')}</label>
                             <div className="flex flex-wrap gap-2">
-                                {config.options.map((opt) => {
+                                {config.options.filter(opt => opt.slug !== "polaroid").map((opt) => {
                                     let displayPrice = opt.price;
                                     // Custom display logic for Magnet option
                                     if (opt.slug === 'magnetic' && config.magnetPrices) {
@@ -148,7 +172,7 @@ export function ImageOptionsModal({ isOpen, onClose, currentOptions, onSave }: a
 
                 </div>
 
-                <div className="p-4 border-t bg-slate-50 flex justify-end gap-3">
+                <div className="p-4 border-t bg-slate-50 flex justify-end gap-3 rounded-b-xl">
                     <Button variant="ghost" onClick={onClose}>{t('Cancel')}</Button>
                     <Button onClick={() => onSave(opts)}>{t('Save Changes')}</Button>
                 </div>

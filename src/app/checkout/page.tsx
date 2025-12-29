@@ -198,11 +198,27 @@ export default function CheckoutPage() {
         setIsSubmitting(true);
 
         try {
-            // 1. Upload unique files
-            const uploadedFilesMap = new Map<File, { server: string, original: string }>(); // File -> { server, original }
-            const uniqueFiles = Array.from(new Set(items.map(i => i.file).filter(Boolean))) as File[];
+            // 1. Process items (ensure all have server files)
+            const processedItems = [];
+            const filesToUpload = new Map<File, string>(); // file -> id to associate later if needed, or just upload unique files
 
-            for (const file of uniqueFiles) {
+            // Check for missing files first
+            const missingFiles = items.filter(i => !i.serverFileName && !i.file);
+            if (missingFiles.length > 0) {
+                alert(t('error.missing_files_refresh') || "Some files are lost due to refresh. Please go back and re-add them.");
+                setIsSubmitting(false);
+                return;
+            }
+
+            // Identify files needing upload (fallback)
+            const itemsNeedingUpload = items.filter(i => !i.serverFileName && i.file);
+
+            // Deduplicate files to upload
+            const uniqueFilesToUpload = Array.from(new Set(itemsNeedingUpload.map(i => i.file!)));
+            const uploadedFilesMap = new Map<File, { server: string, original: string }>();
+
+            // Upload missing files
+            for (const file of uniqueFilesToUpload) {
                 const formDataUpload = new FormData();
                 formDataUpload.append("file", file);
 
@@ -216,7 +232,7 @@ export default function CheckoutPage() {
                 uploadedFilesMap.set(file, { server: fileName, original: originalName });
             }
 
-            // 2. Upload magnet photo if provided
+            // 2. Upload magnet photo if provided (NEW upload)
             let magnetFileData: { server: string, original: string } | null = null;
             if (giftChoice === 'FREE_MAGNET' && magnetOption === 'upload' && magnetFile) {
                 const magnetFormData = new FormData();
@@ -233,7 +249,7 @@ export default function CheckoutPage() {
                 }
             }
 
-            // 3. Build notes with gift info
+            // 3. Build notes with gift info (Same as before)
             let orderNotes = "";
             if (activeDeliveryOption) {
                 orderNotes += `🚚 Доставка: ${activeDeliveryOption.name}`;
@@ -257,38 +273,54 @@ export default function CheckoutPage() {
                 }
             }
 
-            // 4. Prepare order items - ALL original items with isGiftMagnet: false
+            // 4. Prepare order items
             let orderItems = items.map(item => {
-                const fileData = item.file ? uploadedFilesMap.get(item.file) : null;
+                // Determine server file: 
+                // 1. Already has serverFileName? Use it.
+                // 2. Was just uploaded? Use map.
+                let serverName = item.serverFileName;
+                let originalName = item.name; // item.name is persistent
+
+                if (!serverName && item.file) {
+                    const uploaded = uploadedFilesMap.get(item.file);
+                    if (uploaded) {
+                        serverName = uploaded.server;
+                        originalName = uploaded.original; // Update original name just in case
+                    }
+                }
+
                 return {
                     id: item.id,
                     options: item.options,
-                    fileName: fileData?.original || item.file?.name,
-                    serverFileName: fileData?.server,
+                    fileName: originalName,
+                    serverFileName: serverName,
                     priceSnapshot: config ? calculateItemPrice(item.options, config).unitPrice : 0,
-                    isGiftMagnet: false, // Original items are NEVER gift magnets
+                    isGiftMagnet: false,
                 };
             });
 
-            // Add gift magnet as SEPARATE item (copy of existing photo OR uploaded)
+            // Add gift magnet as SEPARATE item 
             if (giftChoice === 'FREE_MAGNET') {
                 if (magnetOption === 'existing' && magnetPhotoId) {
-                    // Find the original item to copy
                     const originalItem = items.find(i => i.id === magnetPhotoId);
-                    const fileData = originalItem?.file ? uploadedFilesMap.get(originalItem.file) : null;
-                    if (originalItem && fileData) {
-                        // Add COPY of the photo as gift magnet
+                    // For existing item, we prefer serverFileName, or fallback to map if it was just uploaded
+                    let serverName = originalItem?.serverFileName;
+                    if (!serverName && originalItem?.file) {
+                        const uploaded = uploadedFilesMap.get(originalItem.file);
+                        if (uploaded) serverName = uploaded.server;
+                    }
+
+                    if (originalItem && serverName) {
                         orderItems = [{
                             id: 'gift-magnet-' + Date.now(),
                             options: { size: '10x15', paper: 'glossy', quantity: 1, options: { magnetic: true } },
-                            fileName: fileData.original,
-                            serverFileName: fileData.server,
+                            fileName: originalItem.name,
+                            serverFileName: serverName,
                             priceSnapshot: 0,
                             isGiftMagnet: true,
                         }, ...orderItems];
                     }
                 } else if (magnetOption === 'upload' && magnetFileData) {
-                    // Uploaded NEW magnet file
                     orderItems = [{
                         id: 'gift-magnet-' + Date.now(),
                         options: { size: '10x15', paper: 'glossy', quantity: 1, options: { magnetic: true } },
@@ -301,6 +333,7 @@ export default function CheckoutPage() {
             }
 
             // 5. Create Order
+            const { draftOrderId } = useCartStore.getState();
             const response = await fetch("/api/orders", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -310,6 +343,7 @@ export default function CheckoutPage() {
                     total: finalTotal, // Use final total with delivery
                     notes: orderNotes,
                     giftChoice: giftChoice,
+                    draftOrderId: draftOrderId
                 }),
             });
 

@@ -15,6 +15,28 @@ export function HelpArticleViewer({ article }: HelpArticleViewerProps) {
         setMounted(true);
     }, []);
 
+    // Handle scroll to examples (first image or anchor)
+    useEffect(() => {
+        if (!mounted || typeof window === 'undefined') return;
+
+        const hash = window.location.hash;
+        if (hash === '#examples') {
+            // Attempt to scroll to ID first, then fallback to first image
+            const attemptScroll = (attemptsLeft: number) => {
+                const element = document.getElementById('examples') || document.querySelector('.help-content img');
+
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else if (attemptsLeft > 0) {
+                    setTimeout(() => attemptScroll(attemptsLeft - 1), 200);
+                }
+            };
+
+            // Start attempts
+            setTimeout(() => attemptScroll(5), 100);
+        }
+    }, [mounted]);
+
     // Helper to get translation or fallback
     const getTr = (l: string) => article.translations.find((t: any) => t.lang === l);
     const tr = getTr(lang) || getTr('ru') || article.translations[0];

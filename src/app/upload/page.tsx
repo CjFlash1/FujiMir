@@ -2,15 +2,17 @@
 
 import { useCallback, useState, useMemo, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
-import { Upload, X, FileImage, Settings, ArrowRight, Copy, Plus, Trash2 } from "lucide-react";
+import { Upload, X, FileImage, Settings, ArrowRight, Copy, Plus, Trash2, Sparkles, Cloud, AlertCircle, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "@/lib/i18n";
+import { useSettings } from "@/lib/settings-context";
 
 import { ImageOptionsModal } from "@/components/image-options";
-import { useCartStore, type PrintOptions, calculateItemPrice } from "@/lib/store";
+
+import { useCartStore, type PrintOptions, type CartItem, calculateItemPrice } from "@/lib/store";
 
 const DEFAULT_OPTIONS: PrintOptions = {
     quantity: 1,
@@ -22,13 +24,16 @@ const DEFAULT_OPTIONS: PrintOptions = {
 export default function UploadPage() {
     const { t } = useTranslation();
     const router = useRouter();
-    const { items: files, addItem, removeItem, updateItem: updateItemOptions, setConfig, cloneItem, bulkCloneItems, config } = useCartStore();
+    const { items: files, addItem, removeItem, updateItem: updateItemOptions, setConfig, cloneItem, bulkCloneItems, config, setItemServerFile } = useCartStore();
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isBulkEditing, setIsBulkEditing] = useState(false);
     const [isDragActive, setIsDragActive] = useState(false);
     const [editingFileId, setEditingFileId] = useState<string | null>(null);
+    const [lightboxFile, setLightboxFile] = useState<CartItem | null>(null);
     const [photosToShow, setPhotosToShow] = useState(100); // Pagination
     const PHOTOS_PER_PAGE = 100;
+
+
 
     // Calculations
     const totalStats = useMemo(() => {
@@ -53,10 +58,23 @@ export default function UploadPage() {
     }, [setConfig]);
 
     const onDrop = useCallback((acceptedFiles: File[]) => {
-        acceptedFiles.forEach((file) => {
-            addItem(file, { ...DEFAULT_OPTIONS });
+        acceptedFiles.forEach(async (file) => {
+            const id = addItem(file, { ...DEFAULT_OPTIONS });
+
+            // Immediate Upload
+            try {
+                const formData = new FormData();
+                formData.append("file", file);
+                const res = await fetch("/api/upload", { method: "POST", body: formData });
+                if (res.ok) {
+                    const data = await res.json();
+                    setItemServerFile(id, data.fileName);
+                }
+            } catch (e) {
+                console.error("Auto-upload failed", e);
+            }
         });
-    }, [addItem]);
+    }, [addItem, setItemServerFile]);
 
     const { getRootProps, getInputProps, isDragAccept: _isDragAccept, open } = useDropzone({
         onDrop,
@@ -206,7 +224,7 @@ export default function UploadPage() {
                             {files.slice(0, photosToShow).map((file) => (
                                 <div
                                     key={file.id}
-                                    onClick={() => toggleSelection(file.id)}
+                                    onClick={() => setLightboxFile(file)}
                                     className={cn(
                                         "group relative aspect-square bg-[#f3f1e9] rounded-2xl overflow-hidden border-2 transition-all cursor-pointer shadow-md",
                                         selectedIds.includes(file.id) ? "border-[#e31e24] ring-4 ring-[#e31e24]/10 transform scale-95" : "border-transparent hover:border-[#c5b98e]/50"
@@ -225,18 +243,65 @@ export default function UploadPage() {
                                     />
 
                                     {/* Constant Filename Display */}
-                                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-3 pb-2 pt-8 pointer-events-none z-10">
-                                        <p className="text-white text-[11px] font-bold truncate drop-shadow-sm font-mono tracking-tight opacity-90" title={file.name || file.file?.name}>
-                                            {file.name || file.file?.name || "IMG_..."}
-                                        </p>
+
+
+                                    {/* --- NEW OVERLAY SYSTEM --- */}
+
+                                    {/* Top-Right: Print Settings Badges (Stacked) */}
+                                    <div className="absolute top-2 right-2 flex flex-col items-end gap-1 pointer-events-none z-10">
+                                        <span className="bg-black/60 backdrop-blur text-white text-[10px] px-1.5 py-0.5 rounded font-medium shadow-sm">
+                                            {file.options.size}
+                                        </span>
+                                        <span className="bg-black/60 backdrop-blur text-white/90 text-[10px] px-1.5 py-0.5 rounded shadow-sm">
+                                            {t(file.options.paper)}
+                                        </span>
+                                        {file.options.quantity > 1 && (
+                                            <span className="bg-yellow-400 text-black text-[10px] px-1.5 py-0.5 rounded font-bold shadow-sm">
+                                                x{file.options.quantity}
+                                            </span>
+                                        )}
                                     </div>
 
-                                    {/* Unified Settings Badge - Always visible */}
-                                    <div className="absolute top-2 right-2 bg-black/80 text-white text-[10px] px-2 py-1 rounded-lg font-black shadow-lg backdrop-blur-sm uppercase text-right leading-tight z-10 pointer-events-none">
-                                        {file.options.size} • {t(file.options.paper.charAt(0).toUpperCase() + file.options.paper.slice(1))}
-                                        {file.options.quantity > 1 && <span className="block text-yellow-400">x{file.options.quantity}</span>}
-                                        {file.options.options?.magnetic && <span className="block text-[#7360f2]">{t('badge.mag')}</span>}
-                                        {file.options.options?.border && <span className="block text-blue-300">{t('badge.border')}</span>}
+                                    {/* Top-Left: Status & Extra Options (Vertical Stack below Checkbox) */}
+                                    {/* Checkbox is at top-3 left-3 (checked via view_file line 280), so we start around top-11 */}
+                                    <div className="absolute top-11 left-3 flex flex-col items-start gap-1 pointer-events-none z-10 w-full pr-12">
+
+                                        {/* Upload Status */}
+                                        {!file.serverFileName && file.file && (
+                                            <div className="bg-blue-500/80 backdrop-blur text-white text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1">
+                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                            </div>
+                                        )}
+
+                                        {!file.serverFileName && !file.file && (
+                                            <div className="bg-red-500/80 backdrop-blur text-white text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1" title={t("Lost File")}>
+                                                <AlertCircle className="w-3 h-3" />
+                                            </div>
+                                        )}
+
+                                        {/* Synced Icon (Optional, keeping it subtle if needed, or removing as requested before. User said remove it, so skipping) */}
+
+                                        {/* Cropping Badge */}
+                                        {file.options.cropping === 'fit' && (
+                                            <span className="bg-indigo-500/90 backdrop-blur text-white text-[10px] px-1.5 py-0.5 rounded font-bold shadow-sm border border-white/20">
+                                                FIT-IN
+                                            </span>
+                                        )}
+                                        {file.options.cropping === 'no_resize' && (
+                                            <span className="bg-purple-500/90 backdrop-blur text-white text-[10px] px-1.5 py-0.5 rounded font-bold shadow-sm border border-white/20">
+                                                NO-RESIZE
+                                            </span>
+                                        )}
+
+                                        {/* Extra Badges (Magnet, Border) */}
+                                        <div className="flex flex-wrap gap-1">
+                                            {file.options.options?.magnetic && (
+                                                <span className="bg-red-500/80 text-white text-[10px] px-1.5 py-0.5 rounded uppercase">Mag</span>
+                                            )}
+                                            {file.options.options?.border && (
+                                                <span className="bg-green-500/80 text-white text-[10px] px-1.5 py-0.5 rounded uppercase">Brdr</span>
+                                            )}
+                                        </div>
                                     </div>
 
                                     {/* Selection Checkbox */}
@@ -248,27 +313,40 @@ export default function UploadPage() {
                                     </div>
 
                                     {/* Hover Actions */}
-                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                removeItem(file.id);
-                                            }}
-                                            className="p-2.5 bg-[#e31e24] text-white rounded-xl hover:scale-110 transition-transform shadow-lg"
-                                            title={t('Remove')}
-                                        >
-                                            <X className="w-5 h-5" />
-                                        </button>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setEditingFileId(file.id);
-                                            }}
-                                            className="p-2.5 bg-[#009846] text-white rounded-xl hover:scale-110 transition-transform shadow-lg"
-                                            title={t('Settings')}
-                                        >
-                                            <Settings className="w-5 h-5" />
-                                        </button>
+                                    {/* Action Buttons & Filename - Always visible for better mobile UX */}
+                                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-2 pt-12 flex flex-col items-center justify-end gap-2 z-20">
+
+                                        {/* Buttons Row */}
+                                        <div className="flex items-center gap-3">
+                                            {/* Settings */}
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setEditingFileId(file.id);
+                                                }}
+                                                className="w-9 h-9 flex items-center justify-center bg-white/90 hover:bg-white text-[#009846] rounded-full shadow-xl backdrop-blur-sm transition-transform active:scale-95 border border-white/50"
+                                                title={t('Settings')}
+                                            >
+                                                <Settings className="w-5 h-5" />
+                                            </button>
+
+                                            {/* Delete */}
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    removeItem(file.id);
+                                                }}
+                                                className="w-9 h-9 flex items-center justify-center bg-white/90 hover:bg-white text-[#e31e24] rounded-full shadow-xl backdrop-blur-sm transition-transform active:scale-95 border border-white/50"
+                                                title={t('Remove')}
+                                            >
+                                                <X className="w-5 h-5" />
+                                            </button>
+                                        </div>
+
+                                        {/* Filename */}
+                                        <p className="text-white/80 text-[10px] truncate max-w-full font-medium px-2 pb-1 opacity-80" onClick={(e) => e.stopPropagation()}>
+                                            {file.name || file.file?.name}
+                                        </p>
                                     </div>
                                 </div>
                             ))}
@@ -335,6 +413,101 @@ export default function UploadPage() {
                         onSave={handleSaveOptions}
                     />
                 )}
+
+                {/* Lightbox Modal */}
+                {lightboxFile && (
+                    <div
+                        className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200"
+                        onClick={() => setLightboxFile(null)}
+                    >
+                        {/* Close Button */}
+                        <button className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors p-2 z-50">
+                            <X className="w-8 h-8" />
+                        </button>
+
+                        {/* Navigation - Left */}
+                        <button
+                            className="absolute left-4 top-1/2 -translate-y-1/2 p-3 text-white/50 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 hidden md:block"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const currentIndex = files.findIndex(f => f.id === lightboxFile.id);
+                                const prevIndex = currentIndex > 0 ? currentIndex - 1 : files.length - 1;
+                                setLightboxFile(files[prevIndex]);
+                            }}
+                        >
+                            <ChevronLeft className="w-10 h-10" />
+                        </button>
+
+                        {/* Navigation - Right */}
+                        <button
+                            className="absolute right-4 top-1/2 -translate-y-1/2 p-3 text-white/50 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 hidden md:block"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const currentIndex = files.findIndex(f => f.id === lightboxFile.id);
+                                const nextIndex = currentIndex < files.length - 1 ? currentIndex + 1 : 0;
+                                setLightboxFile(files[nextIndex]);
+                            }}
+                        >
+                            <ChevronRight className="w-10 h-10" />
+                        </button>
+
+                        <div className="relative w-full h-full flex flex-col items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
+
+                            {/* Main Image - Logic involves trying high-res sources */}
+                            <img
+                                src={
+                                    lightboxFile.file
+                                        ? URL.createObjectURL(lightboxFile.file)
+                                        : (lightboxFile.serverFileName ? `/uploads/${lightboxFile.serverFileName}` : lightboxFile.preview)
+                                }
+                                alt={lightboxFile.name}
+                                className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl select-none"
+                            // Add basic touch swipe support here if needed via listeners, 
+                            // currently just relying on click nav for web, mobile users might tap edges if we added invisible overlay buttons.
+                            />
+
+                            {/* Mobile Navigation Zone Overlay (Invisible) */}
+                            <div className="absolute inset-x-0 bottom-24 top-1/2 flex justify-between md:hidden pointer-events-none">
+                                <div
+                                    className="w-1/3 h-full pointer-events-auto active:bg-white/5"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        const currentIndex = files.findIndex(f => f.id === lightboxFile.id);
+                                        const prevIndex = currentIndex > 0 ? currentIndex - 1 : files.length - 1;
+                                        setLightboxFile(files[prevIndex]);
+                                    }}
+                                />
+                                <div
+                                    className="w-1/3 h-full pointer-events-auto active:bg-white/5"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        const currentIndex = files.findIndex(f => f.id === lightboxFile.id);
+                                        const nextIndex = currentIndex < files.length - 1 ? currentIndex + 1 : 0;
+                                        setLightboxFile(files[nextIndex]);
+                                    }}
+                                />
+                            </div>
+
+                            <div className="absolute bottom-6 left-0 right-0 text-center px-4 pointer-events-none">
+                                <div className="inline-block bg-black/60 backdrop-blur-md rounded-xl px-6 py-3 border border-white/10">
+                                    <p className="text-white/95 font-medium text-lg leading-tight truncate max-w-[80vw]">
+                                        {lightboxFile.name}
+                                        <span className="opacity-50 text-sm ml-2 font-normal">
+                                            ({files.findIndex(f => f.id === lightboxFile.id) + 1} / {files.length})
+                                        </span>
+                                    </p>
+                                    <div className="text-white/70 text-sm mt-1 flex items-center justify-center gap-3">
+                                        <span className="bg-white/10 px-2 py-0.5 rounded">{lightboxFile.options.size}</span>
+                                        <span>{t(lightboxFile.options.paper)}</span>
+                                        {lightboxFile.options.quantity > 1 && <span className="text-yellow-400 font-bold">x{lightboxFile.options.quantity}</span>}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+
             </div>
         </div>
     );

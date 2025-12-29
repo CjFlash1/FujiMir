@@ -32,45 +32,88 @@ export async function POST(request: Request) {
         }
 
         // Sort items so gift magnet comes first
-        const sortedItems = [...items].sort((a, b) => {
+        const sortedItems = [...items].sort((a: any, b: any) => {
             if (a.isGiftMagnet && !b.isGiftMagnet) return -1;
             if (!a.isGiftMagnet && b.isGiftMagnet) return 1;
             return 0;
         });
 
-        const order = await prisma.order.create({
-            data: {
-                orderNumber,
-                totalAmount: total,
-                customerName: customer.name,
-                customerPhone: customer.phone,
-                customerEmail: customer.email,
-                deliveryMethod: customer.deliveryMethod,
-                deliveryAddress: customer.deliveryAddress,
-                notes: notes || null,
-                items: {
-                    create: sortedItems.map((item: any) => ({
-                        type: "PRINT",
-                        name: item.isGiftMagnet
-                            ? `🎁 FREE MAGNET: ${item.options.size}`
-                            : `${item.options.size} ${item.options.paper}`,
-                        quantity: item.options.quantity,
-                        price: item.priceSnapshot,
-                        subtotal: item.priceSnapshot * item.options.quantity,
-                        size: item.options.size,
-                        paper: item.options.paper,
-                        options: JSON.stringify({
-                            ...item.options.options,
-                            isGiftMagnet: item.isGiftMagnet || false,
-                        }),
-                        files: JSON.stringify([{
-                            original: item.fileName,
-                            server: item.serverFileName
-                        }]),
-                    }))
-                }
-            },
+        // PREPARE ITEM DATA GENERATOR
+        const createItemData = (item: any) => ({
+            type: "PRINT",
+            name: item.isGiftMagnet
+                ? `🎁 FREE MAGNET: ${item.options.size}`
+                : `${item.options.size} ${item.options.paper}`,
+            quantity: item.options.quantity,
+            price: item.priceSnapshot,
+            subtotal: item.priceSnapshot * item.options.quantity,
+            size: item.options.size,
+            paper: item.options.paper,
+            options: JSON.stringify({
+                ...item.options.options,
+                cropping: item.options.cropping || 'fill',
+                isGiftMagnet: item.isGiftMagnet || false,
+            }),
+            files: JSON.stringify([{
+                original: item.fileName,
+                server: item.serverFileName
+            }]),
         });
+
+        let order;
+        const { draftOrderId } = body;
+
+        if (draftOrderId) {
+            // Try to find and upgrade existing draft
+            const existingDraft = await prisma.order.findUnique({
+                where: { orderNumber: draftOrderId }
+            });
+
+            if (existingDraft) {
+                // 1. Clear old draft items
+                await prisma.orderItem.deleteMany({
+                    where: { orderId: existingDraft.id }
+                });
+
+                // 2. Update Order to Official Status
+                order = await prisma.order.update({
+                    where: { id: existingDraft.id },
+                    data: {
+                        orderNumber: orderNumber, // Assign official number
+                        status: "PENDING",
+                        totalAmount: total,
+                        customerName: customer.name,
+                        customerPhone: customer.phone,
+                        customerEmail: customer.email,
+                        deliveryMethod: customer.deliveryMethod,
+                        deliveryAddress: customer.deliveryAddress,
+                        notes: notes || null,
+                        items: {
+                            create: sortedItems.map(createItemData)
+                        }
+                    }
+                });
+            }
+        }
+
+        // Fallback: Create NEW if no draft or draft not found
+        if (!order) {
+            order = await prisma.order.create({
+                data: {
+                    orderNumber,
+                    totalAmount: total,
+                    customerName: customer.name,
+                    customerPhone: customer.phone,
+                    customerEmail: customer.email,
+                    deliveryMethod: customer.deliveryMethod,
+                    deliveryAddress: customer.deliveryAddress,
+                    notes: notes || null,
+                    items: {
+                        create: sortedItems.map(createItemData)
+                    }
+                },
+            });
+        }
 
         return NextResponse.json({ success: true, orderNumber: order.orderNumber });
     } catch (error) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Menu, X, Camera } from "lucide-react";
 import { Button } from "./ui/button";
@@ -13,12 +13,23 @@ export function Navbar() {
     const { t, lang, setLang } = useTranslation();
     const { getSetting } = useSettings();
 
+    // Dynamic Menu Fetching
+    const [dynamicPages, setDynamicPages] = useState<{ slug: string, title: string }[]>([]);
+
+    useEffect(() => {
+        fetch(`/api/menu?lang=${lang}`)
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) setDynamicPages(data);
+            })
+            .catch(err => console.error("Failed to fetch menu:", err));
+    }, [lang]);
+
     const navLinks = [
         { href: "/upload", label: t('nav.upload'), primary: true },
         { href: "/pricing", label: t('nav.pricing') },
-        { href: "/p/about", label: t('nav.about') },
-        { href: "/p/contact", label: t('nav.contact') },
-        { href: "/p/help", label: t('nav.help') },
+        { href: "/p/help", label: t('nav.help', 'Допомога') },
+        ...dynamicPages.map(page => ({ href: `/p/${page.slug}`, label: page.title }))
     ];
 
     // localized labels

@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Save, X } from "lucide-react";
 
 import { RichTextEditor } from "@/components/admin/rich-text-editor";
+import { PageBuilder } from "@/components/admin/page-builder/builder";
 
 interface HelpArticleFormProps {
     initialData?: any;
@@ -25,6 +26,12 @@ export function HelpArticleForm({ initialData, categories, onSave, onCancel }: H
     const [categoryId, setCategoryId] = useState(initialData?.helpCategoryId?.toString() || (categories[0]?.id?.toString() || ""));
     const [slug, setSlug] = useState(initialData?.slug || "");
     const [sortOrder, setSortOrder] = useState(initialData?.sortOrder?.toString() || "0");
+
+    const [modes, setModes] = useState<Record<string, "simple" | "builder">>({
+        uk: "simple",
+        ru: "simple",
+        en: "simple"
+    });
 
     const [translations, setTranslations] = useState({
         uk: {
@@ -132,14 +139,38 @@ export function HelpArticleForm({ initialData, categories, onSave, onCancel }: H
                                 required={lang === "uk"}
                             />
                         </div>
-                        <div className="grid gap-2">
+                        <div className="flex justify-between items-end mb-2">
                             <Label>Content ({lang.toUpperCase()})</Label>
+                            <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
+                                <button
+                                    type="button"
+                                    onClick={() => setModes(prev => ({ ...prev, [lang]: "simple" }))}
+                                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${modes[lang] === "simple" ? "bg-white shadow text-slate-900" : "text-slate-500 hover:text-slate-900"}`}
+                                >
+                                    Code / Classic
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setModes(prev => ({ ...prev, [lang]: "builder" }))}
+                                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${modes[lang] === "builder" ? "bg-white shadow text-blue-600" : "text-slate-500 hover:text-blue-600"}`}
+                                >
+                                    ✨ Page Builder
+                                </button>
+                            </div>
+                        </div>
+
+                        {modes[lang] === "simple" ? (
                             <RichTextEditor
                                 value={translations[lang].content}
                                 onChange={(value) => updateTranslation(lang, "content", value)}
                                 placeholder="Enter content..."
                             />
-                        </div>
+                        ) : (
+                            <PageBuilder
+                                initialHtml={translations[lang].content}
+                                onChange={(value) => updateTranslation(lang, "content", value)}
+                            />
+                        )}
                     </TabsContent>
                 ))}
             </Tabs>

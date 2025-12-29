@@ -343,6 +343,13 @@ async function main() {
         { key: 'config.magnets_desc', val: { uk: 'Управління цінами на фотомагніти', en: 'Manage photo magnet pricing', ru: 'Управление ценами на фотомагниты' } },
         { key: 'config.delivery', val: { uk: 'Доставка', en: 'Delivery', ru: 'Доставка' } },
         { key: 'config.delivery_desc', val: { uk: 'Управління опціями та цінами на доставку', en: 'Manage delivery options and pricing', ru: 'Управление опциями и ценами на доставку' } },
+
+        // Image Options (New)
+        { key: 'image_options.additional', val: { uk: 'Додатково (Обрізка)', en: 'Additional (Cropping)', ru: 'Дополнительно' } },
+        { key: 'image_options.free_cropping', val: { uk: 'Free Cropping (Вільна обрізка)', en: 'Free Cropping (Standard)', ru: 'Free Cropping (Произвольная обрезка)' } },
+        { key: 'image_options.fit_in', val: { uk: 'Не обрізати (FIT-IN)', en: 'FIT-IN (No Crop)', ru: 'Не обрезать (FIT-IN)' } },
+        { key: 'image_options.no_resize', val: { uk: 'Без масштабування (NO-RESIZE)', en: 'NO-RESIZE', ru: 'Без масштабирования (NO-RESIZE)' } },
+        { key: 'image_options.crop_std_default', val: { uk: '', en: '', ru: '' } }, // Empty default
     ]
 
     for (const t of translations) {
@@ -489,61 +496,112 @@ async function main() {
     // --- Migrated About Us Content ---
     const aboutContent = {
         ru: `
-            <h1 class="text-2xl font-bold text-[#009846] mb-4">FUJI-Мир</h1>
-            <p class="mb-4"><strong>FUJI-Мир</strong> - одно из лучших предприятий предоставляющих услуги цифровой печати фотографий как для фотолюбителей, так и для профессиональных фотографов.</p>
-            <p class="mb-4">У нас вы можете заказать ряд дизайнерских услуг, таких как:</p>
+<div class="prose max-w-none text-slate-800">
+    <div class="flex flex-col md:flex-row gap-8 items-start mb-8">
+        <div class="flex-1">
+            <p class="mb-4">
+                <b>FUJI-Мир</b> - одно из лучших предприятий предоставляющих услуги цифровой печати фотографий как для фотолюбителей, так и для профессиональных фотографов.
+            </p>
+            <p class="mb-4">У нас вы можете заказать ряд дизайнерских услуг таких как:</p>
             <ul class="list-disc pl-5 mb-4 space-y-1">
-                <li>Сканирование фотографий и пленок</li>
-                <li>Реставрация и компьютерная обработка фотографий</li>
-                <li>Устранение эффекта красных глаз</li>
-                <li>Разработка различных макетов и коллажей</li>
-                <li>Фотографии на документы</li>
+                <li>сканирование фотографий и пленок;</li>
+                <li>реставрация и компьютерная обработка фотографий;</li>
+                <li>устранение эффекта красных глаз;</li>
+                <li>разработка различных макетов и коллажей;</li>
+                <li>а так же сделать фотографию на документы.</li>
             </ul>
-            <p class="mb-4">Печать производится на профессиональном оборудовании фирмы <strong>FUJI - цифровой фотолаборатории Frontier 500</strong>.</p>
-            <p class="mb-4">Высочайшее качество ваших фотографий гарантировано тем, что перед печатью все файлы просматриваются оператором и в большинстве случаев мы проводим необходимую цветовую и тоновую коррекцию изображения.</p>
-            <div class="mt-8 pt-4 border-t border-gray-200">
-                <p><strong>Адрес:</strong> г. Днепр, ул. Европейская (Миронова), д.8</p>
-                <p><strong>Телефоны:</strong> (099) 215-03-17, (098) 492-73-87</p>
-                <p><strong>Время работы:</strong> с 9:30 до 18:30 без выходных</p>
-            </div>
+            <p class="mb-4">
+                Печать производится на профессиональном оборудовании фирмы <b>FUJI</b> - цифровой фотолаборатории <b>Frontier 500</b>.
+            </p>
+            <p class="mb-4">
+                Высочайшее качество ваших фотографий гарантировано тем, что перед печатью все файлы просматриваются оператором и в большинстве случаев мы проводим необходимую цветовую и тоновую коррекцию изображения, устраняя таким образом возможные ошибки допущеные при съемке.
+            </p>
+            <p class="font-bold text-[#009846] text-lg">
+                Будем рады всегда Вас видеть в числе наших клиентов, и постараемся оправдать Ваши ожидания.
+            </p>
+        </div>
+        <div class="w-full md:w-1/3 flex flex-col gap-6">
+             <div class="rounded-xl overflow-hidden shadow-md bg-white border p-2">
+                <img src="/images/about/real_map.gif" alt="Карта Фуджи Мир" class="w-full h-auto" />
+             </div>
+             <div class="rounded-xl overflow-hidden shadow-md bg-white border p-2">
+                <img src="/images/about/refined_magazin.png" alt="Вход в магазин Фуджи Мир" class="w-full h-auto" />
+             </div>
+        </div>
+    </div>
+</div>
         `,
         uk: `
-            <h1 class="text-2xl font-bold text-[#009846] mb-4">FUJI-Світ</h1>
-            <p class="mb-4"><strong>FUJI-Світ</strong> - одне з найкращих підприємств, що надають послуги цифрового друку фотографій як для фотолюбителів, так і для професійних фотографів.</p>
+<div class="prose max-w-none text-slate-800">
+    <div class="flex flex-col md:flex-row gap-8 items-start mb-8">
+        <div class="flex-1">
+            <p class="mb-4">
+                <b>FUJI-Світ</b> - одне з найкращих підприємств, що надають послуги цифрового друку фотографій як для фотолюбителів, так і для професійних фотографів.
+            </p>
             <p class="mb-4">У нас ви можете замовити ряд дизайнерських послуг, таких як:</p>
             <ul class="list-disc pl-5 mb-4 space-y-1">
-                <li>Сканування фотографій та плівок</li>
-                <li>Реставрація та комп'ютерна обробка фотографій</li>
-                <li>Усунення ефекту червоних очей</li>
-                <li>Розробка різноманітних макетів та колажів</li>
-                <li>Фотографії на документи</li>
+                <li>сканування фотографій та плівок;</li>
+                <li>реставрація та комп'ютерна обробка фотографій;</li>
+                <li>усунення ефекту червоних очей;</li>
+                <li>розробка різноманітних макетів та колажів;</li>
+                <li>а також зробити фотографію на документи.</li>
             </ul>
-            <p class="mb-4">Друк проводиться на професійному обладнанні фірми <strong>FUJI - цифровій фотолабораторії Frontier 500</strong>.</p>
-            <p class="mb-4">Найвища якість ваших фотографій гарантована тим, що перед друком всі файли переглядаються оператором і в більшості випадків ми проводимо необхідну кольорову та тонову корекцію.</p>
-            <div class="mt-8 pt-4 border-t border-gray-200">
-                <p><strong>Адреса:</strong> м. Дніпро, вул. Європейська (Миронова), буд.8</p>
-                <p><strong>Телефони:</strong> (099) 215-03-17, (098) 492-73-87</p>
-                <p><strong>Час роботи:</strong> з 9:30 до 18:30 без вихідних</p>
-            </div>
+            <p class="mb-4">
+                Друк проводиться на професійному обладнанні фірми <b>FUJI</b> - цифровій фотолабораторії <b>Frontier 500</b>.
+            </p>
+            <p class="mb-4">
+                Найвища якість ваших фотографій гарантована тим, що перед друком всі файли переглядаються оператором і в більшості випадків ми проводимо необхідну кольорову та тонову корекцію зображення, усуваючи таким чином можливі помилки допущені при зйомці.
+            </p>
+            <p class="font-bold text-[#009846] text-lg">
+                Будемо раді завжди Вас бачити серед наших клієнтів, і намагатимемося виправдати Ваші очікування.
+            </p>
+        </div>
+        <div class="w-full md:w-1/3 flex flex-col gap-6">
+             <div class="rounded-xl overflow-hidden shadow-md bg-white border p-2">
+                <img src="/images/about/real_map.gif" alt="Карта Fuji-Світ" class="w-full h-auto" />
+             </div>
+             <div class="rounded-xl overflow-hidden shadow-md bg-white border p-2">
+                <img src="/images/about/refined_magazin.png" alt="Магазин Fuji-Світ" class="w-full h-auto" />
+             </div>
+        </div>
+    </div>
+</div>
         `,
         en: `
-            <h1 class="text-2xl font-bold text-[#009846] mb-4">FUJI-Mir</h1>
-            <p class="mb-4"><strong>FUJI-Mir</strong> is one of the best enterprises providing digital photo printing services for both amateurs and professional photographers.</p>
-            <p class="mb-4">You can order a range of design services from us, such as:</p>
+<div class="prose max-w-none text-slate-800">
+    <div class="flex flex-col md:flex-row gap-8 items-start mb-8">
+        <div class="flex-1">
+            <p class="mb-4">
+                <b>FUJI-Mir</b> is one of the best enterprises providing digital photo printing services for both amateurs and professional photographers.
+            </p>
+            <p class="mb-4">You can order a range of design services such as:</p>
             <ul class="list-disc pl-5 mb-4 space-y-1">
-                <li>Scanning photos and films</li>
-                <li>Restoration and computer processing of photos</li>
-                <li>Red-eye removal</li>
-                <li>Development of various layouts and collages</li>
-                <li>ID photos</li>
+                <li>scanning photos and films;</li>
+                <li>restoration and computer processing of photos;</li>
+                <li>red-eye removal;</li>
+                <li>development of various layouts and collages;</li>
+                <li>and also ID photos.</li>
             </ul>
-            <p class="mb-4">Printing is done on professional equipment from <strong>FUJI - digital minilab Frontier 500</strong>.</p>
-            <p class="mb-4">The highest quality of your photos is guaranteed because all files are reviewed by an operator before printing, and in most cases, we perform necessary color and tone corrections.</p>
-            <div class="mt-8 pt-4 border-t border-gray-200">
-                <p><strong>Address:</strong> Dnipro, Yevropeyska (Mironova) St, 8</p>
-                <p><strong>Phones:</strong> (099) 215-03-17, (098) 492-73-87</p>
-                <p><strong>Working Hours:</strong> 9:30 to 18:30 daily</p>
-            </div>
+            <p class="mb-4">
+                Printing is done on professional equipment from <b>FUJI</b> - digital minilab <b>Frontier 500</b>.
+            </p>
+            <p class="mb-4">
+                The highest quality of your photos is guaranteed because all files are reviewed by an operator before printing, and in most cases, we perform necessary color and tone corrections, eliminating potential errors made during shooting.
+            </p>
+            <p class="font-bold text-[#009846] text-lg">
+                We look forward to seeing you among our clients and will try to meet your expectations.
+            </p>
+        </div>
+        <div class="w-full md:w-1/3 flex flex-col gap-6">
+             <div class="rounded-xl overflow-hidden shadow-md bg-white border p-2">
+                <img src="/images/about/real_map.gif" alt="Map Fujimir" class="w-full h-auto" />
+             </div>
+             <div class="rounded-xl overflow-hidden shadow-md bg-white border p-2">
+                <img src="/images/about/refined_magazin.png" alt="Fujimir Shop" class="w-full h-auto" />
+             </div>
+        </div>
+    </div>
+</div>
         `
     };
 
@@ -879,90 +937,269 @@ async function main() {
 
     // -- RU Content
     const croppingContentRU = `
-        <h3 class="text-lg font-bold mb-4">Почему фотография при печати обрезаются</h3>
-        <p class="mb-4 text-sm">Изначально форматы печати рассчитывались под наиболее распространенные форматы кадров...</p>
-        <p class="mb-4 text-sm">Подробнее: С появлением цифровых фотоаппаратов...</p>
-        <div class="space-y-6">
-            <div class="border rounded-lg overflow-hidden shadow-sm">
-                 <div class="bg-gray-50 p-3 border-b text-center font-bold">Оригинал</div>
-                 <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-                    <img src="/images/help/orig.jpg" alt="Original" class="w-full mx-auto border" style="max-width: 240px;" />
-                    <div class="text-sm">Снимок полученный с камеры 4:3 (цифромыльница).</div>
-                 </div>
+<div class="prose max-w-none text-slate-800">
+    <p class="mb-4 text-justify">
+        Изначально форматы печати рассчитывались под наиболее распространенные форматы кадров. На рассвете пленочной эры большинство любительских камер снимало на пленку 135-го типа в формате кадра 24х36 мм. Соотношение сторон такого кадра <b>2:3</b> — именно под него создавались форматы печати 10х15, 20х30, 30х45 и др.
+    </p>
+    <p class="mb-4 text-justify">
+        С появлением цифровых фотоаппаратов производители стали ориентироваться на формат компьютерных мониторов, который в большинстве случаев близок к соотношению сторон <b>3:4</b>. На сегодняшний день распространены камеры обоих типов:
+    </p>
+    <ul class="list-disc pl-5 mb-6 space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-100">
+        <li>с соотношением сторон кадра <span class="font-bold text-slate-700">2:3</span> (как правило, цифровые зеркальные камеры, пленочные фотоаппараты);</li>
+        <li>с соотношением сторон кадра <span class="font-bold text-slate-700">3:4</span> (как правило, цифровые любительские камеры).</li>
+    </ul>
+    
+    <div class="bg-amber-50 border-l-4 border-amber-400 p-4 mb-6">
+        <p class="font-medium text-amber-900">
+            Если напечатать кадр 3:4 в формате 10х15 (который имеет соотношение 2:3), то значительная часть изображения либо останется за пределами печати, либо на снимке образуются широкие белые поля (в зависимости от режима печати).
+        </p>
+    </div>
+
+    <p class="mb-4">
+        Так как в общем виде любой файл имеет произвольные размеры (произвольные соотношения сторон), то при его печати в любом стандартном формате всегда есть вероятность что часть фото обрежет.
+    </p>
+    <p class="mb-4 font-semibold">
+        Что же нужно делать заказчику фотографий, если по какой-то причине на фотоснимке любой элемент важный, и хотелось бы его сохранить?
+    </p>
+    <p class="mb-4">
+        Наша фотолаборатория позволяет напечатать фотоснимок в следующих режимах:
+    </p>
+
+    <div class="space-y-8 mt-6">
+        
+        <div class="flex flex-col md:flex-row gap-6 bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+            <div class="w-full md:w-1/3 flex-shrink-0">
+                <div class="rounded-lg overflow-hidden border border-slate-200">
+                    <img src="/images/help/orig.jpg" alt="Оригинал" class="w-full h-auto object-cover" />
+                </div>
             </div>
-             <div class="border rounded-lg overflow-hidden shadow-sm">
-                 <div class="bg-gray-50 p-3 border-b text-center font-bold">Free Cropping</div>
-                 <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-                    <img src="/images/help/crop.jpg" alt="Crop" class="w-full mx-auto border" style="max-width: 240px;" />
-                    <div class="text-sm">Произвольная обрезка оператором.</div>
-                 </div>
-            </div>
-             <div class="border rounded-lg overflow-hidden shadow-sm">
-                 <div class="bg-gray-50 p-3 border-b text-center font-bold">Fit-in</div>
-                 <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-                    <img src="/images/help/no_crop.jpg" alt="Fit" class="w-full mx-auto border" style="max-width: 240px;" />
-                    <div class="text-sm">Печать целиком с белыми полями.</div>
-                 </div>
+            <div class="flex-1 flex flex-col justify-center">
+                <h3 class="text-xl font-bold text-slate-900 mb-2">Оригинал</h3>
+                <p class="text-slate-600">
+                    Снимок полученный с любительской цифровой камеры, и так мы его видим на экране монитора.
+                </p>
             </div>
         </div>
+
+        <div class="flex flex-col md:flex-row gap-6 bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+             <div class="w-full md:w-1/3 flex-shrink-0">
+                <div class="rounded-lg overflow-hidden border border-slate-200 relative">
+                    <img src="/images/help/crop.jpg" alt="Free Cropping" class="w-full h-auto object-cover" />
+                </div>
+            </div>
+            <div class="flex-1 flex flex-col justify-center">
+                <h3 class="text-xl font-bold text-slate-900 mb-2">Free Cropping (произвольная обрезка)</h3>
+                <p class="text-slate-600 mb-2">
+                    Приблизительно так кадрируется фотография, когда нет особых требований к обрезке.
+                </p>
+                <p class="text-slate-500 text-sm">
+                    Оператор печати сам решает какая часть снимка менее значительна, и при печати обрезает её.
+                </p>
+            </div>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-6 bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+             <div class="w-full md:w-1/3 flex-shrink-0">
+                <div class="rounded-lg overflow-hidden border border-slate-200">
+                    <img src="/images/help/no_crop.jpg" alt="Fit-in" class="w-full h-auto object-cover" />
+                </div>
+            </div>
+            <div class="flex-1 flex flex-col justify-center">
+                <h3 class="text-xl font-bold text-slate-900 mb-2">Fit-in (НЕ ОБРЕЗАТЬ)</h3>
+                <p class="text-slate-600 mb-2">
+                    Если любая часть фотографии важна, и обрезка недопустима, то при заказе указывают данный режим печати.
+                </p>
+                <div class="bg-blue-50 p-3 rounded-lg text-sm text-blue-800">
+                     Единственный его недостаток, это белые поля по краям фотографии, которые возникают из-за разных соотношений сторон фотографии, и формата на котором печатается фото.
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="mt-8 p-4 rounded-xl bg-slate-100 border border-slate-200">
+        <h4 class="font-bold text-slate-800 mb-2">No Resize (без масштабирования)</h4>
+        <p class="text-slate-600 text-sm">
+            Отдельный режим печати, предназначен для пользователей владеющих графическими редакторами, и способных самостоятельно откадрировать снимок точно под наши размеры печати.
+        </p>
+    </div>
+</div>
     `;
 
     // -- UK Content
     const croppingContentUK = `
-        <h3 class="text-lg font-bold mb-4">Чому фотографія при друку обрізається</h3>
-        <p class="mb-4 text-sm">Спочатку формати друку розраховувалися під найбільш поширені формати кадрів...</p>
-        <div class="space-y-6">
-             <div class="border rounded-lg overflow-hidden shadow-sm">
-                 <div class="bg-gray-50 p-3 border-b text-center font-bold">Оригінал</div>
-                 <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-                    <img src="/images/help/orig.jpg" alt="Original" class="w-full mx-auto border" style="max-width: 240px;" />
-                    <div class="text-sm">Знімок отриманий з камери 4:3.</div>
-                 </div>
+<div class="prose max-w-none text-slate-800">
+    <p class="mb-4 text-justify">
+        Спочатку формати друку розраховувалися під найбільш поширені формати кадрів. На світанку плівкової ери більшість аматорських камер знімало на плівку 135-го типу у форматі кадру 24х36 мм. Співвідношення сторін такого кадру <b>2:3</b> — саме під нього створювалися формати друку 10х15, 20х30, 30х45 та ін.
+    </p>
+    <p class="mb-4 text-justify">
+        З появою цифрових фотоапаратів виробники стали орієнтуватися на формат комп'ютерних моніторів, який у більшості випадків близький до співвідношення сторін <b>3:4</b>. На сьогоднішній день поширені камери обох типів:
+    </p>
+    <ul class="list-disc pl-5 mb-6 space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-100">
+        <li>зі співвідношенням сторін кадру <span class="font-bold text-slate-700">2:3</span> (як правило, цифрові дзеркальні камери, плівкові фотоапарати);</li>
+        <li>зі співвідношенням сторін кадру <span class="font-bold text-slate-700">3:4</span> (як правило, цифрові аматорські камери).</li>
+    </ul>
+    
+    <div class="bg-amber-50 border-l-4 border-amber-400 p-4 mb-6">
+        <p class="font-medium text-amber-900">
+            Якщо надрукувати кадр 3:4 у форматі 10х15 (який має співвідношення 2:3), то значна частина зображення або залишиться за межами друку, або на знімку утворяться широкі білі поля (залежно від режиму друку).
+        </p>
+    </div>
+
+    <p class="mb-4">
+        Так як у загальному вигляді будь-який файл має довільні розміри (довільні співвідношення сторін), то при його друку в будь-якому стандартному форматі завжди є ймовірність що частина фото обріжеться.
+    </p>
+    <p class="mb-4">
+        Наша фотолабораторія дозволяє надрукувати фотознімок у наступних режимах:
+    </p>
+
+    <div class="space-y-8 mt-6">
+        
+        <div class="flex flex-col md:flex-row gap-6 bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+            <div class="w-full md:w-1/3 flex-shrink-0">
+                <div class="rounded-lg overflow-hidden border border-slate-200">
+                    <img src="/images/help/orig.jpg" alt="Оригінал" class="w-full h-auto object-cover" />
+                </div>
             </div>
-             <div class="border rounded-lg overflow-hidden shadow-sm">
-                 <div class="bg-gray-50 p-3 border-b text-center font-bold">Free Cropping</div>
-                 <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-                    <img src="/images/help/crop.jpg" alt="Crop" class="w-full mx-auto border" style="max-width: 240px;" />
-                    <div class="text-sm">Довільна обрізка оператором.</div>
-                 </div>
-            </div>
-             <div class="border rounded-lg overflow-hidden shadow-sm">
-                 <div class="bg-gray-50 p-3 border-b text-center font-bold">Fit-in</div>
-                 <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-                    <img src="/images/help/no_crop.jpg" alt="Fit" class="w-full mx-auto border" style="max-width: 240px;" />
-                    <div class="text-sm">Друк цілком з білими полями.</div>
-                 </div>
+            <div class="flex-1 flex flex-col justify-center">
+                <h3 class="text-xl font-bold text-slate-900 mb-2">Оригінал</h3>
+                <p class="text-slate-600">
+                    Знімок отриманий з аматорської цифрової камери, і так ми його бачимо на екрані монітора.
+                </p>
             </div>
         </div>
+
+        <div class="flex flex-col md:flex-row gap-6 bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+             <div class="w-full md:w-1/3 flex-shrink-0">
+                <div class="rounded-lg overflow-hidden border border-slate-200 relative">
+                    <img src="/images/help/crop.jpg" alt="Free Cropping" class="w-full h-auto object-cover" />
+                </div>
+            </div>
+            <div class="flex-1 flex flex-col justify-center">
+                <h3 class="text-xl font-bold text-slate-900 mb-2">Free Cropping (довільна обрізка)</h3>
+                <p class="text-slate-600 mb-2">
+                    Приблизно так кадрується фотографія, коли немає особливих вимог до обрізки.
+                </p>
+                <p class="text-slate-500 text-sm">
+                    Оператор друку сам вирішує яка частина знімка менш значна, і при друку обрізає її.
+                </p>
+            </div>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-6 bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+             <div class="w-full md:w-1/3 flex-shrink-0">
+                <div class="rounded-lg overflow-hidden border border-slate-200">
+                    <img src="/images/help/no_crop.jpg" alt="Fit-in" class="w-full h-auto object-cover" />
+                </div>
+            </div>
+            <div class="flex-1 flex flex-col justify-center">
+                <h3 class="text-xl font-bold text-slate-900 mb-2">Fit-in (НЕ ОБРІЗАТИ)</h3>
+                <p class="text-slate-600 mb-2">
+                    Якщо будь-яка частина фотографії важлива, і обрізка неприпустима, то при замовленні вказують даний режим друку.
+                </p>
+                <div class="bg-blue-50 p-3 rounded-lg text-sm text-blue-800">
+                     Єдиний його недолік, це білі поля по краях фотографії, які виникають через різні співвідношення сторін фотографії, і формату на якому друкується фото.
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="mt-8 p-4 rounded-xl bg-slate-100 border border-slate-200">
+        <h4 class="font-bold text-slate-800 mb-2">No Resize (без масштабування)</h4>
+        <p class="text-slate-600 text-sm">
+            Окремий режим друку, призначений для користувачів, що володіють графічними редакторами, і здатних самостійно відкадрувати знімок точно під наші розміри друку.
+        </p>
+    </div>
+</div>
     `;
 
     // -- EN Content
     const croppingContentEN = `
-        <h3 class="text-lg font-bold mb-4">Why photos are cropped when printed</h3>
-        <p class="mb-4 text-sm">Initially, print formats were calculated for the most common frame formats...</p>
-        <div class="space-y-6">
-            <div class="border rounded-lg overflow-hidden shadow-sm">
-                 <div class="bg-gray-50 p-3 border-b text-center font-bold">Original</div>
-                 <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-                    <img src="/images/help/orig.jpg" alt="Original" class="w-full mx-auto border" style="max-width: 240px;" />
-                    <div class="text-sm">Original 4:3 image.</div>
-                 </div>
+<div class="prose max-w-none text-slate-800">
+    <p class="mb-4 text-justify">
+        Initially, print formats were calculated for the most common frame formats. At the dawn of the film era, most amateur cameras shot on 135 type film in 24x36 mm frame format. The aspect ratio of such a frame is <b>2:3</b> — print formats 10x15, 20x30, 30x45 etc. were created specifically for it.
+    </p>
+    <p class="mb-4 text-justify">
+        With the advent of digital cameras, manufacturers began to focus on the format of computer monitors, which in most cases is close to the aspect ratio of <b>3:4</b>. Today, cameras of both types are common:
+    </p>
+    <ul class="list-disc pl-5 mb-6 space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-100">
+        <li>Frame aspect ratio <span class="font-bold text-slate-700">2:3</span> (usually digital SLR cameras, film cameras);</li>
+        <li>Frame aspect ratio <span class="font-bold text-slate-700">3:4</span> (usually digital amateur cameras).</li>
+    </ul>
+    
+    <div class="bg-amber-50 border-l-4 border-amber-400 p-4 mb-6">
+        <p class="font-medium text-amber-900">
+            If you print a 3:4 frame in 10x15 format (which is 2:3), a significant part of the image will either remain outside the print area, or wide white borders will form on the picture (depending on the print mode).
+        </p>
+    </div>
+
+    <p class="mb-4">
+        Since any file generally has arbitrary dimensions (arbitrary aspect ratios), when printing in any standard format there is always a probability that part of the photo will be cropped.
+    </p>
+    <p class="mb-4">
+        Our photo lab allows you to print photos in the following modes:
+    </p>
+
+    <div class="space-y-8 mt-6">
+        
+        <div class="flex flex-col md:flex-row gap-6 bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+            <div class="w-full md:w-1/3 flex-shrink-0">
+                <div class="rounded-lg overflow-hidden border border-slate-200">
+                    <img src="/images/help/orig.jpg" alt="Original" class="w-full h-auto object-cover" />
+                </div>
             </div>
-             <div class="border rounded-lg overflow-hidden shadow-sm">
-                 <div class="bg-gray-50 p-3 border-b text-center font-bold">Free Cropping</div>
-                 <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-                    <img src="/images/help/crop.jpg" alt="Crop" class="w-full mx-auto border" style="max-width: 240px;" />
-                    <div class="text-sm">Arbitrary cropping by operator.</div>
-                 </div>
-            </div>
-             <div class="border rounded-lg overflow-hidden shadow-sm">
-                 <div class="bg-gray-50 p-3 border-b text-center font-bold">Fit-in</div>
-                 <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-                    <img src="/images/help/no_crop.jpg" alt="Fit" class="w-full mx-auto border" style="max-width: 240px;" />
-                    <div class="text-sm">Print whole image with white borders.</div>
-                 </div>
+            <div class="flex-1 flex flex-col justify-center">
+                <h3 class="text-xl font-bold text-slate-900 mb-2">Original</h3>
+                <p class="text-slate-600">
+                    A snapshot obtained from an amateur digital camera, as we see it on the monitor screen.
+                </p>
             </div>
         </div>
+
+        <div class="flex flex-col md:flex-row gap-6 bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+             <div class="w-full md:w-1/3 flex-shrink-0">
+                <div class="rounded-lg overflow-hidden border border-slate-200 relative">
+                    <img src="/images/help/crop.jpg" alt="Free Cropping" class="w-full h-auto object-cover" />
+                </div>
+            </div>
+            <div class="flex-1 flex flex-col justify-center">
+                <h3 class="text-xl font-bold text-slate-900 mb-2">Free Cropping</h3>
+                <p class="text-slate-600 mb-2">
+                    The photo is cropped approximately like this when there are no special cropping requirements.
+                </p>
+                <p class="text-slate-500 text-sm">
+                    The print operator decides which part of the shot is less significant and crops it during printing.
+                </p>
+            </div>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-6 bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+             <div class="w-full md:w-1/3 flex-shrink-0">
+                <div class="rounded-lg overflow-hidden border border-slate-200">
+                    <img src="/images/help/no_crop.jpg" alt="Fit-in" class="w-full h-auto object-cover" />
+                </div>
+            </div>
+            <div class="flex-1 flex flex-col justify-center">
+                <h3 class="text-xl font-bold text-slate-900 mb-2">Fit-in (NO CROP)</h3>
+                <p class="text-slate-600 mb-2">
+                    If any part of the photo is important and cropping is unacceptable, this print mode is specified when ordering.
+                </p>
+                <div class="bg-blue-50 p-3 rounded-lg text-sm text-blue-800">
+                     Its only drawback is white borders on the edges of the photo, which occur due to different aspect ratios of the photo and the format on which the photo is printed.
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="mt-8 p-4 rounded-xl bg-slate-100 border border-slate-200">
+        <h4 class="font-bold text-slate-800 mb-2">No Resize</h4>
+        <p class="text-slate-600 text-sm">
+            A separate print mode intended for users who know how to use graphic editors and are capable of independently cropping the image exactly to our print dimensions.
+        </p>
+    </div>
+</div>
     `;
 
     // Ensure the content variables (croppingContentRU, etc.) are defined only ONCE before this block.
@@ -998,70 +1235,309 @@ async function main() {
                         lang: 'ru',
                         title: 'Наше оборудование и материалы',
                         content: `
-                            <h3 class="text-lg font-bold mb-4">Наше оборудование и материалы</h3>
-                            <div class="flex flex-col md:flex-row gap-6 items-start">
-                                <img src="/images/help/frontier500.png" alt="Fujifilm Frontier 500" class="w-full md:w-1/3 rounded border shim" />
-                                <div class="w-full md:w-2/3 text-sm">
-                                    <p class="mb-4">Наша цифровая фотолаборатория — <strong>Fujifilm Frontier 500</strong>.</p>
-                                    <ul class="list-disc pl-5 space-y-2 mb-4">
-                                        <li>Система экспонирования: Лазерное экспонирование</li>
-                                        <li>Производительность: 800 отп./час (10х15), макс. формат бумаги - 203 мм (А4)</li>
-                                        <li>Автоматическая цветокоррекция, коррекция плотности, <strong>Image Intelligence™</strong></li>
-                                    </ul>
-                                    <p class="mb-2"><strong>Image Intelligence™</strong> - Технология автоматической коррекции снимков (осветление теней, коррекция скин-тонов), делающая фотографии более естественными.</p>
-                                    <div class="mt-4 p-4 bg-blue-50 rounded border border-blue-100">
-                                        <h4 class="font-bold mb-2">Бумага</h4>
-                                        <p>Мы используем только оригинальную бумагу <strong>FUJICOLOR CRYSTAL ARCHIVE PAPER</strong>.</p>
-                                    </div>
-                                </div>
-                            </div>
+<div class="prose max-w-none text-slate-800">
+    <h3 class="text-3xl font-bold text-[#009846] mb-6">Наше оборудование и материалы</h3>
+
+    <!-- Frontier 500 Section -->
+    <div class="flex flex-col md:flex-row gap-8 mb-12">
+        <div class="w-full md:w-1/3 flex-shrink-0">
+             <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm text-center">
+                <img src="/images/help/frontier500.png" alt="Fuji Frontier 500" class="w-full h-auto object-contain mx-auto mb-2" />
+                <p class="text-sm font-bold text-slate-500">Fujifilm Frontier 500</p>
+             </div>
+        </div>
+        <div class="flex-1">
+            <p class="text-lg mb-4">
+                Мы работаем на современной, высокоскоростной компактной цифровой минилаборатории <span class="font-bold text-[#009846]">Fuji Frontier 500</span> — это лучшее решение для получения высококачественных цифровых отпечатков.
+            </p>
+            <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                <h4 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <span>⚡</span> Характеристики и преимущества
+                </h4>
+                <ul class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 mt-1.5 rounded-full bg-[#009846] flex-shrink-0"></div>Высокая эффективность</li>
+                    <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 mt-1.5 rounded-full bg-[#009846] flex-shrink-0"></div>Высококачественная лазерная система экспонирования</li>
+                    <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 mt-1.5 rounded-full bg-[#009846] flex-shrink-0"></div>Новейшее программное обеспечение</li>
+                    <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 mt-1.5 rounded-full bg-[#009846] flex-shrink-0"></div>Скорость печати до 800 отпечатков 10х15 см в час</li>
+                    <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 mt-1.5 rounded-full bg-[#009846] flex-shrink-0"></div>Пониженное энергопотребление</li>
+                    <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 mt-1.5 rounded-full bg-[#009846] flex-shrink-0"></div>Максимальный формат печати — А4 (21х30)</li>
+                    <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 mt-1.5 rounded-full bg-[#009846] flex-shrink-0"></div>Основа системы "Fujifilm Digital Imaging"</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Intelligence Section -->
+    <div class="flex flex-col-reverse md:flex-row gap-8 mb-12 items-center bg-blue-50 p-6 rounded-2xl border border-blue-100">
+        <div class="flex-1">
+            <h4 class="text-xl font-bold text-blue-900 mb-3 flex items-center gap-2">
+                Image Intelligence™ <span class="text-sm font-normal text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">Технология</span>
+            </h4>
+            <p class="mb-4 text-blue-900">
+                Накопленные Fujifilm за последние 7 десятилетий знания воплотились в мощные алгоритмы обработки.
+            </p>
+            <p class="text-sm text-blue-800 leading-relaxed text-justify">
+                Технология <b>"Image Intelligence"</b> автоматически компенсирует недостаточное освещение и другие проблемные условия съемки, а также позволяет добиться более естественных оттенков кожи. Коррекция выполняется автоматически, обеспечивая оптимальный результат даже для снимков, сделанных в сложных условиях.
+            </p>
+        </div>
+        <div class="w-full md:w-1/4 flex-shrink-0">
+             <div class="bg-white p-4 rounded-xl shadow-sm border border-blue-100 flex items-center justify-center">
+                <img src="/images/help/image-intelligence.jpg" alt="Image Intelligence" class="max-w-full h-auto" />
+             </div>
+        </div>
+    </div>
+
+    <!-- Paper Section -->
+    <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+        <h4 class="text-xl font-bold text-slate-900 mb-6 pb-4 border-b border-slate-200">
+            Фотобумага FUJICOLOR CRYSTAL ARCHIVE PAPER
+        </h4>
+        
+        <div class="flex flex-col md:flex-row gap-8">
+            <div class="w-full md:w-1/4 flex-shrink-0">
+                <div class="bg-white p-2 rounded-xl border border-slate-200 shadow-sm rotate-1 hover:rotate-0 transition-transform duration-300">
+                    <img src="/images/help/crystalarhive.jpg" alt="Fujicolor Paper" class="w-full h-auto rounded" />
+                </div>
+            </div>
+            <div class="flex-1">
+                <p class="font-bold text-lg mb-2 text-slate-800">
+                    Профессиональное качество для любительской фотографии.
+                </p>
+                <p class="text-slate-600 mb-4 italic">
+                    Высокая стабильность цвета, высокая белизна бумаги, чистые цвета, точная цветопередача.
+                </p>
+                <p class="mb-6 text-justify">
+                    <b>FUJICOLOR CRYSTAL ARCHIVE PAPER</b> представляет собой цветную фотобумагу с галогенидами серебра, предназначенную для создания высококачественных цветных отпечатков. Она создана на основе новой технологии нанесения слоев для улучшенного воспроизведения цветов и чистого белого цвета.
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-white p-4 rounded-lg border border-slate-100 shadow-sm">
+                        <h5 class="font-bold text-[#009846] mb-1">Яркие цвета</h5>
+                        <p class="text-xs text-slate-600">Сохраняются великолепные цвета, нежные оттенки зеленого, яркие синие и красные.</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg border border-slate-100 shadow-sm">
+                        <h5 class="font-bold text-[#009846] mb-1">Идеальный белый</h5>
+                        <p class="text-xs text-slate-600">Блестящая передача белого цвета и улучшенная детализация в светлых тонах.</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg border border-slate-100 shadow-sm">
+                        <h5 class="font-bold text-[#009846] mb-1">Долговечность</h5>
+                        <p class="text-xs text-slate-600">Отличная стойкость изображения. Не выцветает при длительном хранении.</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg border border-slate-100 shadow-sm">
+                        <h5 class="font-bold text-[#009846] mb-1">Прочность</h5>
+                        <p class="text-xs text-slate-600">Нечувствительность к механическим воздействиям.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
                         `
                     },
                     {
                         lang: 'uk',
                         title: 'Наше обладнання та матеріали',
                         content: `
-                            <h3 class="text-lg font-bold mb-4">Наше обладнання та матеріали</h3>
-                            <div class="flex flex-col md:flex-row gap-6 items-start">
-                                <img src="/images/help/frontier500.png" alt="Fujifilm Frontier 500" class="w-full md:w-1/3 rounded border shim" />
-                                <div class="w-full md:w-2/3 text-sm">
-                                    <p class="mb-4">Наша цифрова фотолабораторія — <strong>Fujifilm Frontier 500</strong>.</p>
-                                    <ul class="list-disc pl-5 space-y-2 mb-4">
-                                        <li>Система експонування: Лазерне експонування</li>
-                                        <li>Продуктивність: 800 відб./год (10х15), макс. формат паперу - 203 мм (А4)</li>
-                                        <li>Автоматична корекція кольору, корекція щільності, <strong>Image Intelligence™</strong></li>
-                                    </ul>
-                                    <p class="mb-2"><strong>Image Intelligence™</strong> - Технологія автоматичної корекції знімків (освітлення тіней, корекція скін-тонів), що робить фотографії більш природними.</p>
-                                    <div class="mt-4 p-4 bg-blue-50 rounded border border-blue-100">
-                                        <h4 class="font-bold mb-2">Папір</h4>
-                                        <p>Ми використовуємо тільки оригінальний папір <strong>FUJICOLOR CRYSTAL ARCHIVE PAPER</strong>.</p>
-                                    </div>
-                                </div>
-                            </div>
+<div class="prose max-w-none text-slate-800">
+    <h3 class="text-3xl font-bold text-[#009846] mb-6">Наше обладнання та матеріали</h3>
+
+    <!-- Frontier 500 Section -->
+    <div class="flex flex-col md:flex-row gap-8 mb-12">
+        <div class="w-full md:w-1/3 flex-shrink-0">
+             <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm text-center">
+                <img src="/images/help/frontier500.png" alt="Fuji Frontier 500" class="w-full h-auto object-contain mx-auto mb-2" />
+                <p class="text-sm font-bold text-slate-500">Fujifilm Frontier 500</p>
+             </div>
+        </div>
+        <div class="flex-1">
+            <p class="text-lg mb-4">
+                Ми працюємо на сучасній, високошвидкісній компактній цифровій мінілабораторії <span class="font-bold text-[#009846]">Fuji Frontier 500</span> — це найкраще рішення для отримання високоякісних цифрових відбитків.
+            </p>
+            <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                <h4 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <span>⚡</span> Характеристики та переваги
+                </h4>
+                <ul class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 mt-1.5 rounded-full bg-[#009846] flex-shrink-0"></div>Висока ефективність</li>
+                    <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 mt-1.5 rounded-full bg-[#009846] flex-shrink-0"></div>Високоякісна лазерна система експонування</li>
+                    <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 mt-1.5 rounded-full bg-[#009846] flex-shrink-0"></div>Новітнє програмне забезпечення</li>
+                    <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 mt-1.5 rounded-full bg-[#009846] flex-shrink-0"></div>Швидкість друку до 800 відбитків 10х15 см на годину</li>
+                    <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 mt-1.5 rounded-full bg-[#009846] flex-shrink-0"></div>Знижене енергоспоживання</li>
+                    <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 mt-1.5 rounded-full bg-[#009846] flex-shrink-0"></div>Максимальний формат друку — А4 (21х30)</li>
+                    <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 mt-1.5 rounded-full bg-[#009846] flex-shrink-0"></div>Основа системи "Fujifilm Digital Imaging"</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Intelligence Section -->
+    <div class="flex flex-col-reverse md:flex-row gap-8 mb-12 items-center bg-blue-50 p-6 rounded-2xl border border-blue-100">
+        <div class="flex-1">
+            <h4 class="text-xl font-bold text-blue-900 mb-3 flex items-center gap-2">
+                Image Intelligence™ <span class="text-sm font-normal text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">Технологія</span>
+            </h4>
+            <p class="mb-4 text-blue-900">
+                Накопичені Fujifilm за останні 7 десятиліть знання втілилися в потужні алгоритми обробки.
+            </p>
+            <p class="text-sm text-blue-800 leading-relaxed text-justify">
+                Технологія <b>"Image Intelligence"</b> автоматично компенсує недостатнє освітлення та інші проблемні умови зйомки, а також дозволяє домогтися більш природних відтінків шкіри. Корекція виконується автоматично, забезпечуючи оптимальний результат навіть для знімків, зроблених у складних умовах.
+            </p>
+        </div>
+        <div class="w-full md:w-1/4 flex-shrink-0">
+             <div class="bg-white p-4 rounded-xl shadow-sm border border-blue-100 flex items-center justify-center">
+                <img src="/images/help/image-intelligence.jpg" alt="Image Intelligence" class="max-w-full h-auto" />
+             </div>
+        </div>
+    </div>
+
+    <!-- Paper Section -->
+    <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+        <h4 class="text-xl font-bold text-slate-900 mb-6 pb-4 border-b border-slate-200">
+            Фотопапір FUJICOLOR CRYSTAL ARCHIVE PAPER
+        </h4>
+        
+        <div class="flex flex-col md:flex-row gap-8">
+            <div class="w-full md:w-1/4 flex-shrink-0">
+                <div class="bg-white p-2 rounded-xl border border-slate-200 shadow-sm rotate-1 hover:rotate-0 transition-transform duration-300">
+                    <img src="/images/help/crystalarhive.jpg" alt="Fujicolor Paper" class="w-full h-auto rounded" />
+                </div>
+            </div>
+            <div class="flex-1">
+                <p class="font-bold text-lg mb-2 text-slate-800">
+                    Професійна якість для аматорської фотографії.
+                </p>
+                <p class="text-slate-600 mb-4 italic">
+                    Висока стабільність кольору, висока білизна паперу, чисті кольори, точна передача кольору.
+                </p>
+                <p class="mb-6 text-justify">
+                    <b>FUJICOLOR CRYSTAL ARCHIVE PAPER</b> являє собою кольоровий фотопапір з галогенідами срібла, призначений для створення високоякісних кольорових відбитків. Він створений на основі нової технології нанесення шарів для поліпшеного відтворення кольорів і чистого білого кольору.
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-white p-4 rounded-lg border border-slate-100 shadow-sm">
+                        <h5 class="font-bold text-[#009846] mb-1">Яскраві кольори</h5>
+                        <p class="text-xs text-slate-600">Зберігаються чудові кольори, ніжні відтінки зеленого, яскраві сині та червоні.</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg border border-slate-100 shadow-sm">
+                        <h5 class="font-bold text-[#009846] mb-1">Ідеальний білий</h5>
+                        <p class="text-xs text-slate-600">Блискуча передача білого кольору та покращена деталізація у світлих тонах.</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg border border-slate-100 shadow-sm">
+                        <h5 class="font-bold text-[#009846] mb-1">Довговічність</h5>
+                        <p class="text-xs text-slate-600">Відмінна стійкість зображення. Не вицвітає при тривалому зберіганні.</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg border border-slate-100 shadow-sm">
+                        <h5 class="font-bold text-[#009846] mb-1">Міцність</h5>
+                        <p class="text-xs text-slate-600">Нечутливість до механічних впливів.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
                         `
                     },
                     {
                         lang: 'en',
                         title: 'Our Equipment and Materials',
                         content: `
-                            <h3 class="text-lg font-bold mb-4">Our Equipment and Materials</h3>
-                            <div class="flex flex-col md:flex-row gap-6 items-start">
-                                <img src="/images/help/frontier500.png" alt="Fujifilm Frontier 500" class="w-full md:w-1/3 rounded border shim" />
-                                <div class="w-full md:w-2/3 text-sm">
-                                    <p class="mb-4">Our digital minilab is <strong>Fujifilm Frontier 500</strong>.</p>
-                                    <ul class="list-disc pl-5 space-y-2 mb-4">
-,
-                                        <li>Exposure system: Laser exposure system</li>
-                                        <li>Capacity: 800 prints/hr (10x15), max paper width - 203 mm (A4)</li>
-                                        <li>Automatic color correction, density correction, <strong>Image Intelligence™</strong></li>
-                                    </ul>
-                                    <p class="mb-2"><strong>Image Intelligence™</strong> - Automatic image correction technology (shadow brightening, skin tone correction) that makes photos look more natural.</p>
-                                    <div class="mt-4 p-4 bg-blue-50 rounded border border-blue-100">
-                                        <h4 class="font-bold mb-2">Paper</h4>
-                                        <p>We use only original <strong>FUJICOLOR CRYSTAL ARCHIVE PAPER</strong>.</p>
-                                    </div>
-                                </div>
-                            </div>
+<div class="prose max-w-none text-slate-800">
+    <h3 class="text-3xl font-bold text-[#009846] mb-6">Our Equipment and Materials</h3>
+
+    <!-- Frontier 500 Section -->
+    <div class="flex flex-col md:flex-row gap-8 mb-12">
+        <div class="w-full md:w-1/3 flex-shrink-0">
+             <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm text-center">
+                <img src="/images/help/frontier500.png" alt="Fuji Frontier 500" class="w-full h-auto object-contain mx-auto mb-2" />
+                <p class="text-sm font-bold text-slate-500">Fujifilm Frontier 500</p>
+             </div>
+        </div>
+        <div class="flex-1">
+            <p class="text-lg mb-4">
+                We work on a modern, high-speed compact digital minilab <span class="font-bold text-[#009846]">Fuji Frontier 500</span> — it is the best solution for obtaining high-quality digital prints.
+            </p>
+            <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                <h4 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <span>⚡</span> Features and Benefits
+                </h4>
+                <ul class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 mt-1.5 rounded-full bg-[#009846] flex-shrink-0"></div>High efficiency</li>
+                    <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 mt-1.5 rounded-full bg-[#009846] flex-shrink-0"></div>High-quality laser exposure system</li>
+                    <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 mt-1.5 rounded-full bg-[#009846] flex-shrink-0"></div>Newest software</li>
+                    <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 mt-1.5 rounded-full bg-[#009846] flex-shrink-0"></div>Print speed up to 800 prints (10x15) per hour</li>
+                    <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 mt-1.5 rounded-full bg-[#009846] flex-shrink-0"></div>Reduced power consumption</li>
+                    <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 mt-1.5 rounded-full bg-[#009846] flex-shrink-0"></div>Maximum print format — A4 (21x30)</li>
+                    <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 mt-1.5 rounded-full bg-[#009846] flex-shrink-0"></div>Based on "Fujifilm Digital Imaging" system</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Intelligence Section -->
+    <div class="flex flex-col-reverse md:flex-row gap-8 mb-12 items-center bg-blue-50 p-6 rounded-2xl border border-blue-100">
+        <div class="flex-1">
+            <h4 class="text-xl font-bold text-blue-900 mb-3 flex items-center gap-2">
+                Image Intelligence™ <span class="text-sm font-normal text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">Technology</span>
+            </h4>
+            <p class="mb-4 text-blue-900">
+                Knowledge accumulated by Fujifilm over the last 7 decades embodied in powerful processing algorithms.
+            </p>
+            <p class="text-sm text-blue-800 leading-relaxed text-justify">
+                <b>"Image Intelligence"</b> technology automatically compensates for insufficient lighting and other problematic shooting conditions, and also achieves more natural skin tones. Correction is performed automatically, ensuring optimal results even for shots taken in difficult conditions.
+            </p>
+        </div>
+        <div class="w-full md:w-1/4 flex-shrink-0">
+             <div class="bg-white p-4 rounded-xl shadow-sm border border-blue-100 flex items-center justify-center">
+                <img src="/images/help/image-intelligence.jpg" alt="Image Intelligence" class="max-w-full h-auto" />
+             </div>
+        </div>
+    </div>
+
+    <!-- Paper Section -->
+    <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+        <h4 class="text-xl font-bold text-slate-900 mb-6 pb-4 border-b border-slate-200">
+            FUJICOLOR CRYSTAL ARCHIVE PAPER
+        </h4>
+        
+        <div class="flex flex-col md:flex-row gap-8">
+            <div class="w-full md:w-1/4 flex-shrink-0">
+                <div class="bg-white p-2 rounded-xl border border-slate-200 shadow-sm rotate-1 hover:rotate-0 transition-transform duration-300">
+                    <img src="/images/help/crystalarhive.jpg" alt="Fujicolor Paper" class="w-full h-auto rounded" />
+                </div>
+            </div>
+            <div class="flex-1">
+                <p class="font-bold text-lg mb-2 text-slate-800">
+                    Professional quality for amateur photography.
+                </p>
+                <p class="text-slate-600 mb-4 italic">
+                    High color stability, high paper whiteness, pure colors, accurate color reproduction.
+                </p>
+                <p class="mb-6 text-justify">
+                    <b>FUJICOLOR CRYSTAL ARCHIVE PAPER</b> is a silver halide color photo paper designed to create high-quality color prints. It is created based on new layer technology for improved color reproduction and pure white color.
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-white p-4 rounded-lg border border-slate-100 shadow-sm">
+                        <h5 class="font-bold text-[#009846] mb-1">Vivid Colors</h5>
+                        <p class="text-xs text-slate-600">Preserves magnificent colors, delicate green shades, bright blues and reds.</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg border border-slate-100 shadow-sm">
+                        <h5 class="font-bold text-[#009846] mb-1">Perfect White</h5>
+                        <p class="text-xs text-slate-600">Brilliant white reproduction and improved detail in highlights.</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg border border-slate-100 shadow-sm">
+                        <h5 class="font-bold text-[#009846] mb-1">Durability</h5>
+                        <p class="text-xs text-slate-600">Excellent image stability. Does not fade during long-term storage.</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg border border-slate-100 shadow-sm">
+                        <h5 class="font-bold text-[#009846] mb-1">Robustness</h5>
+                        <p class="text-xs text-slate-600">Insensitivity to mechanical impacts.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
                         `
                     }
                 ]
@@ -1092,6 +1568,21 @@ async function main() {
     const seq = await prisma.orderSequence.findFirst();
     if (!seq) {
         await prisma.orderSequence.create({ data: { currentValue: 10000 } });
+    }
+
+    // 11. General Settings
+    console.log('Seeding Settings...');
+    const settings = [
+        { key: 'contact_address', value: 'м. Дніпро, вул. Європейська (Миронова), 8' },
+        { key: 'contact_phone', value: '+380992150317' },
+        { key: 'polaroid_frame_price', value: '10.00' },
+    ];
+    for (const s of settings) {
+        await prisma.setting.upsert({
+            where: { key: s.key },
+            update: { value: s.value },
+            create: { key: s.key, value: s.value, description: s.key.replace('_', ' ') }
+        });
     }
 
     console.log('Seeding finished.')

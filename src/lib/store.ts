@@ -18,6 +18,7 @@ export type PrintOptions = {
     size: string;
     paper: string;
     quantity: number;
+    cropping?: 'fill' | 'fit' | 'no_resize';
     options: Record<string, boolean>; // e.g., { border: true, magnetic: false }
 }
 
@@ -26,6 +27,7 @@ export type CartItem = {
     file?: File; // Not persisted
     name: string; // Original filename (persisted)
     preview: string; // Blob URL
+    serverFileName?: string; // Name of the file on the server after upload
     options: PrintOptions;
 }
 
@@ -43,12 +45,15 @@ interface CartState {
     checkoutForm: CheckoutFormState;
     setConfig: (config: ProductConfig) => void;
     setCheckoutForm: (form: Partial<CheckoutFormState>) => void;
-    addItem: (file: File, defaultOptions: PrintOptions) => void;
+    addItem: (file: File, defaultOptions: PrintOptions) => string;
     updateItem: (id: string, options: Partial<PrintOptions>) => void;
     removeItem: (id: string) => void;
     cloneItem: (id: string) => string;
     bulkCloneItems: (ids: string[]) => void;
+    setItemPreview: (id: string, preview: string) => void;
+    setItemServerFile: (id: string, serverFileName: string) => void;
     clearCart: () => void;
+    draftOrderId: string | null;
 }
 
 const DEFAULT_CLONE_OPTIONS: PrintOptions = {
@@ -56,6 +61,104 @@ const DEFAULT_CLONE_OPTIONS: PrintOptions = {
     size: "10x15",
     paper: "glossy",
     options: {},
+};
+
+// --- API SYNC HELPERS ---
+
+const deleteFileFromServer = async (serverFileName: string) => {
+    if (!serverFileName) return;
+    try {
+        await fetch(`/api/upload?fileName=${serverFileName}`, { method: 'DELETE' });
+    } catch (e) {
+        console.error("Failed to delete file:", e);
+    }
+};
+
+let syncTimeout: NodeJS.Timeout;
+const debouncedSyncDraft = (items: CartItem[], config: ProductConfig | null, currentDraftId: string | null, setDraftId: (id: string | null) => void) => {
+    clearTimeout(syncTimeout);
+    syncTimeout = setTimeout(async () => {
+        // If items are empty, we might want to clear the draft order or mark it as abandoned.
+        // For now, if items are empty, we don't send a sync request to create a new empty order.
+        // If there was a draftId, we might want to explicitly delete it or mark it as abandoned.
+        if (items.length === 0 && currentDraftId) {
+            // Optionally, send a request to delete/abandon the draft order
+            // await fetch(`/api/orders/draft/${currentDraftId}`, { method: 'DELETE' });
+            setDraftId(null); // Clear draft ID locally
+            return;
+        }
+        if (items.length === 0) return; // Don't sync empty cart if no current draft ID
+
+        try {
+            // Calculate total on client side for draft estimation and prepare price snapshots
+            const itemsForApi = items.map(i => {
+                let priceSnapshot = 0;
+                if (config) {
+                    priceSnapshot = calculateItemPrice(i.options, config).unitPrice;
+                }
+                return {
+                    ...i,
+                    options: {
+                        ...i.options,
+                        priceSnapshot: priceSnapshot
+                    }
+                };
+            });
+
+            const total = itemsForApi.reduce((acc, item) => {
+                // Use the priceSnapshot from the prepared item for total calculation
+                return acc + (item.options as PrintOptions & { priceSnapshot: number }).priceSnapshot * item.options.quantity;
+            }, 0);
+
+            const res = await fetch('/api/orders/draft', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    items: itemsForApi,
+                    total,
+                    orderNumber: currentDraftId
+                })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (data.orderNumber && data.orderNumber !== currentDraftId) {
+                    setDraftId(data.orderNumber);
+                }
+            }
+        } catch (e) {
+            console.error("Draft sync error", e);
+        }
+    }, 2000); // Debounce 2s
+};
+
+
+// Helper: Generate Base64 Thumbnail (Max 300px)
+const createThumbnail = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.src = url;
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const max = 300;
+            let w = img.width;
+            let h = img.height;
+            if (w > h) { if (w > max) { h *= max / w; w = max; } }
+            else { if (h > max) { w *= max / h; h = max; } }
+
+            canvas.width = w;
+            canvas.height = h;
+            ctx?.drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/jpeg', 0.6)); // Low quality for storage efficiency
+            URL.revokeObjectURL(url);
+        };
+        img.onerror = () => {
+            URL.revokeObjectURL(url);
+            resolve("");
+        };
+    });
 };
 
 export const useCartStore = create<CartState>()(
@@ -70,6 +173,7 @@ export const useCartStore = create<CartState>()(
                 deliveryAddress: "",
                 deliveryMethod: "pickup",
             },
+            draftOrderId: null,
             setConfig: (config) => set({ config }),
             setCheckoutForm: (form) =>
                 set((state) => ({
@@ -77,21 +181,50 @@ export const useCartStore = create<CartState>()(
                 })),
             addItem: (file, options) => {
                 const id = `${file.name}-${Date.now()}`;
+                // 1. Set immediate preview with Blob URL for responsiveness
+                const blobUrl = URL.createObjectURL(file);
+
                 const newItem: CartItem = {
                     id,
                     file,
-                    name: file.name, // Save original name persistantly
-                    preview: URL.createObjectURL(file),
+                    name: file.name,
+                    preview: blobUrl,
                     options: options,
+                    serverFileName: undefined, // serverFileName is undefined initially
                 };
-                set((state) => ({ items: [...state.items, newItem] }));
+
+                set((state) => {
+                    const newItems = [...state.items, newItem];
+                    debouncedSyncDraft(newItems, state.config, state.draftOrderId, (id) => set({ draftOrderId: id }));
+                    return { items: newItems };
+                });
+
+                // 2. Async: Create permanent Base64 thumbnail for persistence
+                createThumbnail(file).then((base64) => {
+                    if (base64) get().setItemPreview(id, base64);
+                });
+
+                return id; // Return ID so component can use it for async upload association
             },
             updateItem: (id, newOptions) =>
-                set((state) => ({
-                    items: state.items.map((item) =>
+                set((state) => {
+                    const newItems = state.items.map((item) =>
                         item.id === id ? { ...item, options: { ...item.options, ...newOptions } } : item
-                    ),
+                    );
+                    debouncedSyncDraft(newItems, state.config, state.draftOrderId, (id) => set({ draftOrderId: id }));
+                    return { items: newItems };
+                }),
+            setItemPreview: (id, preview) =>
+                set((state) => ({
+                    items: state.items.map(item => item.id === id ? { ...item, preview } : item)
                 })),
+            setItemServerFile: (id, serverFileName) =>
+                set((state) => {
+                    const newItems = state.items.map(item => item.id === id ? { ...item, serverFileName } : item);
+                    // Sync again because now we have serverFileName!
+                    debouncedSyncDraft(newItems, state.config, state.draftOrderId, (id) => set({ draftOrderId: id }));
+                    return { items: newItems };
+                }),
             cloneItem: (id) => {
                 let newId = "";
                 set((state) => {
@@ -101,11 +234,14 @@ export const useCartStore = create<CartState>()(
                     const clonedItem = {
                         ...itemToClone,
                         id: newId,
-                        file: itemToClone.file,
+                        file: itemToClone.file, // If original file is missing, this is undefined
+                        serverFileName: itemToClone.serverFileName, // Inherit server file!
                         preview: itemToClone.preview,
                         options: { ...DEFAULT_CLONE_OPTIONS } // Reset options
                     };
-                    return { items: [...state.items, clonedItem] };
+                    const newItems = [...state.items, clonedItem];
+                    debouncedSyncDraft(newItems, state.config, state.draftOrderId, (id) => set({ draftOrderId: id }));
+                    return { items: newItems };
                 });
                 return newId;
             },
@@ -116,28 +252,38 @@ export const useCartStore = create<CartState>()(
                         ...item,
                         id: `${item.id}-copy-${Math.random().toString(36).substring(7)}`,
                         file: item.file,
+                        serverFileName: item.serverFileName, // Inherit server file
                         preview: item.preview,
                         options: { ...DEFAULT_CLONE_OPTIONS } // Reset options
                     }));
-                    return { items: [...state.items, ...clonedItems] };
+                    const newItems = [...state.items, ...clonedItems];
+                    debouncedSyncDraft(newItems, state.config, state.draftOrderId, (id) => set({ draftOrderId: id }));
+                    return { items: newItems };
                 }),
             removeItem: (id) =>
-                set((state) => ({
-                    items: state.items.filter((item) => item.id !== id),
-                })),
-            clearCart: () => set({ items: [] }),
+                set((state) => {
+                    // Check if item has server file
+                    const item = state.items.find(i => i.id === id);
+                    if (item && item.serverFileName) {
+                        deleteFileFromServer(item.serverFileName);
+                    }
+                    const newItems = state.items.filter((item) => item.id !== id);
+                    debouncedSyncDraft(newItems, state.config, state.draftOrderId, (id) => set({ draftOrderId: id }));
+                    return { items: newItems };
+                }),
+            clearCart: () => set({ items: [], draftOrderId: null }), // Also clear draft ID to start fresh on new session
         }),
         {
             name: 'cart-storage',
             partialize: (state) => ({
-                // Don't persist File objects or Previews (they expire)
-                // In a real app, upload to server immediately or use IndexedDB
+                // Don't persist File objects (they expire)
+                // Persist previews (now Base64) to fix disappearing issues
                 config: state.config,
                 checkoutForm: state.checkoutForm,
+                draftOrderId: state.draftOrderId,
                 items: state.items.map(item => ({
                     ...item,
-                    file: undefined, // Ensure file is not persisted
-                    // preview: undefined // If previews are blob URLs, they should not be persisted either
+                    file: undefined,
                 }))
             }),
         }

@@ -29,9 +29,8 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
         'header',
         'bold', 'italic', 'underline', 'strike', 'blockquote',
         'align', 'color', 'background',
-        'list', 'bullet',
-        'link', 'image',
-        'table'
+        'list', // Covers both ordered and bullet lists
+        'link', 'image'
     ];
 
     const [isHtmlMode, setIsHtmlMode] = React.useState(false);
@@ -73,10 +72,20 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
                         }
                         .ql-container {
                             border: none !important; /* Remove default border to merge with ours */
+                            font-family: inherit;
+                        }
+                        .ql-editor {
+                            min-height: 18rem;
+                            max-height: 600px;
+                            overflow-y: auto;
+                            white-space: pre-wrap;
+                            word-wrap: break-word;
+                            overflow-wrap: break-word;
                         }
                         .ql-toolbar {
                             border: none !important;
                             border-bottom: 1px solid #ccc !important;
+                            flex-wrap: wrap; /* Fix toolbar overflow on small screens */
                         }
                     `}</style>
                     <ReactQuill

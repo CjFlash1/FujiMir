@@ -56,10 +56,40 @@ async function collectOrderFiles(order: any, uploadsDir: string) {
                     const safeBase = sanitizeZipName(`${size} ${paper}`.trim());
 
                     const extraFolders = [];
-                    if (extraOpts.magnetic) extraFolders.push("Magnet");
-                    if (extraOpts.border) extraFolders.push("Border");
+                    // Check cropping option
+                    const cropping = extraOpts.cropping;
+                    if (cropping === 'fit') {
+                        extraFolders.push("FIT-IN");
+                    } else if (cropping === 'no_resize') {
+                        extraFolders.push("NO-RESIZE");
+                    }
 
-                    folderPath = [safeBase, ...extraFolders].join('/');
+                    // Add other extra folders (magnetic, border)
+                    // It seems the user wants cropping to be a parent folder: "If crop option is selected, first folder is crop option... then size/paper"
+                    // Current logic for magnetic/border joined them with '/', making them subfolders of Size_Paper? 
+                    // Let's re-read: "if crop option is selected, first folder is crop option... if not selected (free/standard), folder is not needed"
+                    // And standard logic was: `${size} ${paper}`. optionally with "/Magnet" or "/Border"?
+                    // Original code: `folderPath = [safeBase, ...extraFolders].join('/');` where extraFolders had "Magnet", "Border".
+                    // So it was: "10x15 Glossy/Magnet/photo.jpg" or "10x15 Glossy/photo.jpg"
+
+                    // New logic requested:
+                    // If FIT-IN: "FIT-IN/10x15 Glossy/..."
+                    // If NO-RESIZE: "NO-RESIZE/10x15 Glossy/..."
+                    // If Standard: "10x15 Glossy/..."
+
+                    const subFolders = [];
+                    if (extraOpts.magnetic) subFolders.push("Magnet");
+                    if (extraOpts.border) subFolders.push("Border");
+
+                    const mainFolder = [safeBase, ...subFolders].join('/');
+
+                    if (cropping === 'fit') {
+                        folderPath = `FIT-IN/${mainFolder}`;
+                    } else if (cropping === 'no_resize') {
+                        folderPath = `NO-RESIZE/${mainFolder}`;
+                    } else {
+                        folderPath = mainFolder;
+                    }
                 }
 
                 const baseName = originalFileName

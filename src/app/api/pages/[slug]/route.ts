@@ -12,13 +12,13 @@ export async function GET(
     try {
         // Try to find page with exact slug and language
         let page = await prisma.page.findFirst({
-            where: { slug, lang }
+            where: { slug, lang, isActive: true }
         });
 
         // Fallback to any version of this slug
         if (!page) {
             page = await prisma.page.findFirst({
-                where: { slug }
+                where: { slug, isActive: true }
             });
         }
 
