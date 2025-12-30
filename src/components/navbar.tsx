@@ -221,7 +221,7 @@ export function Navbar() {
                                 <span className="text-xl">📍</span>
                                 <div className="flex flex-col">
                                     <span className="text-[10px] uppercase font-bold text-[#4c4c4c]/60 mb-0.5">{currentLabels.address}</span>
-                                    <a href={mapLink} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-[#1a1a1a] underline decoration-black/20 underline-offset-2 leading-tight">{getSetting('contact_address') || address}</a>
+                                    <a href={mapLink} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-[#1a1a1a] underline decoration-black/20 underline-offset-2 leading-tight">{displayAddress}</a>
                                 </div>
                             </div>
 
