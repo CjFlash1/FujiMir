@@ -22,11 +22,17 @@ model Order {
   orderNumber    String      @unique // e.g., "ORD-1001"
   status         String      @default("PENDING") // PENDING, PROCESSING, COMPLETED, CANCELLED
   totalAmount    Float    @default(0)
-  customerName   String?
+  customerName   String?     // Full Name (legacy/combined)
+  customerFirstName String?
+  customerLastName  String?
   customerPhone  String?
   customerEmail  String?
   deliveryAddress String?
   deliveryMethod String      @default("PICKUP") // PICKUP, POST
+  recipientCityRef String?      // Nova Poshta City Ref
+  recipientWarehouseRef String? // Nova Poshta Warehouse Ref
+  ttnNumber      String?      // Express Waybill Number
+  ttnRef         String?      // Nova Poshta Internal Document Ref (for deletion)
   notes          String?     // Gift choice and other notes
   
   items          OrderItem[]
@@ -34,6 +40,7 @@ model Order {
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 }
+
 
 model OrderItem {
   id          Int      @id @default(autoincrement())
@@ -230,4 +237,17 @@ model HelpArticleTranslation {
 model OrderSequence {
   id           Int @id @default(autoincrement())
   currentValue Int @default(10000)
+}
+
+model NPSender {
+  id            Int      @id @default(autoincrement())
+  name          String   // Legacy combined name
+  firstName     String?
+  lastName      String?
+  phone         String   // Contact person phone
+  cityRef       String   // City Ref
+  cityName      String
+  warehouseRef  String   // Warehouse Ref
+  warehouseName String
+  createdAt     DateTime @default(now())
 }

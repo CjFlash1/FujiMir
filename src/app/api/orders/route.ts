@@ -82,11 +82,15 @@ export async function POST(request: Request) {
                         orderNumber: orderNumber, // Assign official number
                         status: "PENDING",
                         totalAmount: total,
-                        customerName: customer.name,
+                        customerName: `${customer.lastName} ${customer.firstName}`.trim(),
+                        customerFirstName: customer.firstName,
+                        customerLastName: customer.lastName,
                         customerPhone: customer.phone,
                         customerEmail: customer.email,
                         deliveryMethod: customer.deliveryMethod,
                         deliveryAddress: customer.deliveryAddress,
+                        recipientCityRef: body.recipientCityRef || null,
+                        recipientWarehouseRef: body.recipientWarehouseRef || null,
                         notes: notes || null,
                         items: {
                             create: sortedItems.map(createItemData)
@@ -102,11 +106,15 @@ export async function POST(request: Request) {
                 data: {
                     orderNumber,
                     totalAmount: total,
-                    customerName: customer.name,
+                    customerName: `${customer.lastName} ${customer.firstName}`.trim(),
+                    customerFirstName: customer.firstName,
+                    customerLastName: customer.lastName,
                     customerPhone: customer.phone,
                     customerEmail: customer.email,
                     deliveryMethod: customer.deliveryMethod,
                     deliveryAddress: customer.deliveryAddress,
+                    recipientCityRef: body.recipientCityRef || null,
+                    recipientWarehouseRef: body.recipientWarehouseRef || null,
                     notes: notes || null,
                     items: {
                         create: sortedItems.map(createItemData)
@@ -116,10 +124,15 @@ export async function POST(request: Request) {
         }
 
         return NextResponse.json({ success: true, orderNumber: order.orderNumber });
-    } catch (error) {
-        console.error("Order creation failed:", error);
+    } catch (error: any) {
+        console.error("Order creation failed ERROR DETAILS:", {
+            message: error.message,
+            code: error.code,
+            meta: error.meta,
+            stack: error.stack
+        });
         return NextResponse.json(
-            { error: "Failed to create order" },
+            { error: "Failed to create order", message: error.message },
             { status: 500 }
         );
     }

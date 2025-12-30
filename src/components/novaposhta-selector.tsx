@@ -24,19 +24,27 @@ interface Warehouse {
 interface NovaPoshtaSelectorProps {
     value: string;
     onChange: (value: string) => void;
+    onRefsChange?: (cityRef: string, warehouseRef: string) => void;
     error?: string | null;
     onClearError?: () => void;
 }
 
-export function NovaPoshtaSelector({ value, onChange, error, onClearError }: NovaPoshtaSelectorProps) {
+export function NovaPoshtaSelector({ value, onChange, onRefsChange, error, onClearError }: NovaPoshtaSelectorProps) {
     const { t } = useTranslation();
 
     // State
     const [selectedCity, setSelectedCity] = useState<City | null>(null);
     const [selectedWarehouse, setSelectedWarehouse] = useState<Warehouse | null>(null);
 
-    const [cityQuery, setCityQuery] = useState("");
+    const [cityQuery, setCityQuery] = useState(value || "");
     const [warehouseQuery, setWarehouseQuery] = useState("");
+
+    // Sync external value
+    useEffect(() => {
+        if (value && !cityQuery) {
+            setCityQuery(value);
+        }
+    }, [value]);
 
     const [cities, setCities] = useState<City[]>([]);
     const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
@@ -136,6 +144,7 @@ export function NovaPoshtaSelector({ value, onChange, error, onClearError }: Nov
         // Update parent with full address (city + warehouse)
         if (city) {
             onChange(`${city.mainDescription}, ${warehouse.description}`);
+            onRefsChange?.(city.deliveryCity, warehouse.ref);
         }
         onClearError?.();
     };
@@ -146,6 +155,7 @@ export function NovaPoshtaSelector({ value, onChange, error, onClearError }: Nov
         setCityQuery("");
         setWarehouseQuery("");
         onChange("");
+        onRefsChange?.("", "");
     };
 
     const clearWarehouse = () => {

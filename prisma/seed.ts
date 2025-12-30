@@ -108,6 +108,9 @@ async function main() {
         { key: 'checkout.free', val: { uk: 'Безкоштовно', en: 'Free', ru: 'Бесплатно' } },
         { key: 'checkout.placeOrder', val: { uk: 'Оформити замовлення', en: 'Place Order', ru: 'Оформить заказ' } },
         { key: 'common.processing', val: { uk: 'Обробка...', en: 'Processing...', ru: 'Обработка...' } },
+        { key: 'checkout.firstname', val: { uk: 'Ім\'я', en: 'First Name', ru: 'Имя' } },
+        { key: 'checkout.lastname', val: { uk: 'Прізвище', en: 'Last Name', ru: 'Фамилия' } },
+        { key: 'checkout.fullname_hint', val: { uk: 'Для Нової Пошти вкажіть ім\'я та прізвище', en: 'For Nova Poshta please enter first and last name', ru: 'Для Новой Почты укажите имя и фамилию' } },
 
         // Options Labels
         { key: 'Border', val: { uk: 'З рамкою', en: 'White Border', ru: 'С рамкой' } },
@@ -155,6 +158,12 @@ async function main() {
         { key: 'bulk.delete', val: { uk: 'Видалити', en: 'Delete', ru: 'Удалить' } },
         { key: 'admin.stats.storage_used', val: { uk: 'Зайнято місця', en: 'Storage Used', ru: 'Занято места' } },
         { key: 'admin.size', val: { uk: 'Розмір', en: 'Size', ru: 'Размер' } },
+        { key: 'admin.create_ttn', val: { uk: 'Створити ТТН', en: 'Create TTN', ru: 'Создать ТТН' } },
+        { key: 'np.city', val: { uk: 'Місто', en: 'City', ru: 'Город' } },
+        { key: 'np.warehouse', val: { uk: 'Відділення', en: 'Warehouse', ru: 'Отделение' } },
+        { key: 'np.city_placeholder', val: { uk: 'Почніть вводити назву міста...', en: 'Start typing city name...', ru: 'Начните вводить название города...' } },
+        { key: 'np.warehouse_placeholder', val: { uk: 'Пошук відділення за номером або адресою...', en: 'Search branch by number or address...', ru: 'Поиск отделения по номеру или адресу...' } },
+        { key: 'np.no_results', val: { uk: 'Нічого не знайдено', en: 'No results found', ru: 'Ничего не найдено' } },
 
         // Config Submenu
         { key: 'config.sizes', val: { uk: 'Розміри', en: 'Print Sizes', ru: 'Размеры' } },
@@ -231,7 +240,6 @@ async function main() {
         { key: 'checkout.back', val: { uk: 'Назад до завантаження', en: 'Back to Upload', ru: 'Назад к загрузке' } },
         { key: 'checkout.order_confirmed', val: { uk: 'Замовлення підтверджено!', en: 'Order Confirmed!', ru: 'Заказ подтвержден!' } },
         { key: 'checkout.return_home', val: { uk: 'На головну', en: 'Return Home', ru: 'На главную' } },
-        { key: 'checkout.fullname_hint', val: { uk: 'Для Нової Пошти вкажіть повне ПІБ', en: 'For Nova Poshta, provide full name', ru: 'Для Новой Почты укажите полное ФИО' } },
         { key: 'Saved', val: { uk: 'Економія', en: 'Saved', ru: 'Экономия' } },
 
         // Nova Poshta

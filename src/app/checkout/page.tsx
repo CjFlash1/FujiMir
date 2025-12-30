@@ -31,17 +31,25 @@ export default function CheckoutPage() {
     const [deliveryOptions, setDeliveryOptions] = useState<DeliveryOption[]>([]);
     const [loadingDelivery, setLoadingDelivery] = useState(true);
 
-    const [formData, setFormData] = useState({
-        name: "",
-        phone: "",
-        email: "",
-        deliveryAddress: "",
-        deliveryMethod: "pickup", // Default to lowercase slug
+    const [formData, setFormData] = useState(() => {
+        // Initialize from store
+        const storeForm = useCartStore.getState().checkoutForm;
+        return {
+            firstName: storeForm.firstName || "",
+            lastName: storeForm.lastName || "",
+            phone: storeForm.phone || "",
+            email: storeForm.email || "",
+            deliveryAddress: storeForm.deliveryAddress || "",
+            deliveryMethod: storeForm.deliveryMethod || "pickup",
+            recipientCityRef: storeForm.recipientCityRef || "",
+            recipientWarehouseRef: storeForm.recipientWarehouseRef || "",
+        };
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [orderComplete, setOrderComplete] = useState<string | null>(null);
     const [phoneError, setPhoneError] = useState<string | null>(null);
-    const [nameError, setNameError] = useState<string | null>(null);
+    const [firstNameError, setFirstNameError] = useState<string | null>(null);
+    const [lastNameError, setLastNameError] = useState<string | null>(null);
     const [addressError, setAddressError] = useState<string | null>(null);
     const [giftError, setGiftError] = useState<string | null>(null);
 
@@ -52,15 +60,8 @@ export default function CheckoutPage() {
     const [magnetFile, setMagnetFile] = useState<File | null>(null);
     const [magnetComment, setMagnetComment] = useState<string>("");
 
-    // Sync with store
-    useEffect(() => {
-        if (checkoutForm.name || checkoutForm.phone || checkoutForm.deliveryMethod) {
-            setFormData(prev => ({
-                ...prev,
-                ...checkoutForm
-            }));
-        }
-    }, []);
+    // Sync only TO store, not from store (except initial)
+    // This prevents infinite loops
 
     useEffect(() => {
         setCheckoutForm(formData);
@@ -156,15 +157,24 @@ export default function CheckoutPage() {
         e.preventDefault();
 
         // Reset errors
-        setNameError(null);
+        setFirstNameError(null);
+        setLastNameError(null);
         setPhoneError(null);
         setAddressError(null);
         setGiftError(null);
 
         // Custom validation
-        if (!formData.name.trim()) {
-            setNameError(t('validation.required_field'));
-            scrollToError('checkout-name');
+        const isNP = formData.deliveryMethod === 'novaposhta';
+
+        if (!formData.firstName.trim()) {
+            setFirstNameError(t('validation.required_field'));
+            scrollToError('checkout-firstname');
+            return;
+        }
+
+        if (isNP && !formData.lastName.trim()) {
+            setLastNameError(t('validation.required_field'));
+            scrollToError('checkout-lastname');
             return;
         }
 
@@ -343,18 +353,24 @@ export default function CheckoutPage() {
                     total: finalTotal, // Use final total with delivery
                     notes: orderNotes,
                     giftChoice: giftChoice,
-                    draftOrderId: draftOrderId
+                    draftOrderId: draftOrderId,
+                    recipientCityRef: formData.recipientCityRef,
+                    recipientWarehouseRef: formData.recipientWarehouseRef
                 }),
             });
 
-            if (!response.ok) throw new Error("Order failed");
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error("Order failed server response:", errorData);
+                throw new Error(errorData.message || "Order failed");
+            }
 
             const data = await response.json();
             setOrderComplete(data.orderNumber);
             clearCart();
-        } catch (error) {
-            console.error(error);
-            alert("Something went wrong. Please try again.");
+        } catch (error: any) {
+            console.error("Checkout submission error:", error);
+            alert(`Something went wrong: ${error.message}. Please try again.`);
         } finally {
             setIsSubmitting(false);
         }
@@ -392,6 +408,8 @@ export default function CheckoutPage() {
         )
     }
 
+    const isNP = formData.deliveryMethod === 'novaposhta';
+
     return (
         <div className="min-h-screen bg-slate-50 py-12">
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -408,41 +426,58 @@ export default function CheckoutPage() {
                             </CardHeader>
                             <CardContent>
                                 <form id="checkout-form" onSubmit={handleSubmit} className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <label className="text-sm font-medium">{t('checkout.name')}</label>
+                                            <label className="text-sm font-medium">{t('checkout.firstname') || 'Имя'}</label>
                                             <Input
-                                                id="checkout-name"
-                                                placeholder={t('checkout.name')}
-                                                value={formData.name}
+                                                id="checkout-firstname"
+                                                placeholder={t('checkout.firstname') || 'Имя'}
+                                                value={formData.firstName}
                                                 onChange={(e) => {
-                                                    setFormData({ ...formData, name: e.target.value });
-                                                    if (nameError) setNameError(null);
+                                                    setFormData({ ...formData, firstName: e.target.value });
+                                                    if (firstNameError) setFirstNameError(null);
                                                 }}
-                                                className={nameError ? "border-red-500 focus-visible:ring-red-500" : ""}
+                                                className={firstNameError ? "border-red-500 focus-visible:ring-red-500" : ""}
                                             />
-                                            {formData.deliveryMethod === 'novaposhta' && (
-                                                <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
-                                                    ⚠️ {t('checkout.fullname_hint')}
-                                                </p>
-                                            )}
-                                            {nameError && <p className="text-sm text-red-500 mt-1">{nameError}</p>}
+                                            {firstNameError && <p className="text-sm text-red-500 mt-1">{firstNameError}</p>}
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-sm font-medium">{t('checkout.phone')}</label>
+                                            <label className="text-sm font-medium">
+                                                {t('checkout.lastname') || 'Фамилия'}
+                                                {isNP && <span className="text-red-500 ml-1">*</span>}
+                                            </label>
                                             <Input
-                                                id="checkout-phone"
-                                                type="tel"
-                                                placeholder="+380..."
-                                                value={formData.phone}
+                                                id="checkout-lastname"
+                                                placeholder={t('checkout.lastname') || 'Фамилия'}
+                                                value={formData.lastName}
                                                 onChange={(e) => {
-                                                    setFormData({ ...formData, phone: e.target.value });
-                                                    if (phoneError) setPhoneError(null);
+                                                    setFormData({ ...formData, lastName: e.target.value });
+                                                    if (lastNameError) setLastNameError(null);
                                                 }}
-                                                className={phoneError ? "border-red-500 focus-visible:ring-red-500" : ""}
+                                                className={lastNameError ? "border-red-500 focus-visible:ring-red-500" : ""}
                                             />
-                                            {phoneError && <p className="text-sm text-red-500 mt-1">{phoneError}</p>}
+                                            {lastNameError && <p className="text-sm text-red-500 mt-1">{lastNameError}</p>}
                                         </div>
+                                    </div>
+                                    {isNP && (
+                                        <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                                            ⚠️ {t('checkout.fullname_hint') || 'Введите имя и фамилию для Новой Почты'}
+                                        </p>
+                                    )}
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">{t('checkout.phone')}</label>
+                                        <Input
+                                            id="checkout-phone"
+                                            type="tel"
+                                            placeholder="+380..."
+                                            value={formData.phone}
+                                            onChange={(e) => {
+                                                setFormData({ ...formData, phone: e.target.value });
+                                                if (phoneError) setPhoneError(null);
+                                            }}
+                                            className={phoneError ? "border-red-500 focus-visible:ring-red-500" : ""}
+                                        />
+                                        {phoneError && <p className="text-sm text-red-500 mt-1">{phoneError}</p>}
                                     </div>
 
                                     <div className="space-y-2">
@@ -519,6 +554,9 @@ export default function CheckoutPage() {
                                                                         onChange={(value) => {
                                                                             setFormData({ ...formData, deliveryAddress: value });
                                                                             if (addressError) setAddressError(null);
+                                                                        }}
+                                                                        onRefsChange={(cityRef, warehouseRef) => {
+                                                                            setFormData(prev => ({ ...prev, recipientCityRef: cityRef, recipientWarehouseRef: warehouseRef }));
                                                                         }}
                                                                         error={addressError}
                                                                         onClearError={() => setAddressError(null)}

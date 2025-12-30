@@ -2,10 +2,11 @@
 
 import { useTranslation } from "@/lib/i18n";
 import Link from "next/link";
-import { ArrowLeft, Download, FileImage, CreditCard, Truck, User, Trash2, Archive, X, ChevronDown, Gift, Printer } from "lucide-react";
+import { ArrowLeft, Download, FileImage, CreditCard, Truck, User, Trash2, Archive, X, ChevronDown, Gift, Printer, PackageCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { TTNModal } from "./ttn-modal";
 
 interface DownloadPart {
     part: number;
@@ -42,6 +43,8 @@ export function OrderDetailView({ order }: { order: any }) {
     const [itemsToShow, setItemsToShow] = useState(50); // Pagination for items
     const [currentStatus, setCurrentStatus] = useState(order.status);
     const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+    const [showTTNModal, setShowTTNModal] = useState(false);
+    const [orderTTN, setOrderTTN] = useState(order.ttnNumber);
     const ITEMS_PER_PAGE = 50;
 
     // Status color mapping
@@ -105,6 +108,25 @@ export function OrderDetailView({ order }: { order: any }) {
             alert('Error deleting order');
         } finally {
             setIsDeleting(false);
+        }
+    };
+
+    const handleCancelTTN = async () => {
+        if (!confirm('Ви дійсно хочете видалити ТТН у системі Нової Пошти?')) return;
+        try {
+            const res = await fetch(`/api/fujiadmin/orders/${order.id}/ttn`, {
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                setOrderTTN(null);
+                router.refresh();
+            } else {
+                const data = await res.json();
+                alert(`Помилка: ${data.error}`);
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Помилка при видаленні ТТН');
         }
     };
 
@@ -326,6 +348,58 @@ export function OrderDetailView({ order }: { order: any }) {
                         <Printer className="w-4 h-4" />
                         <span className="hidden sm:inline">{t('Print')}</span>
                     </Button>
+
+                    {order.deliveryMethod === 'novaposhta' && !orderTTN && (
+                        <Button onClick={() => setShowTTNModal(true)} className="gap-2 bg-orange-600 hover:bg-orange-700 text-xs md:text-sm">
+                            <PackageCheck className="w-4 h-4" />
+                            <span>{t('admin.create_ttn')}</span>
+                        </Button>
+                    )}
+
+                    {orderTTN && (
+                        <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 bg-green-50 border border-green-200 px-3 py-1.5 rounded-lg shadow-sm">
+                                <PackageCheck className="w-4 h-4 text-green-600" />
+                                <span className="text-xs font-bold text-green-700">ТТН: {orderTTN}</span>
+                                <a
+                                    href={`https://novaposhta.ua/tracking/?cargo_number=${orderTTN}`}
+                                    target="_blank"
+                                    className="text-[10px] text-blue-600 underline ml-1 hover:text-blue-800"
+                                >
+                                    Відстежити
+                                </a>
+                                <button
+                                    onClick={handleCancelTTN}
+                                    className="ml-2 p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                    title="Скасувати ТТН"
+                                >
+                                    <X className="w-3 h-3" />
+                                </button>
+                            </div>
+
+                            <div className="flex gap-1">
+                                <a
+                                    href={`/api/fujiadmin/orders/${order.id}/ttn/print?type=document`}
+                                    target="_blank"
+                                >
+                                    <Button variant="outline" size="sm" className="h-9 gap-2 text-xs border-blue-200 hover:bg-blue-50">
+                                        <Printer className="w-3.5 h-3.5 text-blue-600" />
+                                        <span>ТТН (PDF)</span>
+                                    </Button>
+                                </a>
+                                <a
+                                    href={`/api/fujiadmin/orders/${order.id}/ttn/print?type=marking`}
+                                    target="_blank"
+                                >
+                                    <Button variant="outline" size="sm" className="h-9 gap-2 text-xs border-orange-200 hover:bg-orange-50">
+                                        <Printer className="w-3.5 h-3.5 text-orange-600" />
+                                        <span>Стікер (100x100)</span>
+                                    </Button>
+                                </a>
+                            </div>
+                        </div>
+                    )}
+
                     <Button variant="destructive" onClick={handleDelete} disabled={isDeleting} className="gap-2 text-xs md:text-sm">
                         {isDeleting ? t('admin.deleting') : (
                             <>
@@ -544,6 +618,18 @@ export function OrderDetailView({ order }: { order: any }) {
                     </div>
                 )}
             </div>
+
+            {showTTNModal && (
+                <TTNModal
+                    order={order}
+                    onClose={() => setShowTTNModal(false)}
+                    onSuccess={(ttn) => {
+                        setOrderTTN(ttn);
+                        setShowTTNModal(false);
+                        router.refresh();
+                    }}
+                />
+            )}
         </div>
     );
 }

@@ -20,6 +20,7 @@ export async function GET(request: Request) {
 
         return NextResponse.json(tObject);
     } catch (error) {
+        console.error("Translation fetch error:", error);
         return NextResponse.json({ error: "Failed to fetch translations" }, { status: 500 });
     }
 }

@@ -1,0 +1,253 @@
+generator client {
+  provider      = "prisma-client-js"
+  output        = "./generated/client"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String // Hashed
+  role      String   @default("ADMIN")
+  name      String?
+  createdAt DateTime @default(now())
+}
+
+model Order {
+  id                    Int     @id @default(autoincrement())
+  orderNumber           String  @unique // e.g., "ORD-1001"
+  status                String  @default("PENDING") // PENDING, PROCESSING, COMPLETED, CANCELLED
+  totalAmount           Float   @default(0)
+  customerName          String? // Full Name (legacy/combined)
+  customerFirstName     String?
+  customerLastName      String?
+  customerPhone         String?
+  customerEmail         String?
+  deliveryAddress       String?
+  deliveryMethod        String  @default("PICKUP") // PICKUP, POST
+  recipientCityRef      String? // Nova Poshta City Ref
+  recipientWarehouseRef String? // Nova Poshta Warehouse Ref
+  ttnNumber             String? // Express Waybill Number
+  ttnRef                String? // Nova Poshta Internal Document Ref (for deletion)
+  notes                 String? // Gift choice and other notes
+
+  items OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model OrderItem {
+  id      Int   @id @default(autoincrement())
+  orderId Int
+  order   Order @relation(fields: [orderId], references: [id])
+
+  type String // "PRINT", "SHOP_ITEM"
+  name String // "10x15 Glossy"
+
+  quantity Int
+  price    Float // Unit price snapshot
+  subtotal Float
+
+  // Specifics
+  size    String? // "10x15"
+  paper   String? // "Glossy"
+  options String? // JSON: { "border": true, "magnetic": false }
+  files   String? // JSON: ["img1.jpg"]
+
+  createdAt DateTime @default(now())
+}
+
+// --- Dynamic Product Configuration ---
+
+model PrintSize {
+  id        Int      @id @default(autoincrement())
+  name      String // "10x15"
+  slug      String   @unique // "10x15"
+  widthMm   Float?
+  heightMm  Float?
+  basePrice Float
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  discounts VolumeDiscount[]
+}
+
+// Quantity tiers for volume discounts (columns in pricing table)
+model QuantityTier {
+  id          Int     @id @default(autoincrement())
+  label       String // "Менее 100 шт.", "Более 100 шт."
+  minQuantity Int // 1, 100, 200
+  sortOrder   Int     @default(0)
+  isActive    Boolean @default(true)
+
+  discounts VolumeDiscount[]
+}
+
+model VolumeDiscount {
+  id          Int           @id @default(autoincrement())
+  printSizeId Int
+  printSize   PrintSize     @relation(fields: [printSizeId], references: [id])
+  tierId      Int?
+  tier        QuantityTier? @relation(fields: [tierId], references: [id])
+  minQuantity Int // e.g., 1, 100, 200 (kept for backwards compatibility)
+  price       Float // e.g., 10.00
+}
+
+model GiftThreshold {
+  id        Int     @id @default(autoincrement())
+  minAmount Float // Order total threshold, e.g., 1000
+  giftName  String // e.g., "Free 10x15 Print" or "10% Discount"
+  isActive  Boolean @default(true)
+}
+
+model PaperType {
+  id          Int     @id @default(autoincrement())
+  name        String // "Glossy", "Matte"
+  slug        String  @unique // "glossy", "matte"
+  description String?
+  isActive    Boolean @default(true)
+}
+
+model PrintOption {
+  id        Int     @id @default(autoincrement())
+  name      String // "Border", "Magnetic"
+  slug      String  @unique // "border", "magnetic"
+  priceType String // "FIXED", "PERCENT", "PER_AREA"? -> Simplified: "FIXED" usually
+  price     Float // 0 for border, 10 for magnetic
+  isActive  Boolean @default(true)
+}
+
+// Separate pricing grid for magnets (not additive, but total price)
+model MagnetPrice {
+  id       Int     @id @default(autoincrement())
+  sizeSlug String // "10x15", "13x18", etc. - references PrintSize.slug
+  price    Float // Total price for magnet (e.g., 35.00 for 10x15)
+  isActive Boolean @default(true)
+}
+
+// Delivery options and pricing
+model DeliveryOption {
+  id          Int     @id @default(autoincrement())
+  slug        String  @unique // "local", "novaposhta"
+  name        String // "Доставка по м. Дніпро", "Нова Пошта"
+  price       Float // 150 for local, 0 for novaposhta (customer pays separately)
+  description String? // Additional info
+  isActive    Boolean @default(true)
+}
+
+// --- Generic Product (Shop) ---
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  price       Float
+  images      String? // JSON
+  stock       Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+// --- System & Localization ---
+
+model Translation {
+  id    Int    @id @default(autoincrement())
+  lang  String // "uk", "ru", "en"
+  key   String // "hero.title"
+  value String // "Друк фото"
+
+  @@unique([lang, key])
+}
+
+model Setting {
+  key         String  @id
+  value       String
+  description String?
+}
+
+model Page {
+  id          Int      @id @default(autoincrement())
+  lang        String   @default("ru") // "uk", "ru", "en"
+  title       String
+  slug        String
+  content     String // HTML or Markdown content
+  description String? // Meta description
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([slug, lang])
+}
+
+// --- Help Center ---
+
+model HelpCategory {
+  id        Int      @id @default(autoincrement())
+  slug      String   @unique
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  translations HelpCategoryTranslation[]
+  articles     HelpArticle[]
+}
+
+model HelpCategoryTranslation {
+  id             Int          @id @default(autoincrement())
+  helpCategoryId Int
+  helpCategory   HelpCategory @relation(fields: [helpCategoryId], references: [id], onDelete: Cascade)
+  lang           String // "uk", "ru", "en"
+  name           String
+
+  @@unique([helpCategoryId, lang])
+}
+
+model HelpArticle {
+  id             Int          @id @default(autoincrement())
+  helpCategoryId Int
+  helpCategory   HelpCategory @relation(fields: [helpCategoryId], references: [id], onDelete: Cascade)
+  slug           String       @unique
+  sortOrder      Int          @default(0)
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  translations HelpArticleTranslation[]
+}
+
+model HelpArticleTranslation {
+  id            Int         @id @default(autoincrement())
+  helpArticleId Int
+  helpArticle   HelpArticle @relation(fields: [helpArticleId], references: [id], onDelete: Cascade)
+  lang          String // "uk", "ru", "en"
+  title         String
+  content       String // HTML
+
+  @@unique([helpArticleId, lang])
+}
+
+model OrderSequence {
+  id           Int @id @default(autoincrement())
+  currentValue Int @default(10000)
+}
+
+model NPSender {
+  id            Int      @id @default(autoincrement())
+  name          String // Legacy combined name
+  firstName     String?
+  lastName      String?
+  phone         String // Contact person phone
+  cityRef       String // City Ref
+  cityName      String
+  warehouseRef  String // Warehouse Ref
+  warehouseName String
+  createdAt     DateTime @default(now())
+}

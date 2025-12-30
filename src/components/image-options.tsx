@@ -15,6 +15,22 @@ export function ImageOptionsModal({ isOpen, onClose, currentOptions, onSave }: a
         setOpts(currentOptions);
     }, [currentOptions]);
 
+    // Safety check: Disable magnetic if size changes to one that doesn't support it
+    useEffect(() => {
+        if (config?.magnetPrices && opts.options?.magnetic) {
+            const hasMagnetPrice = config.magnetPrices.some((m: any) => m.sizeSlug === opts.size);
+            if (!hasMagnetPrice) {
+                setOpts((prev: any) => ({
+                    ...prev,
+                    options: {
+                        ...prev.options,
+                        magnetic: false
+                    }
+                }));
+            }
+        }
+    }, [opts.size, config]);
+
     const handleOptionToggle = (slug: string) => {
         setOpts((prev: any) => ({
             ...prev,
@@ -141,9 +157,18 @@ export function ImageOptionsModal({ isOpen, onClose, currentOptions, onSave }: a
                             <label className="text-sm font-medium text-slate-700">{t('Extras')}</label>
                             <div className="flex flex-wrap gap-2">
                                 {config.options.filter(opt => opt.slug !== "polaroid").map((opt) => {
+                                    const isMagnet = opt.slug === 'magnetic';
+                                    let isAvailable = true;
+
+                                    // Special check for magnet availability by size
+                                    if (isMagnet && config.magnetPrices) {
+                                        const hasMagnetPrice = config.magnetPrices.some(m => m.sizeSlug === opts.size);
+                                        if (!hasMagnetPrice) isAvailable = false;
+                                    }
+
                                     let displayPrice = opt.price;
                                     // Custom display logic for Magnet option
-                                    if (opt.slug === 'magnetic' && config.magnetPrices) {
+                                    if (isMagnet && config.magnetPrices) {
                                         const mp = config.magnetPrices.find(m => m.sizeSlug === opts.size);
                                         const sizeObj = config.sizes.find(s => s.name === opts.size);
                                         if (mp && sizeObj) {
@@ -151,16 +176,18 @@ export function ImageOptionsModal({ isOpen, onClose, currentOptions, onSave }: a
                                         }
                                     }
 
-                                    const showPrice = displayPrice > 0 && opt.slug !== 'magnetic';
+                                    const showPrice = displayPrice > 0 && !isMagnet; // Don't show generic price for magnet if we have custom logic, or if unavailable
 
                                     return (
                                         <button
                                             key={opt.id}
-                                            onClick={() => handleOptionToggle(opt.slug)}
+                                            onClick={() => isAvailable && handleOptionToggle(opt.slug)}
+                                            disabled={!isAvailable}
                                             className={`py-1.5 px-3 text-sm border rounded-full transition-all ${opts.options?.[opt.slug]
                                                 ? "border-emerald-600 bg-emerald-50 text-emerald-700 font-medium"
-                                                : "border-slate-200 hover:border-slate-300 text-slate-600"
-                                                }`}
+                                                : "border-slate-200 text-slate-600"
+                                                } ${!isAvailable ? 'opacity-50 cursor-not-allowed bg-slate-100 text-slate-400' : 'hover:border-slate-300'}`}
+                                            title={!isAvailable && isMagnet ? t("Not available for this size") : ""}
                                         >
                                             {t(opt.name)} {showPrice ? `(+${displayPrice.toFixed(0)} ${t('general.currency')})` : ''}
                                         </button>
