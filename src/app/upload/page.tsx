@@ -305,10 +305,15 @@ export default function UploadPage() {
                                     </div>
 
                                     {/* Selection Checkbox */}
-                                    <div className={cn(
-                                        "absolute top-3 left-3 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all z-10",
-                                        selectedIds.includes(file.id) ? "bg-[#e31e24] border-[#e31e24] scale-110 shadow-lg" : "bg-white/90 border-[#c5b98e]/40"
-                                    )}>
+                                    <div
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            toggleSelection(file.id);
+                                        }}
+                                        className={cn(
+                                            "absolute top-3 left-3 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all z-10 hover:scale-110 active:scale-95 cursor-pointer",
+                                            selectedIds.includes(file.id) ? "bg-[#e31e24] border-[#e31e24] scale-110 shadow-lg" : "bg-white/90 border-[#c5b98e]/40"
+                                        )}>
                                         {selectedIds.includes(file.id) && <div className="w-2.5 h-2.5 bg-white rounded-full" />}
                                     </div>
 
