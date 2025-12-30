@@ -38,6 +38,8 @@ interface CheckoutFormState {
     email: string;
     deliveryAddress: string;
     deliveryMethod: string;
+    recipientCityRef?: string;
+    recipientWarehouseRef?: string;
 }
 
 interface CartState {
@@ -174,6 +176,8 @@ export const useCartStore = create<CartState>()(
                 email: "",
                 deliveryAddress: "",
                 deliveryMethod: "pickup",
+                recipientCityRef: "",
+                recipientWarehouseRef: "",
             },
             draftOrderId: null,
             setConfig: (config) => set({ config }),
