@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NovaPoshtaSelector } from "@/components/novaposhta-selector";
 import { useTranslation } from "@/lib/i18n";
+import { toast } from "sonner";
 
 interface NPSender {
     id: number;
@@ -100,7 +101,7 @@ export function TTNModal({ order, onClose, onSuccess }: TTNModalProps) {
             if (!senderCityRef) missing.push("Місто (Ref)");
             if (!senderWarehouseRef) missing.push("Відділення (Ref)");
 
-            alert(`Будь ласка, заповніть всі дані відправника: ${missing.join(", ")}`);
+            toast.error(`Будь ласка, заповніть всі дані відправника: ${missing.join(", ")}`);
             return;
         }
         setIsSavingSender(true);
@@ -175,12 +176,13 @@ export function TTNModal({ order, onClose, onSuccess }: TTNModalProps) {
             const data = await res.json();
             if (res.ok) {
                 onSuccess(data.ttnNumber);
+                toast.success('ТТН успішно створено!');
             } else {
-                alert(`Помилка: ${data.error}\n${data.details?.join(', ') || ''}`);
+                toast.error(`Помилка: ${data.error}\n${data.details?.join(', ') || ''}`);
             }
         } catch (e) {
             console.error(e);
-            alert("Сталася помилка при генерації ТТН");
+            toast.error("Сталася помилка при генерації ТТН");
         } finally {
             setLoading(false);
         }

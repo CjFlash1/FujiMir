@@ -10,6 +10,7 @@ import { ArrowLeft, Loader2, CheckCircle2, Upload, Gift, Truck, Image as ImageIc
 import Link from "next/link";
 import { useTranslation } from "@/lib/i18n";
 import { NovaPoshtaSelector } from "@/components/novaposhta-selector";
+import { toast } from "sonner";
 
 type GiftChoice = 'FREE_DELIVERY' | 'FREE_MAGNET';
 type MagnetOption = 'upload' | 'existing' | 'comment';
@@ -215,7 +216,7 @@ export default function CheckoutPage() {
             // Check for missing files first
             const missingFiles = items.filter(i => !i.serverFileName && !i.file);
             if (missingFiles.length > 0) {
-                alert(t('error.missing_files_refresh') || "Some files are lost due to refresh. Please go back and re-add them.");
+                toast.error(t('error.missing_files_refresh') || "Some files are lost due to refresh. Please go back and re-add them.");
                 setIsSubmitting(false);
                 return;
             }
@@ -370,7 +371,7 @@ export default function CheckoutPage() {
             clearCart();
         } catch (error: any) {
             console.error("Checkout submission error:", error);
-            alert(`Something went wrong: ${error.message}. Please try again.`);
+            toast.error(`Something went wrong: ${error.message}. Please try again.`);
         } finally {
             setIsSubmitting(false);
         }

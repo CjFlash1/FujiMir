@@ -102,6 +102,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 import { TranslationProvider } from "@/lib/i18n";
 import { SettingsProvider } from "@/lib/settings-context";
+import { Toaster } from "sonner";
 
 export default function RootLayout({
   children,
@@ -119,6 +120,7 @@ export default function RootLayout({
             <Navbar />
             {children}
             <Footer />
+            <Toaster richColors position="top-center" />
           </TranslationProvider>
         </SettingsProvider>
       </body>

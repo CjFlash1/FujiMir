@@ -6,21 +6,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { STATUS_COLORS, getStatusConfig } from "@/lib/constants/order-statuses";
+import { toast } from "sonner";
 
 interface OrdersTableProps {
     orders: any[];
 }
 
 const ORDERS_PER_PAGE = 20;
-
-// Status color mapping
-const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }> = {
-    DRAFT: { bg: "bg-slate-100", text: "text-slate-600", label: "admin.status.draft" },
-    PENDING: { bg: "bg-red-100", text: "text-red-700", label: "admin.status.pending" },
-    PROCESSING: { bg: "bg-orange-100", text: "text-orange-700", label: "admin.status.processing" },
-    COMPLETED: { bg: "bg-green-100", text: "text-green-700", label: "admin.status.completed" },
-    CANCELLED: { bg: "bg-gray-200", text: "text-gray-600", label: "admin.status.cancelled" },
-};
 
 const STATUSES = ["PENDING", "PROCESSING", "COMPLETED", "CANCELLED"];
 
@@ -81,12 +74,13 @@ export function OrdersTable({ orders }: OrdersTableProps) {
             if (res.ok) {
                 router.refresh();
                 setSelectedOrders(new Set());
+                toast.success(t("admin.status_updated") || "Status updated");
             } else {
-                alert(t("admin.status_update_failed"));
+                toast.error(t("admin.status_update_failed") || "Failed to update status");
             }
         } catch (error) {
             console.error("Bulk status update failed", error);
-            alert(t("admin.status_update_failed"));
+            toast.error(t("admin.status_update_failed") || "Failed to update status");
         } finally {
             setIsUpdatingStatus(false);
         }
@@ -105,20 +99,22 @@ export function OrdersTable({ orders }: OrdersTableProps) {
 
             const failedCount = results.filter(r => !r).length;
             if (failedCount > 0) {
-                alert(`Failed to delete ${failedCount} orders.`);
+                toast.error(`Failed to delete ${failedCount} orders.`);
+            } else {
+                toast.success(t("admin.orders_deleted") || "Orders deleted");
             }
             router.refresh();
             setSelectedOrders(new Set());
         } catch (error) {
             console.error("Bulk delete failed", error);
-            alert("Some orders failed to delete");
+            toast.error("Some orders failed to delete");
         } finally {
             setIsDeleting(false);
         }
     };
 
     const getStatusStyle = (status: string) => {
-        return STATUS_COLORS[status] || STATUS_COLORS.PENDING;
+        return getStatusConfig(status);
     };
 
     return (

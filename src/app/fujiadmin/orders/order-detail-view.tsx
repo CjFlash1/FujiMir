@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { TTNModal } from "./ttn-modal";
+import { STATUS_COLORS } from "@/lib/constants/order-statuses";
+import { getFilesFromItem, getDeliveryCostSync } from "@/lib/helpers/order-utils";
+import { toast } from "sonner";
 
 interface DownloadPart {
     part: number;
@@ -19,18 +22,6 @@ interface PartsInfo {
     totalParts: number;
     photosPerPart: number;
     parts: DownloadPart[];
-}
-
-// Helper to parse files from JSON and get file info
-function getFilesFromItem(item: any): { server: string; original: string }[] {
-    if (!item.files) return [];
-    try {
-        const parsed = JSON.parse(item.files);
-        if (Array.isArray(parsed)) {
-            return parsed.filter((f: any) => f.server);
-        }
-    } catch (e) { }
-    return [];
 }
 
 export function OrderDetailView({ order }: { order: any }) {
@@ -86,15 +77,6 @@ export function OrderDetailView({ order }: { order: any }) {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [previewIndex, allImages.length]);
 
-    // Status color mapping
-    const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }> = {
-        DRAFT: { bg: "bg-slate-100", text: "text-slate-600", label: "admin.status.draft" },
-        PENDING: { bg: "bg-red-100", text: "text-red-700", label: "admin.status.pending" },
-        PROCESSING: { bg: "bg-orange-100", text: "text-orange-700", label: "admin.status.processing" },
-        COMPLETED: { bg: "bg-green-100", text: "text-green-700", label: "admin.status.completed" },
-        CANCELLED: { bg: "bg-gray-200", text: "text-gray-600", label: "admin.status.cancelled" },
-    };
-
     const handleStatusChange = async (newStatus: string) => {
         setIsUpdatingStatus(true);
         try {
@@ -106,12 +88,13 @@ export function OrderDetailView({ order }: { order: any }) {
             if (res.ok) {
                 setCurrentStatus(newStatus);
                 router.refresh();
+                toast.success(t("admin.status_updated") || "Status updated");
             } else {
-                alert(t("admin.status_update_failed"));
+                toast.error(t("admin.status_update_failed") || "Failed to update status");
             }
         } catch (error) {
             console.error("Status update failed:", error);
-            alert(t("admin.status_update_failed"));
+            toast.error(t("admin.status_update_failed") || "Failed to update status");
         } finally {
             setIsUpdatingStatus(false);
         }
@@ -139,12 +122,13 @@ export function OrderDetailView({ order }: { order: any }) {
             if (res.ok) {
                 router.push('/fujiadmin/orders');
                 router.refresh();
+                toast.success(t("admin.order_deleted") || "Order deleted");
             } else {
-                alert('Failed to delete order');
+                toast.error('Failed to delete order');
             }
         } catch (error) {
             console.error(error);
-            alert('Error deleting order');
+            toast.error('Error deleting order');
         } finally {
             setIsDeleting(false);
         }
@@ -159,13 +143,14 @@ export function OrderDetailView({ order }: { order: any }) {
             if (res.ok) {
                 setOrderTTN(null);
                 router.refresh();
+                toast.success('ТТН видалено');
             } else {
                 const data = await res.json();
-                alert(`Помилка: ${data.error}`);
+                toast.error(`Помилка: ${data.error}`);
             }
         } catch (e) {
             console.error(e);
-            alert('Помилка при видаленні ТТН');
+            toast.error('Помилка при видаленні ТТН');
         }
     };
 
@@ -216,11 +201,8 @@ export function OrderDetailView({ order }: { order: any }) {
 
     // Delivery Cost Display
     const deliveryCostDisplay = useMemo(() => {
-        if (order.deliveryMethod === 'local') return '150.00 грн';
-        if (order.deliveryMethod === 'pickup') return '0.00 грн';
-        if (order.deliveryMethod === 'novaposhta') return 'За тарифами перевізника';
-        return '-';
-    }, [order.deliveryMethod, t]);
+        return getDeliveryCostSync(order.deliveryMethod);
+    }, [order.deliveryMethod]);
 
     const handlePrint = () => {
         const printWindow = window.open('', '_blank', 'width=800,height=600');

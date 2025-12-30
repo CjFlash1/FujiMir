@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { RichTextEditor } from "@/components/admin/rich-text-editor";
 import { PageBuilder } from "@/components/admin/page-builder/builder";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 // Types
 interface PageData {
@@ -113,7 +114,7 @@ export default function CMSPages() {
 
     const handleSave = async () => {
         if (!currentSlug) {
-            alert("Slug is required");
+            toast.error("Slug is required");
             return;
         }
 
@@ -149,9 +150,10 @@ export default function CMSPages() {
 
             setIsEditing(false);
             fetchPages();
+            toast.success("Pages saved successfully");
         } catch (e) {
             console.error(e);
-            alert("Error saving pages. Check console.");
+            toast.error("Error saving pages. Check console.");
         } finally {
             setIsSaving(false);
         }

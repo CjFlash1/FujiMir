@@ -6,6 +6,7 @@ import { FilePlus, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HelpArticleForm } from "@/components/admin/help-article-form";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 export default function AdminHelpPage() {
     const { t } = useTranslation();
@@ -53,12 +54,13 @@ export default function AdminHelpPage() {
             });
             if (res.ok) {
                 fetchData();
+                toast.success("Article deleted");
             } else {
-                alert("Failed to delete article");
+                toast.error("Failed to delete article");
             }
         } catch (error) {
             console.error("Error deleting article:", error);
-            alert("Error deleting article");
+            toast.error("Error deleting article");
         }
     }
 

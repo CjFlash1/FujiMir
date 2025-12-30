@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { npRequest } from "@/lib/novaposhta";
 
+// Debug logging - only in development
+const DEBUG_TTN = process.env.NODE_ENV === 'development';
+const log = (...args: any[]) => DEBUG_TTN && console.log('[TTN DEBUG]', ...args);
+
 export async function POST(
     request: Request,
     { params }: { params: Promise<{ id: string }> }

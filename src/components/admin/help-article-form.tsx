@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Save, X } from "lucide-react";
+import { toast } from "sonner";
 
 import { RichTextEditor } from "@/components/admin/rich-text-editor";
 import { PageBuilder } from "@/components/admin/page-builder/builder";
@@ -73,10 +74,11 @@ export function HelpArticleForm({ initialData, categories, onSave, onCancel }: H
             });
 
             if (!res.ok) throw new Error("Failed to save article");
+            toast.success("Article saved successfully");
             onSave();
         } catch (error) {
             console.error(error);
-            alert("Error saving article");
+            toast.error("Error saving article");
         } finally {
             setIsLoading(false);
         }

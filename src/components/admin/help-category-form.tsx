@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Save, X } from "lucide-react";
+import { toast } from "sonner";
 
 interface HelpCategoryFormProps {
     initialData?: any;
@@ -48,10 +49,11 @@ export function HelpCategoryForm({ initialData, onSave, onCancel }: HelpCategory
             });
 
             if (!res.ok) throw new Error("Failed to save category");
+            toast.success("Category saved successfully");
             onSave();
         } catch (error) {
             console.error(error);
-            alert("Error saving category");
+            toast.error("Error saving category");
         } finally {
             setIsLoading(false);
         }
