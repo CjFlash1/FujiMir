@@ -9,7 +9,7 @@ export async function GET() {
             prisma.printSize.findMany({
                 where: { isActive: true },
                 include: { discounts: true },
-                orderBy: { basePrice: 'asc' }
+                orderBy: { sortOrder: 'asc' }
             }),
             prisma.paperType.findMany({ where: { isActive: true } }),
             prisma.printOption.findMany({ where: { isActive: true } }),

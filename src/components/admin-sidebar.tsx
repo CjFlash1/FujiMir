@@ -80,7 +80,7 @@ export function AdminSidebar() {
         { name: t("admin.pages"), href: "/fujiadmin/pages", icon: FileText },
         { name: t("admin.translations"), href: "/fujiadmin/config/translations", icon: Globe },
         { name: t("admin.settings"), href: "/fujiadmin/settings", icon: Settings },
-        { name: t("admin.config"), href: "/fujiadmin/config/sizes", icon: Settings },
+        { name: t("admin.config"), href: "/fujiadmin/config/discounts", icon: Settings },
     ];
 
     const handleNavClick = () => {

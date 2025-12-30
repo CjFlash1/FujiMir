@@ -1,6 +1,6 @@
 "use client";
 
-import { ShoppingBag, FileText, Clock, CheckCircle, AlertCircle } from "lucide-react";
+import { ShoppingBag, FileText, Clock, CheckCircle, AlertCircle, HardDrive } from "lucide-react";
 import { ServerStats } from "@/components/server-stats";
 import { useTranslation } from "@/lib/i18n";
 import { useState, useEffect } from "react";
@@ -12,8 +12,16 @@ interface OrderStats {
     completed: number;
     cancelled: number;
     total: number;
-    recentOrders: number;
-    totalRevenue: number;
+    totalUploadsSize: number;
+}
+
+// Helper to format bytes to human readable
+function formatBytes(bytes: number): string {
+    if (bytes === 0) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB", "TB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 }
 
 export default function AdminDashboard() {
@@ -108,7 +116,7 @@ export default function AdminDashboard() {
 
             {/* Summary Row */}
             {stats && (
-                <div className="grid gap-4 md:grid-cols-3">
+                <div className="grid gap-4 md:grid-cols-2">
                     <div className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
                         <div className="flex items-center gap-3">
                             <div className="p-3 bg-blue-50 rounded-lg">
@@ -123,22 +131,11 @@ export default function AdminDashboard() {
                     <div className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
                         <div className="flex items-center gap-3">
                             <div className="p-3 bg-purple-50 rounded-lg">
-                                <Clock className="w-6 h-6 text-purple-600" />
+                                <HardDrive className="w-6 h-6 text-purple-600" />
                             </div>
                             <div>
-                                <p className="text-sm font-medium text-slate-500">{t("admin.stats.this_week")}</p>
-                                <div className="text-2xl font-bold text-slate-900">+{stats.recentOrders}</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
-                        <div className="flex items-center gap-3">
-                            <div className="p-3 bg-green-50 rounded-lg">
-                                <CheckCircle className="w-6 h-6 text-green-600" />
-                            </div>
-                            <div>
-                                <p className="text-sm font-medium text-slate-500">{t("admin.stats.revenue")}</p>
-                                <div className="text-2xl font-bold text-slate-900">{stats.totalRevenue.toFixed(2)} {t("general.currency")}</div>
+                                <p className="text-sm font-medium text-slate-500">{t("admin.stats.storage_used")}</p>
+                                <div className="text-2xl font-bold text-slate-900">{formatBytes(stats.totalUploadsSize)}</div>
                             </div>
                         </div>
                     </div>

@@ -6,11 +6,12 @@ export const dynamic = "force-dynamic";
 // Public API for getting pricing data
 export async function GET() {
     try {
-        const [sizes, magnetPrices, deliveryOptions, discounts, giftThreshold] = await Promise.all([
-            prisma.printSize.findMany({ where: { isActive: true }, orderBy: { basePrice: 'asc' } }),
+        const [sizes, magnetPrices, deliveryOptions, discounts, tiers, giftThreshold] = await Promise.all([
+            prisma.printSize.findMany({ where: { isActive: true }, orderBy: { sortOrder: 'asc' } }),
             prisma.magnetPrice.findMany({ where: { isActive: true } }),
             prisma.deliveryOption.findMany({ where: { isActive: true } }),
-            prisma.volumeDiscount.findMany({ include: { printSize: true } }),
+            prisma.volumeDiscount.findMany({ include: { printSize: true, tier: true } }),
+            prisma.quantityTier.findMany({ where: { isActive: true }, orderBy: { sortOrder: 'asc' } }),
             prisma.giftThreshold.findFirst({ where: { isActive: true }, orderBy: { minAmount: 'asc' } }),
         ]);
 
@@ -31,10 +32,11 @@ export async function GET() {
             magnetPrices,
             deliveryOptions,
             discounts,
+            tiers,
             giftThreshold,
         });
     } catch (error) {
         console.error("Error fetching pricing data:", error);
-        return NextResponse.json({ sizes: [], magnetPrices: [], deliveryOptions: [], discounts: [] });
+        return NextResponse.json({ sizes: [], magnetPrices: [], deliveryOptions: [], discounts: [], tiers: [] });
     }
 }

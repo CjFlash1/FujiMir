@@ -13,24 +13,78 @@ async function main() {
     await prisma.printOption.upsert({ where: { slug: 'border' }, update: {}, create: { name: 'Border', slug: 'border', price: 0, priceType: 'FIXED' } })
     await prisma.printOption.upsert({ where: { slug: 'magnetic' }, update: {}, create: { name: 'Magnetic', slug: 'magnetic', price: 15, priceType: 'FIXED' } })
 
-    // 3. Print Sizes
+    // 3. Print Sizes (from original site)
     const sizes = [
-        { name: '9x13', price: 3.50 },
-        { name: '10x15', price: 4.00 },
-        { name: '13x18', price: 5.50 },
-        { name: '15x20', price: 7.00 },
-        { name: '20x30', price: 15.00 },
+        { name: '9x13', basePrice: 10.00, sortOrder: 0 },
+        { name: '10x15', basePrice: 12.00, sortOrder: 1 },
+        { name: '13x18', basePrice: 20.00, sortOrder: 2 },
+        { name: '15x20', basePrice: 24.00, sortOrder: 3 },
+        { name: '20x30', basePrice: 48.00, sortOrder: 4 },
     ]
 
     for (const s of sizes) {
         await prisma.printSize.upsert({
             where: { slug: s.name },
-            update: {},
-            create: { name: s.name, slug: s.name, basePrice: s.price }
+            update: { basePrice: s.basePrice, sortOrder: s.sortOrder },
+            create: { name: s.name, slug: s.name, basePrice: s.basePrice, sortOrder: s.sortOrder }
         })
     }
 
-    // 4. Translations (Extensive)
+    // 4. Quantity Tiers (columns in pricing table)
+    const tiers = [
+        { label: 'Менее 100 шт.', minQuantity: 1, sortOrder: 0 },
+        { label: 'Более 100 шт.', minQuantity: 100, sortOrder: 1 },
+        { label: 'Более 200 шт.', minQuantity: 200, sortOrder: 2 },
+    ]
+
+    for (const t of tiers) {
+        const existing = await prisma.quantityTier.findFirst({ where: { minQuantity: t.minQuantity } })
+        if (!existing) {
+            await prisma.quantityTier.create({ data: t })
+        }
+    }
+
+    // 5. Volume Discounts (prices from original site)
+    // Format: sizeSlug -> { minQuantity: price }
+    const discountData: Record<string, Record<number, number>> = {
+        '9x13': { 1: 10.00, 100: 9.00, 200: 8.00 },
+        '10x15': { 1: 12.00, 100: 10.80, 200: 9.60 },
+        '13x18': { 1: 20.00, 100: 18.00, 200: 16.00 },
+        '15x20': { 1: 24.00, 100: 21.60, 200: 19.20 },
+        '20x30': { 1: 48.00, 100: 43.20, 200: 38.40 },
+    }
+
+    for (const [sizeSlug, prices] of Object.entries(discountData)) {
+        const size = await prisma.printSize.findUnique({ where: { slug: sizeSlug } })
+        if (!size) continue
+
+        for (const [minQtyStr, price] of Object.entries(prices)) {
+            const minQuantity = parseInt(minQtyStr)
+            const tier = await prisma.quantityTier.findFirst({ where: { minQuantity } })
+
+            const existing = await prisma.volumeDiscount.findFirst({
+                where: { printSizeId: size.id, minQuantity }
+            })
+
+            if (!existing) {
+                await prisma.volumeDiscount.create({
+                    data: {
+                        printSizeId: size.id,
+                        tierId: tier?.id,
+                        minQuantity,
+                        price
+                    }
+                })
+            } else {
+                await prisma.volumeDiscount.update({
+                    where: { id: existing.id },
+                    data: { price, tierId: tier?.id }
+                })
+            }
+        }
+    }
+
+    // 6. Translations (Extensive)
     const translations = [
         // Navigation
         { key: 'nav.upload', val: { uk: 'Завантажити фотографії', en: 'Upload Photos', ru: 'Закачать фотографии' } },
@@ -99,13 +153,27 @@ async function main() {
         { key: 'admin.prev', val: { uk: 'Назад', en: 'Previous', ru: 'Назад' } },
         { key: 'admin.next', val: { uk: 'Далі', en: 'Next', ru: 'Далее' } },
         { key: 'bulk.delete', val: { uk: 'Видалити', en: 'Delete', ru: 'Удалить' } },
+        { key: 'admin.stats.storage_used', val: { uk: 'Зайнято місця', en: 'Storage Used', ru: 'Занято места' } },
+        { key: 'admin.size', val: { uk: 'Розмір', en: 'Size', ru: 'Размер' } },
 
         // Config Submenu
         { key: 'config.sizes', val: { uk: 'Розміри', en: 'Print Sizes', ru: 'Размеры' } },
         { key: 'config.papers', val: { uk: 'Типи паперу', en: 'Paper Types', ru: 'Типы бумаги' } },
         { key: 'config.options', val: { uk: 'Опції', en: 'Extra Options', ru: 'Опции' } },
         { key: 'config.gifts', val: { uk: 'Подарунки', en: 'Gifts', ru: 'Подарки' } },
-        { key: 'config.discounts', val: { uk: 'Знижки', en: 'Discounts', ru: 'Скидки' } },
+        { key: 'config.discounts', val: { uk: 'Розміри та знижки', en: 'Sizes & Discounts', ru: 'Размеры и скидки' } },
+        { key: 'config.pricing_table', val: { uk: 'Таблиця цін', en: 'Pricing Table', ru: 'Таблица цен' } },
+        { key: 'config.add_size', val: { uk: 'Додати розмір', en: 'Add Size', ru: 'Добавить размер' } },
+        { key: 'config.size_name', val: { uk: 'Назва розміру', en: 'Size Name', ru: 'Название размера' } },
+        { key: 'config.base_price', val: { uk: 'Базова ціна', en: 'Base Price', ru: 'Базовая цена' } },
+        { key: 'config.no_sizes', val: { uk: 'Розміри не додані', en: 'No sizes added', ru: 'Размеры не добавлены' } },
+        { key: 'config.drag_to_sort', val: { uk: 'Перетягніть рядки для зміни порядку', en: 'Drag rows to reorder', ru: 'Перетащите строки для изменения порядка' } },
+        { key: 'admin.add', val: { uk: 'Додати', en: 'Add', ru: 'Добавить' } },
+        { key: 'admin.save_all', val: { uk: 'Зберегти все', en: 'Save All', ru: 'Сохранить все' } },
+        { key: 'admin.confirm_delete', val: { uk: 'Ви впевнені, що хочете видалити?', en: 'Are you sure you want to delete?', ru: 'Вы уверены, что хотите удалить?' } },
+        { key: 'config.add_tier', val: { uk: 'Додати поріг', en: 'Add Tier', ru: 'Добавить порог' } },
+        { key: 'config.tier_label', val: { uk: 'Назва', en: 'Label', ru: 'Название' } },
+        { key: 'config.min_qty', val: { uk: 'Від шт.', en: 'From qty', ru: 'От шт.' } },
 
         // Misc
         { key: 'upload.default_notice', val: { uk: 'За замовчуванням: 10x15, Глянцевий', en: 'Default: 10x15, Glossy', ru: 'По умолчанию: 10x15, Глянцевая' } },
@@ -236,11 +304,6 @@ async function main() {
         { key: 'settings.telegram_active', val: { uk: 'Увімкнути Telegram (true/false)', en: 'Enable Telegram (true/false)', ru: 'Включить Telegram (true/false)' } },
 
         { key: 'config.system_title', val: { uk: 'Конфігурація Системи', en: 'System Configuration', ru: 'Конфигурация Системы' } },
-        { key: 'config.sizes', val: { uk: 'Розміри', en: 'Print Sizes', ru: 'Размеры' } },
-        { key: 'config.paper', val: { uk: 'Типи Паперу', en: 'Paper Types', ru: 'Типы Бумаги' } },
-        { key: 'config.options', val: { uk: 'Опції', en: 'Extra Options', ru: 'Опции' } },
-        { key: 'config.gifts', val: { uk: 'Подарунки', en: 'Gifts', ru: 'Подарки' } },
-        { key: 'config.discounts', val: { uk: 'Знижки', en: 'Discounts', ru: 'Скидки' } },
         { key: 'settings.contact_phone1', val: { uk: 'Телефон 1', en: 'Phone 1', ru: 'Телефон 1' } },
         { key: 'settings.contact_phone2', val: { uk: 'Телефон 2', en: 'Phone 2', ru: 'Телефон 2' } },
         { key: 'settings.contact_address', val: { uk: 'Адреса (текст шапки)', en: 'Address (Header Text)', ru: 'Адрес (текст шапки)' } },

@@ -65,18 +65,32 @@ model PrintSize {
   widthMm     Float?
   heightMm    Float?
   basePrice   Float
+  sortOrder   Int      @default(0)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   
   discounts   VolumeDiscount[]
 }
 
-model VolumeDiscount {
+// Quantity tiers for volume discounts (columns in pricing table)
+model QuantityTier {
   id          Int       @id @default(autoincrement())
+  label       String    // "Менее 100 шт.", "Более 100 шт."
+  minQuantity Int       // 1, 100, 200
+  sortOrder   Int       @default(0)
+  isActive    Boolean   @default(true)
+  
+  discounts   VolumeDiscount[]
+}
+
+model VolumeDiscount {
+  id          Int           @id @default(autoincrement())
   printSizeId Int
-  printSize   PrintSize @relation(fields: [printSizeId], references: [id])
-  minQuantity Int       // e.g., 51
-  price       Float     // e.g., 5.50
+  printSize   PrintSize     @relation(fields: [printSizeId], references: [id])
+  tierId      Int?
+  tier        QuantityTier? @relation(fields: [tierId], references: [id])
+  minQuantity Int           // e.g., 1, 100, 200 (kept for backwards compatibility)
+  price       Float         // e.g., 10.00
 }
 
 model GiftThreshold {

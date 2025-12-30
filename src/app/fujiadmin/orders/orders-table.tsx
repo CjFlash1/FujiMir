@@ -24,6 +24,15 @@ const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }>
 
 const STATUSES = ["PENDING", "PROCESSING", "COMPLETED", "CANCELLED"];
 
+// Helper to format bytes
+function formatBytes(bytes: number): string {
+    if (bytes === 0) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+}
+
 export function OrdersTable({ orders }: OrdersTableProps) {
     const { t } = useTranslation();
     const router = useRouter();
@@ -172,6 +181,7 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                                 <th className="px-6 py-3">{t('admin.customer')}</th>
                                 <th className="px-6 py-3">{t('admin.method')}</th>
                                 <th className="px-6 py-3">{t('admin.items')}</th>
+                                <th className="px-6 py-3">{t('admin.size')}</th>
                                 <th className="px-6 py-3">{t('admin.total')}</th>
                                 <th className="px-6 py-3">{t('admin.status')}</th>
                                 <th className="px-6 py-3">{t('admin.action')}</th>
@@ -180,7 +190,7 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                         <tbody>
                             {paginatedOrders.length === 0 ? (
                                 <tr>
-                                    <td colSpan={9} className="px-6 py-8 text-center text-slate-500">
+                                    <td colSpan={10} className="px-6 py-8 text-center text-slate-500">
                                         {t('No orders found')}
                                     </td>
                                 </tr>
@@ -212,6 +222,7 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-slate-500">{order._count?.items || 0}</td>
+                                            <td className="px-6 py-4 text-slate-500">{formatBytes(order.size || 0)}</td>
                                             <td className="px-6 py-4 font-medium text-slate-900">{order.totalAmount?.toFixed(2) || "0.00"} {t('general.currency')}</td>
                                             <td className="px-6 py-4">
                                                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusStyle.bg} ${statusStyle.text}`}>

@@ -1,5 +1,34 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import fs from "fs";
+import path from "path";
+
+// Helper to calculate total size of files in uploads folder
+async function calculateTotalUploadsSize(): Promise<number> {
+    const uploadsDir = path.join(process.cwd(), "public", "uploads");
+
+    try {
+        if (!fs.existsSync(uploadsDir)) {
+            return 0;
+        }
+
+        const files = fs.readdirSync(uploadsDir);
+        let totalSize = 0;
+
+        for (const file of files) {
+            const filePath = path.join(uploadsDir, file);
+            const stat = fs.statSync(filePath);
+            if (stat.isFile()) {
+                totalSize += stat.size;
+            }
+        }
+
+        return totalSize;
+    } catch (error) {
+        console.error("Error calculating uploads size:", error);
+        return 0;
+    }
+}
 
 export async function GET() {
     try {
@@ -13,24 +42,8 @@ export async function GET() {
             prisma.order.count(),
         ]);
 
-        // Get recent orders (last 7 days)
-        const weekAgo = new Date();
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        
-        const recentOrders = await prisma.order.count({
-            where: {
-                createdAt: { gte: weekAgo },
-                status: { not: "DRAFT" }
-            }
-        });
-
-        // Calculate total revenue (excluding drafts and cancelled)
-        const revenueResult = await prisma.order.aggregate({
-            _sum: { totalAmount: true },
-            where: {
-                status: { in: ["PENDING", "PROCESSING", "COMPLETED"] }
-            }
-        });
+        // Calculate total uploads size
+        const totalUploadsSize = await calculateTotalUploadsSize();
 
         return NextResponse.json({
             stats: {
@@ -40,8 +53,7 @@ export async function GET() {
                 completed,
                 cancelled,
                 total,
-                recentOrders,
-                totalRevenue: revenueResult._sum.totalAmount || 0
+                totalUploadsSize, // in bytes
             }
         });
     } catch (error) {

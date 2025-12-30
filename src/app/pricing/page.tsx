@@ -34,11 +34,19 @@ interface VolumeDiscount {
     printSize: PrintSize;
 }
 
+interface QuantityTier {
+    id: number;
+    label: string;
+    minQuantity: number;
+    sortOrder: number;
+}
+
 interface PricingData {
     sizes: PrintSize[];
     magnetPrices: MagnetPrice[];
     deliveryOptions: DeliveryOption[];
     discounts: VolumeDiscount[];
+    tiers: QuantityTier[];
     giftThreshold?: { minAmount: number; isActive: boolean } | null;
 }
 
@@ -114,23 +122,31 @@ export default function PricingPage() {
                                 <thead>
                                     <tr className="border-b-2 border-slate-200">
                                         <th className="text-left py-2 font-bold text-slate-600">{t('pricing.format')}</th>
-                                        <th className="text-center py-2 font-bold text-slate-600">&lt;100</th>
-                                        <th className="text-center py-2 font-bold text-slate-600">&gt;100</th>
-                                        <th className="text-center py-2 font-bold text-slate-600">&gt;200</th>
+                                        {data?.tiers?.map((tier, index) => (
+                                            <th key={tier.id} className="text-center py-2 font-bold text-slate-600">
+                                                {tier.label}
+                                            </th>
+                                        ))}
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {data?.sizes.map((size) => {
-                                        const discounts = getDiscounts(size.id);
-                                        const price100 = discounts.find(d => d.minQuantity <= 100)?.price || (size.basePrice * 0.9);
-                                        const price200 = discounts.find(d => d.minQuantity <= 200 && d.minQuantity > 100)?.price || (size.basePrice * 0.8);
+                                        const sizeDiscounts = getDiscounts(size.id);
+                                        const getPrice = (minQty: number) => {
+                                            const discount = sizeDiscounts.find(d => d.minQuantity === minQty);
+                                            return discount?.price || size.basePrice;
+                                        };
+
+                                        const tierColors = ['text-slate-800', 'text-[#009846]', 'text-[#e31e24]', 'text-purple-600'];
 
                                         return (
                                             <tr key={size.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                                                 <td className="py-2.5 font-medium text-[#4c4c4c]">{size.name}</td>
-                                                <td className="py-2.5 text-center font-semibold">{size.basePrice.toFixed(2)}</td>
-                                                <td className="py-2.5 text-center font-semibold text-[#009846]">{price100.toFixed(2)}</td>
-                                                <td className="py-2.5 text-center font-semibold text-[#e31e24]">{price200.toFixed(2)}</td>
+                                                {data?.tiers?.map((tier, index) => (
+                                                    <td key={tier.id} className={`py-2.5 text-center font-semibold ${tierColors[index] || 'text-slate-800'}`}>
+                                                        {getPrice(tier.minQuantity).toFixed(2)}
+                                                    </td>
+                                                ))}
                                             </tr>
                                         );
                                     })}
