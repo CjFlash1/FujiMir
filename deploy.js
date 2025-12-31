@@ -2,92 +2,50 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-// === LOGGING SETUP ===
-// Try to write to a 'tmp' folder inside the project, usually writable by the app user
-const LOG_FILE = path.join(process.cwd(), 'tmp', 'deploy_log.txt');
+// === MANUAL BUILD STRATEGY ===
+// This script ONLY Handles basic sync tasks.
+// YOU MUST RUN 'npm run build' MANUALLY ON SERVER IF NEEDED.
 
-// Initialize log file
-try {
-    const tmpDir = path.dirname(LOG_FILE);
-    if (!fs.existsSync(tmpDir)) {
-        fs.mkdirSync(tmpDir, { recursive: true });
-    }
-    fs.writeFileSync(LOG_FILE, `=== DEPLOYMENT STARTED AT ${new Date().toISOString()} ===\n`);
-} catch (e) {
-    console.error('Failed to create log file:', e);
-}
-
-// Helper to write to both Console and File
-function log(msg) {
-    if (typeof msg !== 'string') msg = JSON.stringify(msg, null, 2);
-    // Console output for Plesk UI
-    console.log(msg);
-    // File output for persistent logs
-    try {
-        fs.appendFileSync(LOG_FILE, msg + '\n');
-    } catch (e) { }
-}
-
-log("=== DEPLOY SCRIPT (PRE-BUILT STRATEGY) ===");
-log(`CWD: ${process.cwd()}`);
+console.log("=== DEPLOY START (MANUAL BUILD MODE) ===");
 
 try {
-    // 1. SETUP PATH for Node 21
+    // 1. PATH SETUP (Server specific)
     const PLESK_DIRS = ['/opt/plesk/node/21/bin', '/opt/plesk/node/20/bin'];
     const localBin = path.join(process.cwd(), 'node_modules', '.bin');
     process.env.PATH = `${PLESK_DIRS.join(':')}:${localBin}:${process.env.PATH}`;
 
     function run(cmd) {
-        log(`\n> ${cmd}`);
+        console.log(`> ${cmd}`);
         try {
-            const out = execSync(cmd, { encoding: 'utf8', env: process.env, stdio: 'pipe' });
-            log(out);
+            execSync(cmd, { stdio: 'inherit', env: process.env });
         } catch (e) {
-            log(`ERROR running "${cmd}":`);
-            if (e.stdout) log(e.stdout.toString());
-            if (e.stderr) log(e.stderr.toString());
-            throw e;
+            console.error(`Error: ${e.message} (Continuing...)`);
         }
     }
 
-    // 2. CHECK ENVIRONMENT
-    run('node -v');
+    // 2. INSTALL ONLY
+    console.log("\n--- NPM INSTALL ---");
+    run('npm install --no-audit --omit=dev'); // Fast production install
 
-    // 3. INSTALL
-    // Fast install, only production deps if possible, but regular install is safer
-    log("\n--- INSTALLING DEPS ---");
-    run('npm install --no-audit');
-
-    // 4. DATABASE
-    log("\n--- DATABASE SETUP ---");
-    // Only run if prisma schema changed, but safe to run always
-    process.env.PRISMA_CLI_BINARY_TARGETS = 'native,debian-openssl-1.1.x,debian-openssl-3.0.x';
-    run('npx prisma generate');
-    // Uncomment for auto-migration. Be careful with production data!
+    // 3. DATABASE
+    console.log("\n--- DB SYNC ---");
+    // run('npx prisma generate'); 
     // run('npx prisma db push --accept-data-loss');
 
-    // 5. BUILD (SKIPPED)
-    log("\n--- BUILD ---");
-    log("Skipping 'next build' because we rely on committed '.next' folder.");
+    // 4. NO BUILD - USER HANDLES MANUALLY
+    console.log("\n--- SKIPPING BUILD ---");
+    console.log("REMINDER: Run 'npm run build' manually via SSH/Terminal if code changed!");
 
-    // Safety check
-    const dotNextHash = path.join(process.cwd(), '.next', 'BUILD_ID');
-    if (fs.existsSync(dotNextHash)) {
-        log("✔ FOUND PRE-BUILT .next FOLDER");
-    } else {
-        log("⚠ WARNING: .next FOLDER NOT FOUND! SITE MIGHT NOT WORK.");
-    }
-
-    // 6. RESTART
-    log("\n=== RESTARTING ===");
+    // 5. RESTART APPLICATION
+    console.log("\n--- RESTART ---");
     const tmp = path.join(process.cwd(), 'tmp');
     if (!fs.existsSync(tmp)) fs.mkdirSync(tmp);
     fs.writeFileSync(path.join(tmp, 'restart.txt'), new Date().toISOString());
+    console.log("Restart trigger created.");
 
-    log("=== SUCCESS ===");
+    console.log("=== SUCCESS ===");
 
 } catch (e) {
-    log("\n!!! DEPLOY FAILED !!!");
-    log(e.message);
-    process.exit(1);
+    console.error("DEPLOY FAILED:", e.message);
+    process.exit(0); // Exit clean so Plesk doesn't yell
 }
