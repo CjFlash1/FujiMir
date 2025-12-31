@@ -8,11 +8,8 @@ import sharp from "sharp";
 import busboy from "busboy";
 
 // Force Node.js to not parse body (though App Router ignores this mostly, middleware might respect it)
-export const config = {
-    api: {
-        bodyParser: false,
-    },
-};
+// Note: App Router handles body parsing automatically or via Request methods.
+// We don't need 'export const config' for bodyParser: false in App Router.;
 
 // === VALIDATION CONFIG ===
 const ALLOWED_MIME_TYPES = [
