@@ -67,11 +67,11 @@ try {
     const nextBin = path.join(process.cwd(), 'node_modules', '.bin', 'next');
 
     if (fs.existsSync(nextBin)) {
-        // Try --no-lint to save memory/time
-        run(`"${nextBin}" build --no-lint`);
+        // Attempt build with simplified command
+        run(`"${nextBin}" build`);
     } else {
         log("Binary 'next' not found in .bin, trying via npm run build");
-        run('npm run build -- --no-lint');
+        run('npm run build');
     }
 
     // 7. FINISH
