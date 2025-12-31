@@ -57,17 +57,21 @@ try {
     // 6. BUILD
     log("\n--- BUILDING ---");
     process.env.NEXT_TELEMETRY_DISABLED = '1';
+    // Fix for some environments
+    process.env.NODE_OPTIONS = '--max-old-space-size=4096';
+    process.env.NEXT_MANUAL_SIG_HANDLE = '1';
 
-    // Try forcing memory limit to avoid UV error
-    // Use the absolute path to 'next' bin
+    // Check if we can disable Turbopack or specific memory calls via env?
+    // Not directly, but we can try basic build.
+
     const nextBin = path.join(process.cwd(), 'node_modules', '.bin', 'next');
 
     if (fs.existsSync(nextBin)) {
-        // Attempt build with simplified command
-        run(`"${nextBin}" build`);
+        // Try --no-lint to save memory/time
+        run(`"${nextBin}" build --no-lint`);
     } else {
         log("Binary 'next' not found in .bin, trying via npm run build");
-        run('npm run build');
+        run('npm run build -- --no-lint');
     }
 
     // 7. FINISH
