@@ -5,8 +5,10 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "node server.js",
     "lint": "eslint",
+    "db:push": "npx prisma db push",
+    "db:setup": "npx prisma generate && npx prisma db push && npx prisma db seed",
     "postinstall": "prisma generate",
     "cms:export": "ts-node scripts/export-content.ts"
   },
