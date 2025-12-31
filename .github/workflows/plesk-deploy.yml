@@ -1,0 +1,51 @@
+name: Build and Deploy to Plesk
+
+on:
+  push:
+    branches:
+      - plesk_production
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🚚 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: npm ci
+
+      - name: 🏗️ Build Project
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+          # Add any build-time env vars here if needed, or in GitHub Secrets
+
+      - name: 📂 Sync .next folder via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          # We upload ONLY the build artifacts. Source code is handled by Plesk Git (optional) 
+          # OR we can upload everything. 
+          # Hybrid approach: Upload .next to the server root.
+          local-dir: ./.next/
+          server-dir: /.next/
+          dangerous-clean-slate: true # Removes old .next files on server (safe for this folder)
+
+      - name: 🔄 Trigger Restart (Create restart.txt)
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./tmp/
+          server-dir: /tmp/

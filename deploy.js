@@ -1,32 +1,42 @@
 const { execSync } = require('child_process');
-const path = require('path');
 const fs = require('fs');
+const path = require('path');
 
-// Accumulate logs in memory
-let LOG_BUFFER = [];
-function log(msg) {
-    if (typeof msg !== 'string') msg = JSON.stringify(msg, null, 2);
-    console.log(msg); // Print to stdout (Plesk might hide this on success)
-    LOG_BUFFER.push(msg); // Check this later
+// === LOGGING SETUP ===
+// Try to write to a 'tmp' folder inside the project, usually writable by the app user
+const LOG_FILE = path.join(process.cwd(), 'tmp', 'deploy_log.txt');
+
+// Initialize log file
+try {
+    const tmpDir = path.dirname(LOG_FILE);
+    if (!fs.existsSync(tmpDir)) {
+        fs.mkdirSync(tmpDir, { recursive: true });
+    }
+    fs.writeFileSync(LOG_FILE, `=== DEPLOYMENT STARTED AT ${new Date().toISOString()} ===\n`);
+} catch (e) {
+    console.error('Failed to create log file:', e);
 }
 
-log("=== DEPLOY SCRIPT STARTING ===");
+// Helper to write to both Console and File
+function log(msg) {
+    if (typeof msg !== 'string') msg = JSON.stringify(msg, null, 2);
+    // Console output for Plesk UI
+    console.log(msg);
+    // File output for persistent logs
+    try {
+        fs.appendFileSync(LOG_FILE, msg + '\n');
+    } catch (e) { }
+}
+
+log("=== DEPLOY SCRIPT (PRE-BUILT STRATEGY) ===");
 log(`CWD: ${process.cwd()}`);
-log(`Node Version: ${process.version}`);
 
 try {
-    // 1. SETUP PATH
-    const PLESK_DIRS = [
-        '/opt/plesk/node/21/bin',     // FOUND ON SERVER
-        '/opt/plesk/node/20/bin',
-        '/opt/plesk/node/22/bin'
-    ];
+    // 1. SETUP PATH for Node 21
+    const PLESK_DIRS = ['/opt/plesk/node/21/bin', '/opt/plesk/node/20/bin'];
     const localBin = path.join(process.cwd(), 'node_modules', '.bin');
     process.env.PATH = `${PLESK_DIRS.join(':')}:${localBin}:${process.env.PATH}`;
 
-    log("PATH updated.");
-
-    // 2. HELPER
     function run(cmd) {
         log(`\n> ${cmd}`);
         try {
@@ -40,54 +50,44 @@ try {
         }
     }
 
-    // 3. CHECK ENV
+    // 2. CHECK ENVIRONMENT
     run('node -v');
-    // run('which node'); // 'which' is missing on this server
 
-    // 4. INSTALL
-    log("\n--- INSTALLING ---");
+    // 3. INSTALL
+    // Fast install, only production deps if possible, but regular install is safer
+    log("\n--- INSTALLING DEPS ---");
     run('npm install --no-audit');
 
-    // 5. PRISMA
-    log("\n--- DB ---");
-    // Uncomment when build passes cleanly:
-    // run('npx prisma generate');
+    // 4. DATABASE
+    log("\n--- DATABASE SETUP ---");
+    // Only run if prisma schema changed, but safe to run always
+    process.env.PRISMA_CLI_BINARY_TARGETS = 'native,debian-openssl-1.1.x,debian-openssl-3.0.x';
+    run('npx prisma generate');
+    // Uncomment for auto-migration. Be careful with production data!
     // run('npx prisma db push --accept-data-loss');
 
-    // 6. BUILD
-    log("\n--- BUILDING ---");
-    process.env.NEXT_TELEMETRY_DISABLED = '1';
-    // Fix for some environments
-    process.env.NODE_OPTIONS = '--max-old-space-size=4096';
-    process.env.NEXT_MANUAL_SIG_HANDLE = '1';
+    // 5. BUILD (SKIPPED)
+    log("\n--- BUILD ---");
+    log("Skipping 'next build' because we rely on committed '.next' folder.");
 
-    // Check if we can disable Turbopack or specific memory calls via env?
-    // Not directly, but we can try basic build.
-
-    const nextBin = path.join(process.cwd(), 'node_modules', '.bin', 'next');
-
-    if (fs.existsSync(nextBin)) {
-        // Attempt build with simplified command
-        run(`"${nextBin}" build`);
+    // Safety check
+    const dotNextHash = path.join(process.cwd(), '.next', 'BUILD_ID');
+    if (fs.existsSync(dotNextHash)) {
+        log("✔ FOUND PRE-BUILT .next FOLDER");
     } else {
-        log("Binary 'next' not found in .bin, trying via npm run build");
-        run('npm run build');
+        log("⚠ WARNING: .next FOLDER NOT FOUND! SITE MIGHT NOT WORK.");
     }
 
-    // 7. FINISH
-    console.log("\n=== SUCCESS ==="); // Print to console for UI
-
-    // 8. RESTART SIGNAL
+    // 6. RESTART
+    log("\n=== RESTARTING ===");
     const tmp = path.join(process.cwd(), 'tmp');
     if (!fs.existsSync(tmp)) fs.mkdirSync(tmp);
     fs.writeFileSync(path.join(tmp, 'restart.txt'), new Date().toISOString());
 
+    log("=== SUCCESS ===");
+
 } catch (e) {
-    console.error("\n!!! DEPLOY FAILED !!!");
-    console.error(e.message);
-    if (LOG_BUFFER.length > 0) {
-        console.error("--- LOGS ---");
-        console.error(LOG_BUFFER.join('\n'));
-    }
+    log("\n!!! DEPLOY FAILED !!!");
+    log(e.message);
     process.exit(1);
 }
