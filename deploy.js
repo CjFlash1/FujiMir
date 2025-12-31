@@ -70,6 +70,21 @@ try {
         log(`Prisma warning (non-fatal): ${e.message}`);
     }
 
+    // 5. STORAGE SETUP
+    console.log("\n--- VERIFYING STORAGE ---");
+    const uploadsPath = path.join(process.cwd(), 'public', 'uploads');
+    const tempPath = path.join(uploadsPath, 'temp');
+    const thumbPath = path.join(uploadsPath, 'thumb');
+
+    [uploadsPath, tempPath, thumbPath].forEach(dir => {
+        if (!fs.existsSync(dir)) {
+            console.log(`Creating directory: ${dir}`);
+            fs.mkdirSync(dir, { recursive: true });
+            // Try to set permissions to 775 (rwxrwxr-x)
+            try { fs.chmodSync(dir, '775'); } catch (e) { }
+        }
+    });
+
     // 5. RESTART
     console.log("\n--- RESTARTING SERVICE ---");
     const tmp = path.join(process.cwd(), 'tmp');
