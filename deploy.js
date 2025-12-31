@@ -42,7 +42,7 @@ try {
 
     // 3. CHECK ENV
     run('node -v');
-    run('which node'); // See where 'node' resolves to
+    // run('which node'); // 'which' is missing on this server
 
     // 4. INSTALL
     log("\n--- INSTALLING ---");
