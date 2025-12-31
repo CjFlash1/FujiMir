@@ -52,16 +52,34 @@ try {
     // 6. DB
     try {
         console.log('\nDB Setup...');
-        run('prisma generate');
-        run('prisma db push --accept-data-loss');
-        // run('prisma db seed');
+        /* 
+           TEMPORARILY DISABLED TO ISOLATE BUILD ERROR
+           run('prisma generate');
+           run('prisma db push --accept-data-loss');
+        */
+        console.log('Skipping Prisma DB push for debugging...');
     } catch (e) { console.warn('DB Setup Warning:', e.message); }
 
     // 7. Build
     console.log('\nBuilding...');
-    // We trust 'node' is now correct because of PATH prepending
+
+    // Debug: Check exactly what 'node' is right now
+    run('node -v');
+    run('which node');
+
     const nextJsFile = path.join(process.cwd(), 'node_modules', 'next', 'dist', 'bin', 'next');
-    run(`node "${nextJsFile}" build`);
+
+    // Set env to disable telemetry and potential memory tracking issues
+    process.env.NEXT_TELEMETRY_DISABLED = '1';
+
+    // Try running build
+    if (fs.existsSync(nextJsFile)) {
+        console.log(`Found Next.js CLI at: ${nextJsFile}`);
+        run(`node "${nextJsFile}" build`);
+    } else {
+        console.error('Could not find Next.js CLI at expected path:', nextJsFile);
+        run('npm run build'); // Fallback
+    }
 
     // 8. Restart
     console.log('\nRestarting...');
