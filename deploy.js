@@ -3,10 +3,15 @@ const fs = require('fs');
 const path = require('path');
 
 // === LOGGING SETUP ===
-const LOG_FILE = path.join(process.cwd(), 'deploy_log.txt');
+// Try to write to a 'tmp' folder inside the project, usually writable by the app user
+const LOG_FILE = path.join(process.cwd(), 'tmp', 'deploy_log.txt');
 
 // Initialize log file
 try {
+    const tmpDir = path.dirname(LOG_FILE);
+    if (!fs.existsSync(tmpDir)) {
+        fs.mkdirSync(tmpDir, { recursive: true });
+    }
     fs.writeFileSync(LOG_FILE, `=== DEPLOYMENT STARTED AT ${new Date().toISOString()} ===\n`);
 } catch (e) {
     console.error('Failed to create log file:', e);
