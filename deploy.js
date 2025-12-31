@@ -85,6 +85,16 @@ try {
         }
     });
 
+    // 6. FIX DATA
+    console.log("\n--- SEEDING TRANSLATIONS ---");
+    try {
+        // Run ts-node to seed missing database entries
+        // Note: Using CommonJS module settings to avoid ESM conflicts
+        run('npx ts-node --compiler-options "{\\"module\\":\\"CommonJS\\"}" src/scripts/seed-missing-translations.ts');
+    } catch (e) {
+        log(`Translation seed warning (non-fatal): ${e.message}`);
+    }
+
     // 5. RESTART
     console.log("\n--- RESTARTING SERVICE ---");
     const tmp = path.join(process.cwd(), 'tmp');
