@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -33,7 +33,7 @@ model Order {
   recipientWarehouseRef String? // Nova Poshta Warehouse Ref
   ttnNumber      String?      // Express Waybill Number
   ttnRef         String?      // Nova Poshta Internal Document Ref (for deletion)
-  notes          String?     // Gift choice and other notes
+  notes          String?     @db.Text // Gift choice and other notes
   
   items          OrderItem[]
   
@@ -57,8 +57,8 @@ model OrderItem {
   // Specifics
   size        String?  // "10x15"
   paper       String?  // "Glossy"
-  options     String?  // JSON: { "border": true, "magnetic": false }
-  files       String?  // JSON: ["img1.jpg"]
+  options     String?  @db.Text // JSON: { "border": true, "magnetic": false }
+  files       String?  @db.LongText // JSON: ["img1.jpg"]
   
   createdAt   DateTime @default(now())
 }
@@ -111,7 +111,7 @@ model PaperType {
   id          Int      @id @default(autoincrement())
   name        String   // "Glossy", "Matte"
   slug        String   @unique // "glossy", "matte"
-  description String?
+  description String?  @db.Text
   isActive    Boolean  @default(true)
 }
 
@@ -138,7 +138,7 @@ model DeliveryOption {
   slug        String   @unique // "local", "novaposhta"
   name        String   // "Доставка по м. Дніпро", "Нова Пошта"
   price       Float    // 150 for local, 0 for novaposhta (customer pays separately)
-  description String?  // Additional info
+  description String?  @db.Text // Additional info
   isActive    Boolean  @default(true)
 }
 
@@ -147,9 +147,9 @@ model DeliveryOption {
 model Product {
   id          Int      @id @default(autoincrement())
   name        String
-  description String?
+  description String?  @db.Text
   price       Float
-  images      String?  // JSON
+  images      String?  @db.Text // JSON
   stock       Int      @default(0)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
@@ -161,15 +161,15 @@ model Translation {
   id        Int      @id @default(autoincrement())
   lang      String   // "uk", "ru", "en"
   key       String   // "hero.title"
-  value     String   // "Друк фото"
+  value     String   @db.Text // "Друк фото"
   
   @@unique([lang, key])
 }
 
 model Setting {
   key         String   @id
-  value       String
-  description String?
+  value       String   @db.Text
+  description String?  @db.Text
 }
 
 model Page {
@@ -177,7 +177,7 @@ model Page {
   lang        String   @default("ru") // "uk", "ru", "en"
   title       String
   slug        String
-  content     String   // HTML or Markdown content
+  content     String   @db.LongText // HTML or Markdown content
   description String?  // Meta description
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
@@ -229,7 +229,7 @@ model HelpArticleTranslation {
   helpArticle   HelpArticle @relation(fields: [helpArticleId], references: [id], onDelete: Cascade)
   lang          String      // "uk", "ru", "en"
   title         String
-  content       String      // HTML
+  content       String      @db.LongText // HTML
 
   @@unique([helpArticleId, lang])
 }
