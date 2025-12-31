@@ -17,10 +17,9 @@ log(`Node Version: ${process.version}`);
 try {
     // 1. SETUP PATH
     const PLESK_DIRS = [
+        '/opt/plesk/node/21/bin',     // FOUND ON SERVER
         '/opt/plesk/node/20/bin',
-        '/opt/plesk/node/20.19.6/bin',
-        '/opt/plesk/node/22/bin',
-        '/opt/plesk/node/18/bin'
+        '/opt/plesk/node/22/bin'
     ];
     const localBin = path.join(process.cwd(), 'node_modules', '.bin');
     process.env.PATH = `${PLESK_DIRS.join(':')}:${localBin}:${process.env.PATH}`;
@@ -49,9 +48,11 @@ try {
     log("\n--- INSTALLING ---");
     run('npm install --no-audit');
 
-    // 5. PRISMA (SKIPPED FOR NOW)
+    // 5. PRISMA
     log("\n--- DB ---");
-    log("Skipping Prisma to isolate build error.");
+    // Uncomment when build passes cleanly:
+    // run('npx prisma generate');
+    // run('npx prisma db push --accept-data-loss');
 
     // 6. BUILD
     log("\n--- BUILDING ---");
@@ -70,19 +71,18 @@ try {
     }
 
     // 7. FINISH
-    log("\n=== SUCCESS ===");
+    console.log("\n=== SUCCESS ==="); // Print to console for UI
 
-    // Force an error at the end so Plesk SHOWS THE LOG in the UI!
-    throw new Error("\n[INTENTIONAL ERROR TO SHOW LOGS]\n" + LOG_BUFFER.join('\n'));
+    // 8. RESTART SIGNAL
+    const tmp = path.join(process.cwd(), 'tmp');
+    if (!fs.existsSync(tmp)) fs.mkdirSync(tmp);
+    fs.writeFileSync(path.join(tmp, 'restart.txt'), new Date().toISOString());
 
 } catch (e) {
-    // Determine if it was our intentional error or a real one
-    if (e.message.includes("INTENTIONAL ERROR")) {
-        console.error(e.message);
-    } else {
-        console.error("\n!!! REAL ERROR !!!");
-        console.error(e.message);
-        console.error("--- FULL LOG ---");
+    console.error("\n!!! DEPLOY FAILED !!!");
+    console.error(e.message);
+    if (LOG_BUFFER.length > 0) {
+        console.error("--- LOGS ---");
         console.error(LOG_BUFFER.join('\n'));
     }
     process.exit(1);
