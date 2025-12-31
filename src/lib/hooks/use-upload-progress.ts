@@ -60,52 +60,107 @@ export const useUploadProgress = create<UploadProgressState>((set, get) => ({
 }));
 
 // Helper function to upload with progress tracking
-export async function uploadWithProgress(
+// This function now supports Chunked Uploads for robust large file handling
+// It bypasses 10MB limits by splitting file into 2MB pieces.
+export const uploadWithProgress = (
     id: string,
     file: File,
     onProgress: (progress: number) => void,
     onSuccess: (serverFileName: string) => void,
     onError: (error: string) => void
-): Promise<void> {
-    return new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        const formData = new FormData();
-        formData.append('file', file);
+): Promise<void> => {
+    return new Promise(async (resolve, reject) => {
+        const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB safe chunk size
+        const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+        const uploadId = crypto.randomUUID(); // Unique ID for this upload session
 
-        xhr.upload.addEventListener('progress', (event) => {
-            if (event.lengthComputable) {
-                const progress = Math.round((event.loaded / event.total) * 100);
-                onProgress(progress);
+        // If file is very small (<2MB), we could use legacy, but consistency is better.
+        // Actually for simplicity, we use chunking for everything to guarantee success.
+
+        let start = 0;
+        let chunkIndex = 0;
+
+        try {
+            while (start < file.size) {
+                const end = Math.min(start + CHUNK_SIZE, file.size);
+                const chunk = file.slice(start, end);
+
+                // Send Chunk
+                await new Promise<void>((resolveChunk, rejectChunk) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', '/api/upload', true);
+
+                    // Headers for Chunking
+                    xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+                    xhr.setRequestHeader('x-upload-id', uploadId);
+                    xhr.setRequestHeader('x-chunk-index', chunkIndex.toString());
+                    xhr.setRequestHeader('x-total-chunks', totalChunks.toString());
+                    xhr.setRequestHeader('x-file-name', encodeURIComponent(file.name));
+                    xhr.setRequestHeader('x-mime-type', file.type || 'application/octet-stream');
+
+                    xhr.upload.onprogress = (event) => {
+                        if (event.lengthComputable) {
+                            // Calculate global progress
+                            // Current chunk progress + previous chunks size
+                            const currentChunkProgress = event.loaded;
+                            const totalUploaded = start + currentChunkProgress;
+                            const percentComplete = Math.round((totalUploaded / file.size) * 100);
+                            onProgress(percentComplete);
+                        }
+                    };
+
+                    xhr.onload = () => {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            try {
+                                const response = JSON.parse(xhr.responseText);
+                                if (response.error) {
+                                    rejectChunk(new Error(response.error));
+                                } else {
+                                    // If last chunk, we expect fileName
+                                    if (chunkIndex === totalChunks - 1) {
+                                        if (response.fileName) {
+                                            onSuccess(response.fileName);
+                                        } else {
+                                            // Should not happen on last chunk if successful
+                                            console.warn("No filename returned on last chunk?");
+                                        }
+                                    }
+                                    resolveChunk();
+                                }
+                            } catch (e) {
+                                rejectChunk(new Error("Invalid server response"));
+                            }
+                        } else {
+                            // Parse error
+                            let errorMessage = `Upload failed: ${xhr.status}`;
+                            try {
+                                const resp = JSON.parse(xhr.responseText);
+                                if (resp.error) errorMessage = resp.error;
+                            } catch (e) {
+                                // ignore JSON parse error
+                            }
+                            rejectChunk(new Error(errorMessage));
+                        }
+                    };
+
+                    xhr.onerror = () => {
+                        rejectChunk(new Error('Network error'));
+                    };
+
+                    xhr.onabort = () => {
+                        rejectChunk(new Error('Upload cancelled'));
+                    };
+
+                    xhr.send(chunk);
+                });
+
+                start = end;
+                chunkIndex++;
             }
-        });
-
-        xhr.addEventListener('load', () => {
-            if (xhr.status >= 200 && xhr.status < 300) {
-                try {
-                    const data = JSON.parse(xhr.responseText);
-                    onSuccess(data.fileName);
-                    resolve();
-                } catch (e) {
-                    onError('Failed to parse response');
-                    reject(e);
-                }
-            } else {
-                onError(`Upload failed: ${xhr.status}`);
-                reject(new Error(`Upload failed: ${xhr.status}`));
-            }
-        });
-
-        xhr.addEventListener('error', () => {
-            onError('Network error');
-            reject(new Error('Network error'));
-        });
-
-        xhr.addEventListener('abort', () => {
-            onError('Upload cancelled');
-            reject(new Error('Upload cancelled'));
-        });
-
-        xhr.open('POST', '/api/upload');
-        xhr.send(formData);
+            resolve();
+        } catch (error: any) {
+            onError(error.message || 'Upload failed');
+            reject(error);
+        }
     });
-}
+};

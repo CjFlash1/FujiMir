@@ -61,6 +61,16 @@ export async function DELETE(
             serverFiles.map(file => unlink(join(uploadsDir, file)))
         );
 
+        // Also delete thumbnails for these files
+        const thumbDir = join(uploadsDir, "thumb");
+        await Promise.allSettled(
+            serverFiles.map(file => {
+                // Extract just filename if path includes folder
+                const fileName = file.includes('/') ? file.split('/').pop()! : file;
+                return unlink(join(thumbDir, fileName));
+            })
+        );
+
         // Log failures logic... existing code...
         results.forEach((result, idx) => {
             if (result.status === 'rejected') {

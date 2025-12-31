@@ -21,7 +21,9 @@ export async function POST(
             recipientFirstName, recipientLastName, recipientPhone, recipientCityRef, recipientWarehouseRef,
             cost, // Declared value
             payerType = "Recipient", // Default to Recipient
-            paymentMethod = "Cash"
+            paymentMethod = "Cash",
+            explicitRecipientRef, // NEW: Manual selection
+            explicitContactRef    // NEW: Manual selection
         } = body;
 
         const orderId = parseInt(id);
@@ -133,7 +135,7 @@ export async function POST(
             console.log(`[TTN DEBUG] Found Sender Contact Match: ${contactMatch.Ref} (Name: ${contactMatch.LastName})`);
             contactSenderRef = contactMatch.Ref;
             // Force update
-            const updateRes = await npRequest("ContactPerson", "save", {
+            const updateRes = await npRequest("ContactPerson", "update", {
                 Ref: contactSenderRef,
                 CounterpartyRef: senderRef,
                 FirstName: sFN,
@@ -143,9 +145,9 @@ export async function POST(
                 Email: ""
             });
             if (!updateRes.success) {
-                console.error("[TTN ERROR] Failed to update Sender Contact:", updateRes.errors);
-                // Actually, fail hard so user knows why name is wrong
-                return NextResponse.json({ error: "Failed to update Sender Name", details: updateRes.errors }, { status: 400 });
+                console.warn("[TTN WARN] Failed to update Sender Contact (likely PrivatePerson restriction). Proceeding with existing data.", updateRes.errors);
+                // We ignore this error because PrivatePerson contact updates are often blocked by NP API.
+                // The TTN will be created with the name currently stored in NP database.
             }
         } else {
             console.log(`[TTN DEBUG] Creating NEW Sender Contact for ${sFN} ${sLN}`);
@@ -170,7 +172,7 @@ export async function POST(
                     console.log("[TTN DEBUG] Falling back to UPDATING Default Sender Contact...");
                     const defaultContactRef = senderContacts.data[0].Ref;
 
-                    const fallbackUpdate = await npRequest("ContactPerson", "save", {
+                    const fallbackUpdate = await npRequest("ContactPerson", "update", {
                         Ref: defaultContactRef,
                         CounterpartyRef: senderRef,
                         FirstName: sFN,
@@ -198,65 +200,202 @@ export async function POST(
         }
 
         // 3. Create/Update Recipient
-        // Strategy: Search first to get Ref (if exists), then Force Update with Ref.
-        // This is more reliable than implicit update by phone for PrivatePerson.
-        console.log(`[TTN DEBUG] Searching Recipient by Phone: ${rPhoneClean}`);
+        let recipientRef = explicitRecipientRef || "";
+        let contactRecipientRef = explicitContactRef || "";
 
-        // Search existing
-        let recipientRef = "";
-        const searchRecipient = await npRequest("Counterparty", "getCounterparties", {
-            CounterpartyProperty: "Recipient",
-            FindByString: rPhoneClean
-        });
+        if (recipientRef && contactRecipientRef) {
+            console.log(`[TTN DEBUG] Using Explicit Recipient: ${recipientRef}, Contact: ${contactRecipientRef}`);
+            // If explicit refs provided, we still try to update the name just in case it's allowed
+            // but we rely on these refs.
+            try {
+                await npRequest("ContactPerson", "save", {
+                    Ref: contactRecipientRef,
+                    CounterpartyRef: recipientRef,
+                    FirstName: finalRecipientFirstName,
+                    LastName: finalRecipientLastName,
+                    MiddleName: "",
+                    Phone: rPhoneClean,
+                    Email: ""
+                });
+            } catch (e) { console.warn("[TTN WARN] Failed to update explicit contact:", e); }
 
-        if (searchRecipient.success && searchRecipient.data?.length > 0) {
-            recipientRef = searchRecipient.data[0].Ref;
-            console.log(`[TTN DEBUG] Found existing Recipient: ${recipientRef} (${searchRecipient.data[0].FirstName} ${searchRecipient.data[0].LastName})`);
         } else {
-            console.log(`[TTN DEBUG] Recipient not found by phone, creating new.`);
-        }
+            console.log(`[TTN DEBUG] No explicit recipient selected, starting aggressive search/save...`);
+            // 3. Create/Update Recipient - AGGRESSIVE STRATEGY (Fallback if no explicit refs)
+            // Instead of searching first, we try to SAVE immediately.
+            // If the phone exists, NP API should update it or return the existing Ref.
+            console.log(`[TTN DEBUG] Saving Recipient (Aggressive): ${finalRecipientFirstName} ${finalRecipientLastName} ${rPhoneClean}`);
 
-        // Force Save/Update
-        const savedRecipient = await npRequest("Counterparty", "save", {
-            Ref: recipientRef, // Pass Ref to force update existing record
-            FirstName: finalRecipientFirstName,
-            MiddleName: "",
-            LastName: finalRecipientLastName,
-            Phone: rPhoneClean,
-            Email: "",
-            CounterpartyType: "PrivatePerson",
-            CounterpartyProperty: "Recipient"
-        });
+            const saveRecipientRes = await npRequest("Counterparty", "save", {
+                FirstName: finalRecipientFirstName,
+                LastName: finalRecipientLastName,
+                MiddleName: "",
+                Phone: rPhoneClean,
+                Email: "",
+                CounterpartyType: "PrivatePerson",
+                CounterpartyProperty: "Recipient"
+            });
 
-        if (savedRecipient.success) {
-            recipientRef = savedRecipient.data[0].Ref;
-            console.log(`[TTN DEBUG] Recipient Saved/Updated. Ref: ${recipientRef}`);
-            // Check if name really updated?
-            if (savedRecipient.data[0].FirstName !== finalRecipientFirstName) {
-                console.warn(`[TTN WARN] Recipient Name mismatch after save! Sent: ${finalRecipientFirstName}, Got: ${savedRecipient.data[0].FirstName}`);
+            if (saveRecipientRes.success && saveRecipientRes.data?.length > 0) {
+                recipientRef = saveRecipientRes.data[0].Ref;
+                console.log(`[TTN DEBUG] Recipient Saved/Found. Ref: ${recipientRef}`);
+            } else {
+                console.warn("[TTN WARN] Direct save failed or returned no data, trying fallback search...", saveRecipientRes.errors);
+                // Fallback: Search by phone if save didn't return data (rare but possible errors)
+                const searchRes = await npRequest("Counterparty", "getCounterparties", {
+                    CounterpartyProperty: "Recipient",
+                    FindByString: rPhoneClean
+                });
+
+                if (searchRes.success && searchRes.data?.length > 0) {
+                    recipientRef = searchRes.data[0].Ref;
+                    console.log(`[TTN DEBUG] Found Recipient by search: ${recipientRef}`);
+                } else {
+                    return NextResponse.json({
+                        error: "Не вдалося створити або знайти отримувача",
+                        details: saveRecipientRes.errors || ["Phone search failed"]
+                    }, { status: 400 });
+                }
             }
-        } else {
-            console.error("[TTN ERROR] Recipient Save Failed:", savedRecipient.errors);
-            return NextResponse.json({ error: "Failed to save recipient", details: savedRecipient.errors }, { status: 400 });
+
+            // 3.1 Handle Contact Person
+            // Strategy: Look for specific contact by phone within the counterparty.
+            // If found -> Update name. If not found -> Create new contact.
+            const recipientContacts = await npRequest("Counterparty", "getCounterpartyContactPersons", {
+                Ref: recipientRef
+            });
+
+            let createErrors: any = [];
+
+            if (recipientContacts.success && recipientContacts.data) {
+                // Improved Strategy for Automatic Selection:
+                // 1. Find if there is an existing contact with matching Phone AND matching Name.
+                // 2. If yes, use it.
+                // 3. If no (even if phone matches but name differs), CREATE NEW contact with correct name.
+
+                const targetName = (finalRecipientLastName + finalRecipientFirstName).toLowerCase().replace(/\s/g, '');
+
+                const exactMatch = recipientContacts.data.find((c: any) => {
+                    const cPhone = (c.Phones || c.Phone || "").replace(/\D/g, '');
+                    const cName = ((c.LastName || "") + (c.FirstName || "")).toLowerCase().replace(/\s/g, '');
+
+                    // Flexible phone match (last 10 digits)
+                    const phoneMatches = cPhone.endsWith(rPhoneClean.slice(-10));
+                    // Name match
+                    const nameMatches = cName === targetName;
+
+                    return phoneMatches && nameMatches;
+                });
+
+                if (exactMatch) {
+                    contactRecipientRef = exactMatch.Ref;
+                    console.log(`[TTN DEBUG] Found EXACT match (Name+Phone): ${contactRecipientRef}`);
+                    // No need to update name, it matched
+                } else {
+                    console.log(`[TTN DEBUG] No exact name+phone match for ${finalRecipientLastName} ${finalRecipientFirstName}. Creating NEW contact...`);
+                    // Fall through to creation logic
+                }
+
+                if (!contactRecipientRef) {
+                    // Create new contact logic (moved here to run if exactMatch was false)
+                    try {
+                        console.log(`[TTN DEBUG] Attempting to create contact: ${finalRecipientLastName} ${finalRecipientFirstName}`);
+                        const createRes = await npRequest("ContactPerson", "save", {
+                            CounterpartyRef: recipientRef,
+                            FirstName: finalRecipientFirstName,
+                            LastName: finalRecipientLastName,
+                            MiddleName: "",
+                            Phone: rPhoneClean,
+                            Email: ""
+                        });
+
+                        if (createRes.success && createRes.data?.length > 0) {
+                            contactRecipientRef = createRes.data[0].Ref;
+                            console.log(`[TTN DEBUG] Created new contact successfully: ${contactRecipientRef}`);
+                        } else {
+                            createErrors = createRes.errors; // CAPTURE ERRORS
+                            console.warn("[TTN WARN] Creation might have failed:", createRes.errors);
+                        }
+                    } catch (e) {
+                        console.error("[TTN ERROR] Exception creating contact:", e);
+                    }
+
+                    // CRITICAL FIX: If creation didn't give us a Ref (or silently succeeded/failed), 
+                    // we MUST re-scan the contacts to find the one we likely just created/updated.
+                    if (!contactRecipientRef) {
+                        console.log("[TTN DEBUG] Re-scanning contacts to find the created person...");
+                        const reloadContacts = await npRequest("Counterparty", "getCounterpartyContactPersons", {
+                            Ref: recipientRef
+                        });
+
+                        if (reloadContacts.success && reloadContacts.data) {
+                            const targetName = (finalRecipientLastName + finalRecipientFirstName).toLowerCase().replace(/\s/g, '');
+                            const reMatch = reloadContacts.data.find((c: any) => {
+                                const cPhone = (c.Phones || c.Phone || "").replace(/\D/g, '');
+                                const cName = ((c.LastName || "") + (c.FirstName || "")).toLowerCase().replace(/\s/g, '');
+                                return cPhone.endsWith(rPhoneClean.slice(-10)) && cName === targetName;
+                            });
+
+                            if (reMatch) {
+                                contactRecipientRef = reMatch.Ref;
+                                console.log(`[TTN DEBUG] Found contact after re-scan: ${contactRecipientRef}`);
+                            } else {
+                                // Last resort: Fallback to ANY matching phone
+                                const phoneMatch = reloadContacts.data.find((c: any) => {
+                                    const cPhone = (c.Phones || c.Phone || "").replace(/\D/g, '');
+                                    return cPhone.endsWith(rPhoneClean.slice(-10));
+                                });
+                                if (phoneMatch) {
+                                    contactRecipientRef = phoneMatch.Ref;
+                                    console.log(`[TTN WARN] Fallback to phone-only match after re-scan: ${contactRecipientRef}`);
+                                }
+                            }
+
+                            // ABSOLUTE FALLBACK 1: If we still don't have a contact, use the first one from re-scan
+                            if (!contactRecipientRef && reloadContacts.data.length > 0) {
+                                console.warn("[TTN WARN] ABSOLUTE FALLBACK: Using first available contact.");
+                                contactRecipientRef = reloadContacts.data[0].Ref;
+                            }
+                        }
+                    }
+                    // ABSOLUTE FALLBACK 2: Use Counterparty Ref itself (Desperate measure)
+                    if (!contactRecipientRef) {
+                        console.warn("[TTN WARN] ULTIMATE FALLBACK: Using Counterparty Ref as Contact Ref");
+                        contactRecipientRef = recipientRef;
+                    }
+                }
+            } else {
+                return NextResponse.json({ error: "Contact retrieval failed" }, { status: 400 });
+            }
+
+            if (!contactRecipientRef) {
+                return NextResponse.json({
+                    error: "Не вдалося визначити контактну особу (Auto-fail)",
+                    details: {
+                        recipientRef,
+                        createErrors,
+                        contactsFound: recipientContacts?.data?.length || 0,
+                    }
+                }, { status: 400 });
+            }
         }
 
-        const recipientContacts = await npRequest("Counterparty", "getCounterpartyContactPersons", {
-            Ref: recipientRef
-        });
-
-        let contactRecipientRef = "";
-        if (recipientContacts.success && recipientContacts.data?.length > 0) {
-            contactRecipientRef = recipientContacts.data[0].Ref;
-            // Removed explicit ContactPerson.save as it causes "Ref must be empty" error for Recipient
-        } else {
-            return NextResponse.json({ error: "No contact person found for recipient" }, { status: 400 });
-        }
 
         // 3. Create TTN
         const ttnParams = {
             PayerType: payerType,
             PaymentMethod: paymentMethod,
-            DateTime: new Date().toLocaleDateString('uk-UA').replace(/\//g, '.'),
+            DateTime: (() => {
+                const date = new Date();
+                // If it's late (after 18:00), use tomorrow's date to avoid "less than now" error
+                if (date.getHours() >= 18) {
+                    date.setDate(date.getDate() + 1);
+                }
+                const d = date.getDate().toString().padStart(2, '0');
+                const m = (date.getMonth() + 1).toString().padStart(2, '0');
+                const y = date.getFullYear();
+                return `${d}.${m}.${y}`;
+            })(),
             CargoType: "Parcel",
             Weight: weight,
             ServiceType: "WarehouseWarehouse",

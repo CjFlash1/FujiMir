@@ -719,12 +719,11 @@ export default function CheckoutPage() {
                                                             onChange={(e) => setMagnetPhotoId(e.target.value)}
                                                         >
                                                             <option value="">-- {t('gift.select_photo')} --</option>
-                                                            {items.slice(0, 50).map((item, idx) => (
+                                                            {items.map((item, idx) => (
                                                                 <option key={item.id} value={item.id}>
-                                                                    #{idx + 1}: {item.file?.name?.slice(0, 30) || `${t('Photo')} ${idx + 1}`}
+                                                                    #{idx + 1}: {item.name?.slice(0, 40) || `${t('Photo')} ${idx + 1}`}
                                                                 </option>
                                                             ))}
-                                                            {items.length > 50 && <option disabled>... {t('and_more')} {items.length - 50} {t('фото')}</option>}
                                                         </select>
                                                     )}
                                                 </div>

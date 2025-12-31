@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { NP_API_KEY } from "@/lib/novaposhta";
+import { DEFAULT_NP_KEY } from "@/lib/novaposhta";
 
 export async function GET(
     request: Request,
@@ -19,7 +19,12 @@ export async function GET(
             return NextResponse.json({ error: "TTN Ref not found" }, { status: 404 });
         }
 
-        const apiKey = NP_API_KEY;
+        let apiKey = DEFAULT_NP_KEY;
+        try {
+            const setting = await prisma.setting.findUnique({ where: { key: "novaposhta_api_key" } });
+            if (setting?.value) apiKey = setting.value;
+        } catch (e) { /* ignore DB error */ }
+
         const baseUrl = "https://my.novaposhta.ua/orders";
 
         // Format: /orders/printDocument/orders[]/INT_DOC_NUMBER/type/pdf/apiKey/KEY

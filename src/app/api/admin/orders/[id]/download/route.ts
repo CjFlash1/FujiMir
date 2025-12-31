@@ -95,12 +95,27 @@ async function collectOrderFiles(order: any, uploadsDir: string) {
                 const baseName = originalFileName
                     ? originalFileName.replace(/\.[^/.]+$/, "")
                     : (item.name || `photo-${item.id}`);
-                const safeFileName = sanitizeZipName(baseName) + ".jpg";
 
-                allFiles.push({
-                    filePath,
-                    zipPath: `${folderPath}/${safeFileName}`
-                });
+                // Check if it's an archive based on original name or logic
+                const isArchive = originalFileName?.toLowerCase().endsWith('.zip')
+                    || originalFileName?.toLowerCase().endsWith('.rar')
+                    || originalFileName?.toLowerCase().endsWith('.7z');
+
+                if (isArchive) {
+                    folderPath = "ARCHIVE";
+                    const ext = originalFileName?.split('.').pop() || 'zip';
+                    // Keep original name for archive
+                    allFiles.push({
+                        filePath,
+                        zipPath: `${folderPath}/${sanitizeZipName(baseName)}.${ext}`
+                    });
+                } else {
+                    const safeFileName = sanitizeZipName(baseName) + ".jpg";
+                    allFiles.push({
+                        filePath,
+                        zipPath: `${folderPath}/${safeFileName}`
+                    });
+                }
             } catch (e) {
                 console.warn(`File not found for zip: ${filePath}`);
             }

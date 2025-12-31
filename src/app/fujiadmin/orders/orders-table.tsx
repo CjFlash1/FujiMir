@@ -2,7 +2,7 @@
 
 import { useTranslation } from "@/lib/i18n";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,13 @@ function formatBytes(bytes: number): string {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
 }
 
+interface StorageStats {
+    total: { count: number; size: number; formatted: string };
+    main: { count: number; size: number; formatted: string };
+    thumb: { count: number; size: number; formatted: string };
+    temp: { count: number; size: number; formatted: string };
+}
+
 export function OrdersTable({ orders }: OrdersTableProps) {
     const { t } = useTranslation();
     const router = useRouter();
@@ -33,6 +40,56 @@ export function OrdersTable({ orders }: OrdersTableProps) {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
+
+    // Storage stats
+    const [storageStats, setStorageStats] = useState<StorageStats | null>(null);
+    const [isLoadingStats, setIsLoadingStats] = useState(false);
+    const [isRunningCleanup, setIsRunningCleanup] = useState(false);
+
+    // Load storage stats on mount
+    const loadStorageStats = async () => {
+        setIsLoadingStats(true);
+        try {
+            const res = await fetch('/api/fujiadmin/cleanup');
+            if (res.ok) {
+                const data = await res.json();
+                setStorageStats(data);
+            }
+        } catch (e) {
+            console.error('Failed to load storage stats', e);
+        } finally {
+            setIsLoadingStats(false);
+        }
+    };
+
+    // Run on mount
+    useEffect(() => { loadStorageStats(); }, []);
+
+    const runCleanup = async () => {
+        if (!confirm(t('admin.cleanup_confirm') || 'Запустити очистку сховища? Загублені файли будуть перенесені в окреме замовлення для перегляду.')) return;
+
+        setIsRunningCleanup(true);
+        try {
+            const res = await fetch('/api/fujiadmin/cleanup', { method: 'POST' });
+            const data = await res.json();
+
+            if (data.success) {
+                if (data.orphansRecovered > 0) {
+                    toast.success(`Recovered ${data.orphansRecovered} files to Order #${data.recoveryOrderNumber}`);
+                    router.refresh();
+                } else {
+                    toast.success(t('admin.no_orphans') || 'Загублених файлів не знайдено. Сховище чисте!');
+                }
+                loadStorageStats(); // Refresh stats
+            } else {
+                toast.error(data.error || 'Cleanup failed');
+            }
+        } catch (e) {
+            toast.error('Cleanup failed');
+        } finally {
+            setIsRunningCleanup(false);
+        }
+    };
 
     // Pagination calculations
     const totalPages = Math.ceil(orders.length / ORDERS_PER_PAGE);
@@ -119,8 +176,36 @@ export function OrdersTable({ orders }: OrdersTableProps) {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <h1 className="text-3xl font-bold tracking-tight text-slate-900">{t('admin.orders')}</h1>
+            {/* Header with title and storage controls */}
+            <div className="flex flex-col gap-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <h1 className="text-3xl font-bold tracking-tight text-slate-900">{t('admin.orders')}</h1>
+
+                    {/* Storage Stats & Cleanup */}
+                    <div className="flex items-center gap-3 bg-slate-50 rounded-lg px-4 py-2 border border-slate-200">
+                        <div className="text-sm">
+                            <span className="text-slate-500">{t('admin.storage') || 'Сховище'}:</span>
+                            <span className="font-semibold text-slate-700 ml-1">
+                                {isLoadingStats ? '...' : (storageStats?.total.formatted || '0 B')}
+                            </span>
+                            {storageStats && storageStats.total.count > 0 && (
+                                <span className="text-slate-400 ml-1">
+                                    ({storageStats.total.count} {t('admin.files') || 'файлів'})
+                                </span>
+                            )}
+                        </div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={runCleanup}
+                            disabled={isRunningCleanup || isLoadingStats}
+                            className="gap-1"
+                        >
+                            <RefreshCw className={`w-4 h-4 ${isRunningCleanup ? 'animate-spin' : ''}`} />
+                            {t('admin.cleanup') || 'Очистка'}
+                        </Button>
+                    </div>
+                </div>
 
                 {selectedOrders.size > 0 && (
                     <div className="flex flex-wrap items-center gap-2">

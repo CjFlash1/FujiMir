@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Save, Globe, Phone, Mail, Instagram, Facebook, Search, Trash2, Clock } from "lucide-react";
+import { Loader2, Save, Globe, Phone, Mail, Instagram, Facebook, Search, Trash2, Clock, Package, CheckCircle, XCircle } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { toast } from "sonner";
 
@@ -22,28 +22,33 @@ export default function SettingsPage() {
     const [settings, setSettings] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState<string | null>(null);
-    const [cleaning, setCleaning] = useState(false);
 
-    const handleCleanup = async () => {
-        if (!confirm(t('confirm_cleanup') || "Видалити старі файли? Ця дія незворотня.")) return;
-        setCleaning(true);
+    // NP Validation State
+    const [npValidating, setNpValidating] = useState(false);
+    const [npValidationResult, setNpValidationResult] = useState<{ valid: boolean, ownerName?: string, city?: string, error?: string } | null>(null);
+
+    const handleValidateNP = async (key: string) => {
+        if (!key) return;
+        setNpValidating(true);
+        setNpValidationResult(null);
         try {
-            const res = await fetch("/api/fujiadmin/cleanup", { method: "POST" });
+            const res = await fetch('/api/fujiadmin/settings/validate-np', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ apiKey: key })
+            });
             const data = await res.json();
-            if (data.success) {
-                if (data.deletedCount > 0) {
-                    toast.success(`Успішно! Видалено ${data.deletedCount} файлів. Звільнено ${data.freedSpaceMB} MB.`);
-                } else {
-                    toast.info("Система чиста. Старих файлів не знайдено.");
-                }
+            setNpValidationResult(data);
+            if (data.valid) {
+                toast.success('Ключ API дійсний!');
             } else {
-                toast.error(`Помилка: ${data.message || 'Unknown error'}`);
+                toast.error('Недійсний ключ: ' + (data.error || 'Unknown error'));
             }
         } catch (e) {
             console.error(e);
-            toast.error("Помилка з'єднання");
+            toast.error('Помилка перевірки');
         } finally {
-            setCleaning(false);
+            setNpValidating(false);
         }
     };
 
@@ -114,6 +119,13 @@ export default function SettingsPage() {
                 { key: "google_verification", label: t('settings.google_verification'), icon: Search, placeholder: "google-site-verification code" },
                 { key: "yandex_verification", label: t('settings.yandex_verification'), icon: Search, placeholder: "yandex-verification code" },
                 { key: "bing_verification", label: t('settings.bing_verification'), icon: Search, placeholder: "msvalidate.01 code" },
+            ]
+        },
+        {
+            title: t('settings.integrations', 'Інтеграції та API'),
+            description: t('settings.integrations_desc', 'Налаштування зовнішніх сервісів'),
+            items: [
+                { key: "novaposhta_api_key", label: t('settings.np_api_key', 'Ключ API Нової Пошти'), icon: Package, placeholder: "API Key" },
             ]
         }
     ];
@@ -219,52 +231,39 @@ export default function SettingsPage() {
                                         </>
                                     )}
                                 </div>
+                                {item.key === 'novaposhta_api_key' && (
+                                    <div className="flex flex-wrap items-center gap-2 mt-1 px-1">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleValidateNP(settings[item.key])}
+                                            disabled={npValidating || !settings[item.key]}
+                                            className="text-xs h-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                        >
+                                            {npValidating ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <CheckCircle className="w-3 h-3 mr-1" />}
+                                            Перевірити ключ
+                                        </Button>
+
+                                        {npValidationResult && (
+                                            <div className={`text-xs px-2 py-1 rounded-md flex items-center gap-1.5 animate-in fade-in transition-all ${npValidationResult.valid ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-800 border border-red-200'}`}>
+                                                {npValidationResult.valid ? <CheckCircle className="w-3 h-3 text-green-600" /> : <XCircle className="w-3 h-3 text-red-600" />}
+                                                {npValidationResult.valid ? (
+                                                    <span className="flex items-center gap-1">
+                                                        <span className="font-bold">{npValidationResult.ownerName}</span>
+                                                        {npValidationResult.city && <span className="opacity-75 text-[10px] uppercase tracking-wide ml-1">({npValidationResult.city})</span>}
+                                                    </span>
+                                                ) : (
+                                                    <span>{npValidationResult.error || 'Помилка'}</span>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </CardContent>
                 </Card>
             ))}
-
-            {/* Maintenance Section */}
-            <Card className="border-red-100 bg-red-50/10">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-red-900">
-                        <Trash2 className="w-5 h-5" />
-                        {t('settings.maintenance') || "Обслуговування системи"}
-                    </CardTitle>
-                    <CardDescription>
-                        {t('settings.maintenance_desc') || "Видалення тимчасових файлів, які не були прив'язані до замовлень"}
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-red-100">
-                        <div>
-                            <h3 className="font-semibold text-sm mb-1">{t('settings.cleanup_files') || "Очистка покинутих файлів"}</h3>
-                            <p className="text-xs text-slate-500 max-w-md">
-                                {t('settings.cleanup_files_desc') || "Видаляє файли з кореневої папки завантажень, які старше 24 годин і не знаходяться в папках замовлень."}
-                            </p>
-                        </div>
-                        <Button
-                            variant="destructive"
-                            onClick={handleCleanup}
-                            disabled={cleaning}
-                            className="shrink-0"
-                        >
-                            {cleaning ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Scanning...
-                                </>
-                            ) : (
-                                <>
-                                    <Trash2 className="w-4 h-4 mr-2" />
-                                    {t('settings.run_cleanup') || "Запустити очистку"}
-                                </>
-                            )}
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
         </div>
     );
 }

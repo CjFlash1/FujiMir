@@ -2,7 +2,7 @@
 
 import { useTranslation } from "@/lib/i18n";
 import Link from "next/link";
-import { ArrowLeft, Download, FileImage, CreditCard, Truck, User, Trash2, Archive, X, ChevronDown, Gift, Printer, PackageCheck } from "lucide-react";
+import { ArrowLeft, Download, FileImage, CreditCard, Truck, User, Trash2, Archive, X, ChevronDown, Gift, Printer, PackageCheck, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -441,11 +441,23 @@ export function OrderDetailView({ order }: { order: any }) {
                         <span className="hidden sm:inline">{t('Print')}</span>
                     </Button>
 
-                    {order.deliveryMethod === 'novaposhta' && !orderTTN && (
-                        <Button onClick={() => setShowTTNModal(true)} className="gap-2 bg-orange-600 hover:bg-orange-700 text-xs md:text-sm">
-                            <PackageCheck className="w-4 h-4" />
-                            <span>{t('admin.create_ttn')}</span>
-                        </Button>
+                    {!orderTTN && (
+                        order.deliveryMethod === 'novaposhta' ? (
+                            <Button onClick={() => setShowTTNModal(true)} className="gap-2 bg-orange-600 hover:bg-orange-700 text-xs md:text-sm">
+                                <PackageCheck className="w-4 h-4" />
+                                <span>{t('admin.create_ttn')}</span>
+                            </Button>
+                        ) : (
+                            <Button
+                                onClick={() => setShowTTNModal(true)}
+                                size="sm"
+                                variant="outline"
+                                className="w-9 h-9 p-0 border-orange-200 text-orange-600 hover:bg-orange-50 hover:text-orange-700 shadow-sm"
+                                title="Створити ТТН (Нова Пошта)"
+                            >
+                                <PackageCheck className="w-5 h-5" />
+                            </Button>
+                        )
                     )}
                     {orderTTN && (
                         <div className="flex items-center gap-2">
@@ -453,7 +465,7 @@ export function OrderDetailView({ order }: { order: any }) {
                                 <PackageCheck className="w-4 h-4 text-green-600" />
                                 <span className="text-xs font-bold text-green-700">ТТН: {orderTTN}</span>
                                 <a
-                                    href={`https://novaposhta.ua/tracking/?cargo_number=${orderTTN}`}
+                                    href={`https://novaposhta.ua/tracking/${orderTTN}`}
                                     target="_blank"
                                     className="text-[10px] text-blue-600 underline ml-1 hover:text-blue-800"
                                 >
@@ -573,6 +585,78 @@ export function OrderDetailView({ order }: { order: any }) {
                     </div>
                 </div>
             )}
+
+            {/* Order Statistics Summary */}
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <div className="flex items-center gap-3 mb-4 text-slate-900">
+                    <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
+                        <BarChart3 className="w-5 h-5" />
+                    </div>
+                    <h3 className="font-semibold text-lg">{t('admin.order_statistics')}</h3>
+                </div>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                    {/* Size Stats */}
+                    <div>
+                        <h4 className="text-xs uppercase text-slate-500 font-bold mb-2 border-b border-slate-100 pb-1">Розміри фото</h4>
+                        <div className="space-y-1">
+                            {Object.entries(orderSummary.sizes).map(([size, count]) => (
+                                <div key={size} className="flex justify-between text-sm">
+                                    <span className="text-slate-600">{size}</span>
+                                    <span className="font-bold text-slate-900">{count} шт.</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    {/* Paper Stats */}
+                    <div>
+                        <h4 className="text-xs uppercase text-slate-500 font-bold mb-2 border-b border-slate-100 pb-1">Тип паперу</h4>
+                        <div className="space-y-1">
+                            {Object.entries(orderSummary.papers).map(([paper, count]) => (
+                                <div key={paper} className="flex justify-between text-sm">
+                                    <span className="text-slate-600">{t(paper)}</span>
+                                    <span className="font-bold text-slate-900">{count} шт.</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    {/* Options Stats */}
+                    <div>
+                        <h4 className="text-xs uppercase text-slate-500 font-bold mb-2 border-b border-slate-100 pb-1">Опції</h4>
+                        <div className="space-y-1">
+                            <div className="flex justify-between text-sm">
+                                <span className="text-slate-600">Магніт</span>
+                                <span className={`font-bold ${orderSummary.magnets > 0 ? 'text-slate-900' : 'text-slate-300'}`}>
+                                    {orderSummary.magnets > 0 ? orderSummary.magnets : '-'}
+                                </span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <span className="text-slate-600">Біла рамка</span>
+                                <span className={`font-bold ${orderSummary.borders > 0 ? 'text-slate-900' : 'text-slate-300'}`}>
+                                    {orderSummary.borders > 0 ? orderSummary.borders : '-'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    {/* Financial Stats */}
+                    <div>
+                        <h4 className="text-xs uppercase text-slate-500 font-bold mb-2 border-b border-slate-100 pb-1">Фінал</h4>
+                        <div className="space-y-1">
+                            <div className="flex justify-between text-sm">
+                                <span className="text-slate-600">Всього фото</span>
+                                <span className="font-bold text-slate-900">{orderSummary.totalPhotos} шт.</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <span className="text-slate-600">Доставка</span>
+                                <span className="font-bold text-slate-900">{deliveryCostDisplay}</span>
+                            </div>
+                            <div className="flex justify-between text-lg font-black text-primary-600 pt-2 border-t border-slate-100 mt-2">
+                                <span>Разом</span>
+                                <span>{order.totalAmount.toFixed(2)} {t('general.currency')}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             {/* Order Items */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">

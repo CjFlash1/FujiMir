@@ -52,7 +52,9 @@ interface CartState {
     setCheckoutForm: (form: Partial<CheckoutFormState>) => void;
     addItem: (file: File, defaultOptions: PrintOptions) => string;
     updateItem: (id: string, options: Partial<PrintOptions>) => void;
+    bulkUpdateItems: (ids: string[], options: Partial<PrintOptions>) => void;
     removeItem: (id: string) => void;
+    bulkRemoveItems: (ids: string[]) => void;
     cloneItem: (id: string) => string;
     bulkCloneItems: (ids: string[]) => void;
     setItemPreview: (id: string, preview: string) => void;
@@ -137,44 +139,6 @@ const debouncedSyncDraft = (items: CartItem[], config: ProductConfig | null, cur
     }, 2000); // Debounce 2s
 };
 
-
-// Helper: Generate Base64 Thumbnail (Max 300px)
-const createThumbnail = (file: File): Promise<string> => {
-    return new Promise((resolve) => {
-        // Skip for archives
-        const isArchive = /\.(zip|rar|7z)$/i.test(file.name) ||
-            ['application/zip', 'application/x-zip-compressed', 'application/x-rar-compressed', 'application/vnd.rar', 'application/x-7z-compressed'].includes(file.type);
-
-        if (isArchive) {
-            resolve(""); // No thumbnail for archives
-            return;
-        }
-
-        const img = new Image();
-        const url = URL.createObjectURL(file);
-        img.src = url;
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const max = 300;
-            let w = img.width;
-            let h = img.height;
-            if (w > h) { if (w > max) { h *= max / w; w = max; } }
-            else { if (h > max) { w *= max / h; h = max; } }
-
-            canvas.width = w;
-            canvas.height = h;
-            ctx?.drawImage(img, 0, 0, w, h);
-            resolve(canvas.toDataURL('image/jpeg', 0.6)); // Low quality for storage efficiency
-            URL.revokeObjectURL(url);
-        };
-        img.onerror = () => {
-            URL.revokeObjectURL(url);
-            resolve("");
-        };
-    });
-};
-
 export const useCartStore = create<CartState>()(
     persist(
         (set, get) => ({
@@ -203,17 +167,16 @@ export const useCartStore = create<CartState>()(
                 const isArchive = /\.(zip|rar|7z)$/i.test(file.name) ||
                     ['application/zip', 'application/x-zip-compressed', 'application/x-rar-compressed', 'application/vnd.rar', 'application/x-7z-compressed'].includes(file.type);
 
-                // 1. Set immediate preview with Blob URL for responsiveness
-                // For archives, we can use a static placeholder in UI, or a specific string here.
-                const blobUrl = isArchive ? "/images/archive-icon.png" : URL.createObjectURL(file);
+                // No blob URL creation - previews now use server URLs only (after upload)
+                // This saves massive memory on large batches
 
                 const newItem: CartItem = {
                     id,
                     file,
                     name: file.name,
-                    preview: blobUrl,
+                    preview: '', // Empty - preview comes from server after upload
                     options: { ...options, isArchive },
-                    serverFileName: undefined, // serverFileName is undefined initially
+                    serverFileName: undefined,
                     isArchive
                 };
 
@@ -223,19 +186,23 @@ export const useCartStore = create<CartState>()(
                     return { items: newItems };
                 });
 
-                // 2. Async: Create permanent Base64 thumbnail for persistence
-                if (!isArchive) {
-                    createThumbnail(file).then((base64) => {
-                        if (base64) get().setItemPreview(id, base64);
-                    });
-                }
-
-                return id; // Return ID so component can use it for async upload association
+                // STOP generating Base64 thumbnails for localStorage. It crashes browser on large batches.
+                // We rely on blob URLs (session) or server URLs (persistence).
+                return id;
             },
             updateItem: (id, newOptions) =>
                 set((state) => {
                     const newItems = state.items.map((item) =>
                         item.id === id ? { ...item, options: { ...item.options, ...newOptions } } : item
+                    );
+                    debouncedSyncDraft(newItems, state.config, state.draftOrderId, (id) => set({ draftOrderId: id }));
+                    return { items: newItems };
+                }),
+            // Optimized Bulk Update
+            bulkUpdateItems: (ids: string[], newOptions: Partial<PrintOptions>) =>
+                set((state) => {
+                    const newItems = state.items.map((item) =>
+                        ids.includes(item.id) ? { ...item, options: { ...item.options, ...newOptions } } : item
                     );
                     debouncedSyncDraft(newItems, state.config, state.draftOrderId, (id) => set({ draftOrderId: id }));
                     return { items: newItems };
@@ -247,7 +214,6 @@ export const useCartStore = create<CartState>()(
             setItemServerFile: (id, serverFileName) =>
                 set((state) => {
                     const newItems = state.items.map(item => item.id === id ? { ...item, serverFileName } : item);
-                    // Sync again because now we have serverFileName!
                     debouncedSyncDraft(newItems, state.config, state.draftOrderId, (id) => set({ draftOrderId: id }));
                     return { items: newItems };
                 }),
@@ -294,7 +260,7 @@ export const useCartStore = create<CartState>()(
                     const newItems = [...state.items];
                     ids.forEach(id => {
                         const itemToClone = state.items.find(i => i.id === id);
-                        if (itemToClone && !itemToClone.isArchive) { // Skip archives for bulk clone? Or allow? Let's skip to keep it simple or allow.
+                        if (itemToClone && !itemToClone.isArchive) {
                             const newId = `${itemToClone.id}-copy-${Math.random().toString(36).substring(7)}`;
                             newItems.push({
                                 ...itemToClone,
@@ -309,12 +275,24 @@ export const useCartStore = create<CartState>()(
             },
             removeItem: (id) =>
                 set((state) => {
-                    // Check if item has server file
                     const item = state.items.find(i => i.id === id);
                     if (item && item.serverFileName) {
                         deleteFileFromServer(item.serverFileName);
                     }
                     const newItems = state.items.filter((item) => item.id !== id);
+                    debouncedSyncDraft(newItems, state.config, state.draftOrderId, (id) => set({ draftOrderId: id }));
+                    return { items: newItems };
+                }),
+            // Optimized Bulk Remove
+            bulkRemoveItems: (ids: string[]) =>
+                set((state) => {
+                    // Trigger deletes
+                    state.items.forEach(item => {
+                        if (ids.includes(item.id) && item.serverFileName) {
+                            deleteFileFromServer(item.serverFileName);
+                        }
+                    });
+                    const newItems = state.items.filter(item => !ids.includes(item.id));
                     debouncedSyncDraft(newItems, state.config, state.draftOrderId, (id) => set({ draftOrderId: id }));
                     return { items: newItems };
                 }),

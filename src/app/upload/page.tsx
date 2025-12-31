@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useMemo, useEffect } from "react";
+import { useCallback, useState, useMemo, useEffect, useRef } from "react";
 import { useDropzone } from "react-dropzone";
 import { Upload, X, FileImage, Settings, ArrowRight, Copy, Plus, Trash2, Sparkles, Cloud, AlertCircle, Loader2, ChevronLeft, ChevronRight, Archive } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,14 +25,14 @@ const DEFAULT_OPTIONS: PrintOptions = {
 export default function UploadPage() {
     const { t } = useTranslation();
     const router = useRouter();
-    const { items: files, addItem, removeItem, updateItem: updateItemOptions, setConfig, cloneItem, bulkCloneItems, config, setItemServerFile } = useCartStore();
+    const { items: files, addItem, removeItem, updateItem: updateItemOptions, bulkUpdateItems, bulkRemoveItems, setConfig, cloneItem, bulkCloneItems, config, setItemServerFile } = useCartStore();
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isBulkEditing, setIsBulkEditing] = useState(false);
     const [isDragActive, setIsDragActive] = useState(false);
     const [editingFileId, setEditingFileId] = useState<string | null>(null);
     const [lightboxFile, setLightboxFile] = useState<CartItem | null>(null);
-    const [photosToShow, setPhotosToShow] = useState(100); // Pagination
-    const PHOTOS_PER_PAGE = 100;
+    const [photosToShow, setPhotosToShow] = useState(50); // Pagination
+    const PHOTOS_PER_PAGE = 50;
 
 
 
@@ -61,32 +61,81 @@ export default function UploadPage() {
     // Upload Progress Tracking
     const { uploads, addUpload, setProgress, setStatus } = useUploadProgress();
 
+    // Concurrency Control Queue
+    // Simple concurrency control using a ref-based semaphore
+    const activeUploadsRef = useRef(0);
+    const CONCURRENT_LIMIT = 5;
+    const uploadQueueRef = useRef<Array<{ id: string; file: File }>>([]);
+
+    const processNextUpload = useCallback(async () => {
+        if (activeUploadsRef.current >= CONCURRENT_LIMIT) return;
+        if (uploadQueueRef.current.length === 0) return;
+
+        const next = uploadQueueRef.current.shift();
+        if (!next) return;
+
+        activeUploadsRef.current++;
+
+        try {
+            await uploadWithProgress(
+                next.id,
+                next.file,
+                (progress) => setProgress(next.id, progress),
+                (serverFileName) => {
+                    setItemServerFile(next.id, serverFileName);
+                    setStatus(next.id, 'done');
+                },
+                (error) => {
+                    console.error("Upload failed", error);
+                    setStatus(next.id, 'error', error);
+                }
+            );
+        } catch (e: any) {
+            console.error("Auto-upload failed", e);
+            setStatus(next.id, 'error', e.message || 'Upload failed');
+        } finally {
+            activeUploadsRef.current--;
+            // Process next in queue
+            processNextUpload();
+        }
+    }, [setProgress, setItemServerFile, setStatus]);
+
     const onDrop = useCallback((acceptedFiles: File[]) => {
-        acceptedFiles.forEach(async (file) => {
+        acceptedFiles.forEach((file) => {
             const id = addItem(file, { ...DEFAULT_OPTIONS });
             addUpload(id);
+            // Add to queue with file reference
+            uploadQueueRef.current.push({ id, file });
+        });
 
-            // Immediate Upload with progress tracking
-            try {
-                await uploadWithProgress(
-                    id,
-                    file,
-                    (progress) => setProgress(id, progress),
-                    (serverFileName) => {
-                        setItemServerFile(id, serverFileName);
-                        setStatus(id, 'done');
-                    },
-                    (error) => {
-                        console.error("Upload failed", error);
-                        setStatus(id, 'error', error);
-                    }
-                );
-            } catch (e) {
-                console.error("Auto-upload failed", e);
-                setStatus(id, 'error', 'Upload failed');
+        // Start processing (will respect CONCURRENT_LIMIT)
+        for (let i = 0; i < Math.min(CONCURRENT_LIMIT, acceptedFiles.length); i++) {
+            processNextUpload();
+        }
+    }, [addItem, addUpload, processNextUpload]);
+
+    // Global Progress Calculation
+    const globalUploadStats = useMemo(() => {
+        const total = Object.keys(uploads).length;
+        if (total === 0) return { percent: 100, isUploading: false, pending: 0 };
+
+        let completed = 0;
+        let pending = 0;
+        let totalProgressSum = 0;
+
+        Object.values(uploads).forEach(u => {
+            if (u.status === 'done' || u.status === 'error') {
+                completed++;
+                totalProgressSum += 100;
+            } else {
+                pending++;
+                totalProgressSum += u.progress;
             }
         });
-    }, [addItem, setItemServerFile, addUpload, setProgress, setStatus]);
+
+        const percent = total > 0 ? Math.round(totalProgressSum / total) : 100;
+        return { percent, isUploading: pending > 0, pending };
+    }, [uploads]);
 
     const { getRootProps, getInputProps, isDragAccept: _isDragAccept, open } = useDropzone({
         onDrop,
@@ -125,7 +174,7 @@ export default function UploadPage() {
 
     const deleteSelected = () => {
         if (confirm(t('bulk.delete') + '?')) {
-            selectedIds.forEach(id => removeItem(id));
+            bulkRemoveItems(selectedIds);
             setSelectedIds([]);
         }
     };
@@ -134,7 +183,7 @@ export default function UploadPage() {
 
     const handleSaveOptions = (opts: PrintOptions) => {
         if (isBulkEditing) {
-            selectedIds.forEach(id => updateItemOptions(id, opts));
+            bulkUpdateItems(selectedIds, opts);
             setIsBulkEditing(false);
             setSelectedIds([]);
         } else if (editingFileId) {
@@ -255,15 +304,26 @@ export default function UploadPage() {
                                                 <Archive className="w-16 h-16 mb-2 text-gray-300" />
                                                 <span className="text-[10px] font-bold uppercase tracking-wider">Archive</span>
                                             </div>
-                                        ) : (
+                                        ) : file.serverFileName ? (
+                                            // Uploaded - show fast thumbnail preview (~30KB instead of 5MB)
                                             <img
-                                                src={file.preview}
-                                                alt={file.name || file.file?.name || "Photo"}
+                                                src={`/api/uploads/thumb/${file.serverFileName}`}
+                                                alt={file.name || "Photo"}
                                                 className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                                                loading="lazy"
                                                 onError={(e) => {
-                                                    e.currentTarget.style.opacity = '0';
+                                                    // Fallback to full image if thumb doesn't exist
+                                                    e.currentTarget.src = `/api/uploads/${file.serverFileName}`;
                                                 }}
                                             />
+                                        ) : (
+                                            // Not yet uploaded - show placeholder with progress
+                                            <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-slate-100 text-slate-400">
+                                                <Loader2 className="w-10 h-10 mb-2 animate-spin text-blue-400" />
+                                                <span className="text-[10px] font-bold uppercase tracking-wider">
+                                                    {uploads[file.id]?.progress || 0}%
+                                                </span>
+                                            </div>
                                         )}
 
                                         {/* Constant Filename Display */}
@@ -301,14 +361,13 @@ export default function UploadPage() {
                                                 if (!file.serverFileName && file.file) {
                                                     return (
                                                         <div className="flex items-center gap-1.5">
-                                                            {isUploading && (
-                                                                <div className="flex items-center gap-1.5 bg-blue-500/90 backdrop-blur text-white text-[10px] px-2 py-0.5 rounded shadow-sm">
-                                                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                                                    <span className="font-medium">{uploadInfo?.progress || 0}%</span>
-                                                                </div>
-                                                            )}
+                                                            {/* Upload indicator removed as per user request (duplicate) */}
                                                             {hasError && (
-                                                                <div className="flex items-center gap-1.5 bg-red-500/90 backdrop-blur text-white text-[10px] px-2 py-0.5 rounded shadow-sm cursor-pointer hover:bg-red-600" title="Click to retry">
+                                                                <div
+                                                                    className="flex items-center gap-1.5 bg-red-500/90 backdrop-blur text-white text-[10px] px-2 py-0.5 rounded shadow-sm cursor-pointer hover:bg-red-600 pointer-events-auto"
+                                                                    title={uploadInfo.error || "Unknown Error"}
+                                                                    onClick={(e) => { e.stopPropagation(); alert(uploadInfo.error || "Unknown Error"); }}
+                                                                >
                                                                     <AlertCircle className="w-3 h-3" />
                                                                     <span className="font-medium">Error</span>
                                                                 </div>
@@ -452,9 +511,46 @@ export default function UploadPage() {
                                     )}
                                 </div>
                             </div>
-                            <Button onClick={handleProceed} size="lg" className="w-full sm:w-auto bg-[#009846] hover:bg-[#0d8c43] text-white font-black uppercase tracking-tight shadow-lg shadow-green-900/20 px-8 h-12 sm:h-14 text-lg">
-                                {t('checkout.placeOrder')} <ArrowRight className="w-5 h-5 ml-2" />
-                            </Button>
+                            {/* Global Progress Bar Overlay on Button */}
+                            <div className="relative w-full sm:w-auto">
+                                <Button
+                                    onClick={handleProceed}
+                                    size="lg"
+                                    disabled={globalUploadStats.isUploading}
+                                    className={cn(
+                                        "w-full sm:w-auto font-black uppercase tracking-tight shadow-lg shadow-green-900/20 px-8 h-12 sm:h-14 text-lg relative overflow-hidden transition-all",
+                                        globalUploadStats.isUploading
+                                            ? "bg-slate-200 text-slate-500 cursor-not-allowed"
+                                            : "bg-[#009846] hover:bg-[#0d8c43] text-white"
+                                    )}
+                                >
+                                    <span className="relative z-10 flex items-center">
+                                        {globalUploadStats.isUploading ? (
+                                            <>
+                                                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                                                {t('Uploading')}... {globalUploadStats.percent}%
+                                            </>
+                                        ) : (
+                                            <>
+                                                {t('checkout.placeOrder')} <ArrowRight className="w-5 h-5 ml-2" />
+                                            </>
+                                        )}
+                                    </span>
+
+                                    {/* Progress Fill Background */}
+                                    {globalUploadStats.isUploading && (
+                                        <div
+                                            className="absolute left-0 top-0 bottom-0 bg-green-200/50 transition-all duration-300 ease-out"
+                                            style={{ width: `${globalUploadStats.percent}%` }}
+                                        />
+                                    )}
+                                </Button>
+                                {globalUploadStats.isUploading && (
+                                    <div className="text-[10px] text-center text-slate-400 font-bold uppercase mt-1">
+                                        {t('Wait for uploads')} ({globalUploadStats.pending} left)
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}
@@ -510,18 +606,19 @@ export default function UploadPage() {
 
                         <div className="relative w-full h-full flex flex-col items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
 
-                            {/* Main Image - Logic involves trying high-res sources */}
-                            <img
-                                src={
-                                    lightboxFile.file
-                                        ? URL.createObjectURL(lightboxFile.file)
-                                        : (lightboxFile.serverFileName ? `/uploads/${lightboxFile.serverFileName}` : lightboxFile.preview)
-                                }
-                                alt={lightboxFile.name}
-                                className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl select-none"
-                            // Add basic touch swipe support here if needed via listeners, 
-                            // currently just relying on click nav for web, mobile users might tap edges if we added invisible overlay buttons.
-                            />
+                            {/* Main Image - Use server URL only */}
+                            {lightboxFile.serverFileName ? (
+                                <img
+                                    src={`/api/uploads/${lightboxFile.serverFileName}`}
+                                    alt={lightboxFile.name}
+                                    className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl select-none"
+                                />
+                            ) : (
+                                <div className="text-white/50 text-center">
+                                    <Loader2 className="w-16 h-16 animate-spin mx-auto mb-4" />
+                                    <p>{t('Uploading')}...</p>
+                                </div>
+                            )}
 
                             {/* Mobile Navigation Zone Overlay (Invisible) */}
                             <div className="absolute inset-x-0 bottom-24 top-1/2 flex justify-between md:hidden pointer-events-none">
