@@ -70,8 +70,14 @@ try {
     // 4. DATABASE
     console.log("\n--- DB SETUP ---");
     try {
-        process.env.PRISMA_CLI_BINARY_TARGETS = 'native,debian-openssl-1.1.x,debian-openssl-3.0.x';
-        run('npx prisma generate');
+        process.env.PRISMA_CLI_BINARY_TARGETS = 'native,debian-openssl-1.1.x,debian-openssl-3.0.x,linux-musl-openssl-3.0.x';
+        const prismaBin = path.join(process.cwd(), 'node_modules', '.bin', 'prisma');
+        if (fs.existsSync(prismaBin)) {
+            run(`${prismaBin} generate`);
+        } else {
+            // Fallback if bin not found (e.g. windows/path issues) but usually correct on linux
+            run('npx prisma generate');
+        }
     } catch (e) {
         log(`Prisma warning (non-fatal): ${e.message}`);
     }
