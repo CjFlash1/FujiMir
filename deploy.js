@@ -99,6 +99,19 @@ try {
     // 6. FIX DATA
     console.log("\n--- SEEDING TRANSLATIONS ---");
     try {
+        // DEBUG: List available Prisma engines to find the correct one
+        console.log("Checking available Prisma engines:");
+        try {
+            const prismaDir = path.join(process.cwd(), 'node_modules', '.prisma', 'client');
+            if (fs.existsSync(prismaDir)) {
+                fs.readdirSync(prismaDir).forEach(file => {
+                    console.log(' - ' + file);
+                });
+            } else {
+                console.log("WARNING: .prisma/client directory does not exist!");
+            }
+        } catch (e) { console.log(e.message); }
+
         // Run plain JS script (safer than ts-node on server)
         run('node src/scripts/seed-missing-translations.js');
     } catch (e) {
