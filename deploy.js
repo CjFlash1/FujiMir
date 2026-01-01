@@ -96,55 +96,7 @@ try {
         }
     });
 
-    // 6. FIX DATA
-    console.log("\n--- SEEDING TRANSLATIONS ---");
-    try {
-        // Force Prisma to use correct engine since auto-detect fails
-        // IDENTIFIED: Ubuntu 22.04 (Kernel 5.15) -> Needs debian-openssl-3.0.x
-        // CRITICAL FIX: Add system library paths to LD_LIBRARY_PATH because Plesk environments often hide them
-
-        console.log(`Kernel release: ${require('os').release()}`);
-        console.log(`Platform: ${require('os').platform()}`);
-
-        const libPaths = [
-            '/usr/lib/x86_64-linux-gnu',
-            '/lib/x86_64-linux-gnu',
-            '/usr/lib64',
-            '/lib64',
-            '/usr/lib',
-            '/lib'
-        ];
-        const currentPath = process.env.LD_LIBRARY_PATH || '';
-        process.env.LD_LIBRARY_PATH = `${libPaths.join(':')}:${currentPath}`;
-        console.log(`Updated LD_LIBRARY_PATH: ${process.env.LD_LIBRARY_PATH}`);
-
-        const prismaClientDir = path.join(process.cwd(), 'node_modules', '.prisma', 'client');
-        const engines = [
-            'libquery_engine-debian-openssl-3.0.x.so.node', // Correct for Ubuntu 22.04
-            'libquery_engine-rhel-openssl-3.0.x.so.node',
-            'libquery_engine-linux-musl-openssl-3.0.x.so.node'
-        ];
-
-        let engineFound = false;
-        for (const engineName of engines) {
-            const enginePath = path.join(prismaClientDir, engineName);
-            if (fs.existsSync(enginePath)) {
-                console.log(`Force-setting engine to: ${engineName}`);
-                process.env.PRISMA_QUERY_ENGINE_LIBRARY = enginePath;
-                engineFound = true;
-                break;
-            }
-        }
-
-        if (!engineFound) {
-            console.log("Warning: No OpenSSL 3.0.x engine found. Prisma might fail if auto-detect picks 1.1.x.");
-        }
-
-        // Run plain JS script
-        run('node src/scripts/seed-missing-translations.js');
-    } catch (e) {
-        log(`Translation seed warning (non-fatal): ${e.message}`);
-    }
+    // 6. FIX DATA - REMOVED (Run locally)
 
     // 5. RESTART
     console.log("\n--- RESTARTING SERVICE ---");
