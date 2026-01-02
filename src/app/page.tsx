@@ -28,7 +28,12 @@ export default function Home() {
     <div className="flex flex-col min-h-screen bg-[#fdfbf7]"> {/* Warm paper-like background */}
 
       {/* Modern Hero Section */}
-      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+      {/* Modern Hero Section */}
+      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32">
+        <div className="absolute inset-0 overflow-hidden -z-10 pointer-events-none">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-green-50 via-gray-50 to-white"></div>
+          <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]"></div>
+        </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="flex flex-col lg:flex-row items-center gap-16">
 
@@ -68,30 +73,31 @@ export default function Home() {
             </div>
 
             {/* Right Visual - Photo Composition */}
-            <div className="flex-1 relative w-full max-w-[500px] lg:max-w-none mx-auto lg:h-auto mt-8 lg:mt-0 z-10">
+            <div className="flex-1 relative w-full max-w-[500px] lg:max-w-none mx-auto h-auto lg:h-auto mt-16 lg:mt-0 z-10">
               {/* Decoration blobs */}
               <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-amber-100 rounded-full blur-3xl opacity-40 mix-blend-multiply animate-blob"></div>
               <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-red-100 rounded-full blur-3xl opacity-40 mix-blend-multiply animate-blob animation-delay-2000"></div>
 
-              {/* Floating Cards */}
-              <div className="relative w-full lg:h-full perspective-1000">
-                {/* Main Photo (Family) - Relative on mobile, Absolute on Desktop */}
-                <div className="relative mx-auto lg:absolute lg:top-10 lg:right-10 w-64 h-80 bg-white p-3 rounded-2xl shadow-2xl transform lg:rotate-6 hover:rotate-3 transition-all duration-500 z-20 hover:z-50 hover:scale-105">
-                  <img src="/images/assets/hero-1.jpg" className="w-full h-full object-cover rounded-xl" alt="Happy moments" />
-                </div>
+              {/* Floating Cards - Mobile Stack / Desktop Composition */}
+              <div className="relative w-full h-full perspective-1000">
 
-                {/* Secondary Photo (Travel) - Hidden on very small mobile to prevent clutter/overlap */}
-                <div className="absolute bottom-10 lg:bottom-20 left-4 lg:left-10 w-60 h-72 bg-white p-3 rounded-2xl shadow-xl transform -rotate-3 hover:rotate-0 transition-all duration-500 z-10 hover:z-50 hover:scale-105 hidden sm:block">
+                {/* Secondary Photo (Travel) - Left Wide Fan on Mobile / Bottom Left on Desktop */}
+                <div className="absolute top-8 left-1/2 -translate-x-[85%] w-56 h-72 bg-white p-3 rounded-2xl shadow-xl transform -rotate-[15deg] lg:transform-none lg:rotate-0 lg:translate-x-0 lg:left-10 lg:bottom-20 lg:top-auto transition-all duration-500 z-10 hover:z-50 hover:scale-105">
                   <img src="/images/assets/hero-2.jpg" className="w-full h-full object-cover rounded-xl" alt="Travel memories" />
                 </div>
 
-                {/* Small Photo (Friends) */}
-                <div className="absolute top-32 left-0 lg:-left-4 w-48 h-56 bg-white p-2 rounded-2xl shadow-lg transform -rotate-12 hover:-rotate-6 transition-all duration-500 z-0 hover:z-50 hover:scale-105 hidden md:block">
+                {/* Third Photo (Friends) - Right Top Square Fan on Mobile / Left Top on Desktop */}
+                <div className="absolute -top-6 left-1/2 translate-x-[35%] w-44 h-44 bg-white p-2.5 rounded-2xl shadow-lg transform rotate-[15deg] lg:transform-none lg:-rotate-[8deg] lg:translate-x-0 lg:top-32 lg:left-[-1rem] lg:w-48 lg:h-56 transition-all duration-500 z-0 hover:z-50 hover:scale-105">
                   <img src="/images/assets/hero-3.jpg" className="w-full h-full object-cover rounded-xl" alt="Friends" />
                 </div>
 
-                {/* Extra Photo (Portrait) */}
-                <div className="absolute bottom-40 right-4 lg:-right-4 w-40 h-40 bg-white p-2 rounded-2xl shadow-lg transform rotate-12 hover:rotate-6 transition-all duration-500 z-30 hover:z-50 hover:scale-105 hidden sm:block">
+                {/* Main Photo (Family) - Center Foreground */}
+                <div className="relative mx-auto lg:absolute lg:top-10 lg:right-10 lg:mx-0 w-64 h-80 bg-white p-3 rounded-2xl shadow-2xl transform rotate-2 lg:rotate-6 hover:rotate-3 transition-all duration-500 z-20 hover:z-50 hover:scale-105">
+                  <img src="/images/assets/hero-1.jpg" className="w-full h-full object-cover rounded-xl" alt="Happy moments" />
+                </div>
+
+                {/* Extra Photo (Portrait) - Hidden on mobile, Visible on Desktop */}
+                <div className="absolute bottom-40 right-4 lg:-right-4 w-40 h-40 bg-white p-2 rounded-2xl shadow-lg transform rotate-12 hover:rotate-6 transition-all duration-500 z-30 hover:z-50 hover:scale-105 hidden lg:block">
                   <img src="/images/assets/hero-4.jpg" className="w-full h-full object-cover rounded-xl" alt="Portrait" />
                 </div>
               </div>
@@ -258,9 +264,11 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#009846] to-[#007a38]"></div>
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+      <section className="py-24 relative">
+        <div className="absolute inset-0 overflow-hidden -z-10 pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#009846] to-[#007a38]"></div>
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+        </div>
 
         <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
           <h2 className="text-3xl md:text-5xl font-bold text-white mb-6 tracking-tight">

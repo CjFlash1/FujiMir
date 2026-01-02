@@ -87,8 +87,8 @@ export function AdminSidebar() {
 
     return (
         <>
-            {/* Mobile Header Bar - Visible only on mobile via CSS */}
-            <div className={`fixed top-0 left-0 right-0 z-40 bg-slate-900 text-white px-4 py-3 flex items-center gap-3 shadow-lg md:hidden ${isMobileOpen ? 'hidden' : ''}`}>
+            {/* Mobile Header Bar - Flows naturally in flex-col layout now */}
+            <div className={`w-full bg-slate-900 text-white px-4 py-3 flex items-center gap-3 shadow-md md:hidden ${isMobileOpen ? 'hidden' : ''}`}>
                 <button
                     onClick={() => setIsMobileOpen(true)}
                     className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
@@ -102,7 +102,7 @@ export function AdminSidebar() {
             {/* Mobile Overlay */}
             {mounted && isMobileOpen && (
                 <div
-                    className="fixed inset-0 bg-black/50 z-40 md:hidden"
+                    className="fixed inset-0 bg-black/50 z-[90] md:hidden"
                     onClick={() => setIsMobileOpen(false)}
                 />
             )}
@@ -111,11 +111,11 @@ export function AdminSidebar() {
             <aside
                 className={cn(
                     "flex flex-col gap-y-5 overflow-y-auto bg-slate-900 px-4 pb-4 text-white shrink-0 transition-transform duration-200",
-                    // Mobile: Fixed, slide-in
-                    "fixed inset-y-0 left-0 z-50 w-64",
-                    // Desktop: Relative, always visible, reset transform
+                    // Mobile: Fixed, slide-in, Z-100 to cover public navbar
+                    "fixed inset-y-0 left-0 z-[100] w-64",
+                    // Desktop: Relative, always visible
                     "md:relative md:translate-x-0 md:min-h-screen md:z-auto",
-                    // Toggle logic for mobile (only applies if not overriden by md:translate-x-0)
+                    // Toggle logic for mobile
                     (!isMobileOpen ? "-translate-x-full md:translate-x-0" : "translate-x-0")
                 )}
                 style={mounted ? { width: window.innerWidth >= 768 ? width : undefined } : undefined}

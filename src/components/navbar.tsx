@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Menu, X, Camera } from "lucide-react";
 import { Button } from "./ui/button";
 import { useTranslation } from "@/lib/i18n";
@@ -9,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { useSettings } from "@/lib/settings-context";
 
 export function Navbar() {
+    const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(false);
     const { t, lang, setLang } = useTranslation();
     const { getSetting } = useSettings();

@@ -4,8 +4,10 @@ import { useSettings } from "@/lib/settings-context";
 import { useTranslation } from "@/lib/i18n";
 import { Instagram, Facebook } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export function Footer() {
+    const pathname = usePathname();
     const { getSetting } = useSettings();
     const { t } = useTranslation();
     const instagram = getSetting('social_instagram');
