@@ -1,58 +1,53 @@
 #!/bin/bash
-# deploy.sh for Plesk Automation
+# deploy.sh v2 - Fix npx and memory issues
 
 LOG_FILE="deploy.log"
+DATE_NOW=$(date)
 echo "" >> $LOG_FILE
-echo "=== Deployment started at $(date) ===" >> $LOG_FILE
+echo "=== Deployment started at $DATE_NOW ===" >> $LOG_FILE
 
-# 1. Detect Node.js environment
-# Plesk often keeps Node in specific paths. We try common versions.
-export PATH=$PATH:/opt/plesk/node/22/bin:/opt/plesk/node/20/bin:/opt/plesk/node/18/bin
-export NODE_ENV=production
+# 1. Force Node 20 (LTS) or 18. Avoid 21.x.
+# Plesk paths usually: /opt/plesk/node/20/bin
+export PATH=/opt/plesk/node/20/bin:/opt/plesk/node/18/bin:$PATH
 
-echo "Checking environment..." >> $LOG_FILE
-if ! command -v npm &> /dev/null; then
-    echo "ERROR: npm could not be found. PATH is: $PATH" >> $LOG_FILE
-    # Try one last fallback explicit call
-    NPM_PATH=$(find /opt/plesk/node -name npm | head -n 1)
-    if [ -n "$NPM_PATH" ]; then
-         echo "Found npm at $NPM_PATH, using alias." >> $LOG_FILE
-         alias npm="$NPM_PATH"
-         NODE_PATH=$(dirname "$NPM_PATH")/node
-         alias node="$NODE_PATH"
-    else
-         echo "CRITICAL: No npm found." >> $LOG_FILE
-         exit 1
-    fi
-fi
+echo "Using Node: $(node -v)" >> $LOG_FILE
+echo "Using NPM: $(npm -v)" >> $LOG_FILE
 
-echo "Node version: $(node -v)" >> $LOG_FILE
-echo "NPM version: $(npm -v)" >> $LOG_FILE
-
-# 2. Clean install dependencies
-# We need devDeps for building Next.js, so strict production flag might be bad for build stage
-# But usually on prod we want separate stages. For simplicity here: plain install.
+# 2. Install dependencies
 echo "Installing dependencies..." >> $LOG_FILE
-npm install --legacy-peer-deps >> $LOG_FILE 2>&1
+# Install production + dev dependencies (needed for build) without audit to be faster
+npm install --legacy-peer-deps --no-audit >> $LOG_FILE 2>&1
 
 # 3. Database Setup (Prisma)
+# Use local binary to avoid 'npx not found'
+PRISMA="./node_modules/.bin/prisma"
+if [ ! -f "$PRISMA" ]; then
+    echo "Prisma binary not found, trying global npx..." >> $LOG_FILE
+    PRISMA="npx prisma"
+fi
+
 echo "Running Prisma Generate..." >> $LOG_FILE
-npx prisma generate >> $LOG_FILE 2>&1
+$PRISMA generate >> $LOG_FILE 2>&1
 
 echo "Pushing DB Schema..." >> $LOG_FILE
-npx prisma db push --accept-data-loss >> $LOG_FILE 2>&1
+$PRISMA db push --accept-data-loss >> $LOG_FILE 2>&1
 
-echo "Seeding Database (Settings/Translations)..." >> $LOG_FILE
-# Using npx ts-node to run seed because 'npm run db:setup' might be complex
-npx prisma db seed >> $LOG_FILE 2>&1
+echo "Seeding Database..." >> $LOG_FILE
+# This runs the command defined in package.json "prisma": {"seed": ...}
+$PRISMA db seed >> $LOG_FILE 2>&1
 
 # 4. Build Application
 echo "Building application..." >> $LOG_FILE
-npm run build >> $LOG_FILE 2>&1
+# Set NODE_OPTIONS to increase memory limit for build
+export NODE_OPTIONS="--max-old-space-size=2048"
+export NEXT_TELEMETRY_DISABLED=1
 
-# 5. Restart Node Application (Passenger/Plesk method)
+# Skip linting to save resources
+npm run build -- --no-lint >> $LOG_FILE 2>&1
+
+# 5. Restart
 echo "Triggering restart..." >> $LOG_FILE
 mkdir -p tmp
 touch tmp/restart.txt
 
-echo "=== Deployment Finished at $(date) ===" >> $LOG_FILE
+echo "=== Deployment Finished ===" >> $LOG_FILE

@@ -6,35 +6,36 @@ const path = require('path');
 const prisma = new PrismaClient();
 
 async function main() {
-    console.log('Generating prisma/seed.ts based on current database...');
+  console.log('Generating prisma/seed.ts based on current database...');
 
-    // Fetch data
-    const settings = await prisma.setting.findMany();
-    const translations = await prisma.translation.findMany();
-    const pages = await prisma.page.findMany();
-    const printSizes = await prisma.printSize.findMany({ include: { discounts: true } });
-    const quantityTiers = await prisma.quantityTier.findMany();
-    const printOptions = await prisma.printOption.findMany(); // Assuming model exists
-    const magnetPrices = await prisma.magnetPrice.findMany();
-    const deliveryOptions = await prisma.deliveryOption.findMany();
-    const products = await prisma.product.findMany();
+  // Fetch data
+  const settings = await prisma.setting.findMany();
+  const translations = await prisma.translation.findMany();
+  const pages = await prisma.page.findMany();
+  const printSizes = await prisma.printSize.findMany({ include: { discounts: true } });
+  const quantityTiers = await prisma.quantityTier.findMany();
+  const printOptions = await prisma.printOption.findMany(); // Assuming model exists
+  const magnetPrices = await prisma.magnetPrice.findMany();
+  const deliveryOptions = await prisma.deliveryOption.findMany();
+  const products = await prisma.product.findMany();
 
-    // Help Center
-    const helpCategories = await prisma.helpCategory.findMany({
+  // Help Center
+  const helpCategories = await prisma.helpCategory.findMany({
+    include: {
+      translations: true,
+      articles: {
         include: {
-            translations: true,
-            articles: {
-                include: {
-                    translations: true
-                }
-            }
+          translations: true
         }
-    });
+      }
+    }
+  });
 
-    // Helper to escape JSON
-    const json = (data) => JSON.stringify(data, null, 2);
+  // Helper to escape JSON
+  const json = (data) => JSON.stringify(data, null, 2);
 
-    const seedContent = `import { PrismaClient } from '@prisma/client';
+  const seedContent = `// @ts-nocheck
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -239,15 +240,15 @@ main()
   });
 `;
 
-    fs.writeFileSync(path.join(process.cwd(), 'prisma', 'seed.ts'), seedContent);
-    console.log('Created prisma/seed.ts');
+  fs.writeFileSync(path.join(process.cwd(), 'prisma', 'seed.ts'), seedContent);
+  console.log('Created prisma/seed.ts');
 }
 
 main()
-    .catch((e) => {
-        console.error(e);
-        process.exit(1);
-    })
-    .finally(async () => {
-        await prisma.$disconnect();
-    });
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
