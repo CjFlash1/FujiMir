@@ -265,7 +265,7 @@ export default function Home() {
 
       {/* CTA Section */}
       <section className="py-24 relative">
-        <div className="absolute inset-0 overflow-hidden -z-10 pointer-events-none">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute inset-0 bg-gradient-to-br from-[#009846] to-[#007a38]"></div>
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
         </div>

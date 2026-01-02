@@ -19,22 +19,15 @@ echo "Installing dependencies..." >> $LOG_FILE
 npm install --legacy-peer-deps --no-audit >> $LOG_FILE 2>&1
 
 # 3. Database Setup (Prisma)
-# Use local binary to avoid 'npx not found'
-PRISMA="./node_modules/.bin/prisma"
-if [ ! -f "$PRISMA" ]; then
-    echo "Prisma binary not found, trying global npx..." >> $LOG_FILE
-    PRISMA="npx prisma"
-fi
-
 echo "Running Prisma Generate..." >> $LOG_FILE
-$PRISMA generate >> $LOG_FILE 2>&1
+# Use npm exec to avoid 'npx not found' issues
+npm exec prisma generate >> $LOG_FILE 2>&1
 
 echo "Pushing DB Schema..." >> $LOG_FILE
-$PRISMA db push --accept-data-loss >> $LOG_FILE 2>&1
+npm exec prisma db push --accept-data-loss >> $LOG_FILE 2>&1
 
 echo "Seeding Database..." >> $LOG_FILE
-# This runs the command defined in package.json "prisma": {"seed": ...}
-$PRISMA db seed >> $LOG_FILE 2>&1
+npm exec prisma db seed >> $LOG_FILE 2>&1
 
 # 4. Build Application
 echo "Building application..." >> $LOG_FILE
@@ -42,8 +35,8 @@ echo "Building application..." >> $LOG_FILE
 export NODE_OPTIONS="--max-old-space-size=2048"
 export NEXT_TELEMETRY_DISABLED=1
 
-# Skip linting to save resources
-npm run build -- --no-lint >> $LOG_FILE 2>&1
+# Build (linting disabled in next.config.ts)
+npm run build >> $LOG_FILE 2>&1
 
 # 5. Restart
 echo "Triggering restart..." >> $LOG_FILE
