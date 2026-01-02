@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Save, Trash2, Package, Loader2, Search, UserCheck, UserPlus } from "lucide-react";
+import Link from "next/link";
+import { X, Save, Trash2, Package, Loader2, Search, UserCheck, UserPlus, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NovaPoshtaSelector } from "@/components/novaposhta-selector";
@@ -28,6 +29,18 @@ interface TTNModalProps {
 
 export function TTNModal({ order, onClose, onSuccess }: TTNModalProps) {
     const { t } = useTranslation();
+    const [keyStatus, setKeyStatus] = useState<'ok' | 'missing' | 'invalid' | 'loading'>('loading');
+
+    const checkKey = async () => {
+        try {
+            const res = await fetch('/api/fujiadmin/novaposhta/status');
+            const data = await res.json();
+            if (data.ok) setKeyStatus('ok');
+            else setKeyStatus(data.reason || 'invalid');
+        } catch (e) {
+            setKeyStatus('invalid');
+        }
+    };
     const [loading, setLoading] = useState(false);
     const [senders, setSenders] = useState<NPSender[]>([]);
     const [loadingSenders, setLoadingSenders] = useState(true);
@@ -37,7 +50,15 @@ export function TTNModal({ order, onClose, onSuccess }: TTNModalProps) {
     const [width, setWidth] = useState("20");
     const [height, setHeight] = useState("2");
     const [length, setLength] = useState("30");
-    const [payerType, setPayerType] = useState("Recipient");
+    const [payerType, setPayerType] = useState(() => {
+        const notes = order.notes || "";
+        const freeDeliveryKeywords = [
+            'БЕЗКОШТОВНА ДОСТАВКА', 'БЕСПЛАТНАЯ ДОСТАВКА', 'FREE DELIVERY',
+            '(БЕЗКОШТОВНО ЗА БОНУС)', '(БЕСПЛАТНО ЗА БОНУС)', '(FREE WITH BONUS)'
+        ];
+        const isFreeDelivery = freeDeliveryKeywords.some(k => notes.includes(k));
+        return isFreeDelivery ? "Sender" : "Recipient";
+    });
 
     const [senderFirstName, setSenderFirstName] = useState("");
     const [senderLastName, setSenderLastName] = useState("");
@@ -57,6 +78,7 @@ export function TTNModal({ order, onClose, onSuccess }: TTNModalProps) {
     const [isSavingSender, setIsSavingSender] = useState(false);
 
     useEffect(() => {
+        checkKey();
         fetchSenders();
         const savedPhone = localStorage.getItem('lastSenderPhone');
         if (savedPhone) setSenderPhone(savedPhone);
@@ -115,13 +137,13 @@ export function TTNModal({ order, onClose, onSuccess }: TTNModalProps) {
             const data = await res.json();
             if (data.results && data.results.length > 0) {
                 setRecipientVariants(data.results);
-                toast.success(`Знайдено ${data.results.length} варіантів`);
+                toast.success(t('ttn.found_variants', `Знайдено ${data.results.length} варіантів`));
             } else {
-                toast.info("За цим номером отримувачів не знайдено.");
+                toast.info(t('ttn.no_recipients_found'));
             }
         } catch (e) {
             console.error(e);
-            toast.error("Помилка пошуку");
+            toast.error(t('ttn.search_error'));
         } finally {
             setIsSearchingRecipient(false);
         }
@@ -133,7 +155,7 @@ export function TTNModal({ order, onClose, onSuccess }: TTNModalProps) {
         setSelectedRecipientRef(variant.counterpartyRef);
         setSelectedContactRef(variant.ref);
         setRecipientVariants([]); // Hide list after selection
-        toast.success(`Вибрано: ${variant.fullName}`);
+        toast.success(t('ttn.recipient_selected', `Вибрано: ${variant.fullName}`));
     };
 
     const handleSaveSender = async () => {
@@ -145,7 +167,7 @@ export function TTNModal({ order, onClose, onSuccess }: TTNModalProps) {
             if (!senderCityRef) missing.push("Місто (Ref)");
             if (!senderWarehouseRef) missing.push("Відділення (Ref)");
 
-            toast.error(`Будь ласка, заповніть всі дані відправника: ${missing.join(", ")}`);
+            toast.error(t('ttn.fill_sender_data'));
             return;
         }
         setIsSavingSender(true);
@@ -178,7 +200,7 @@ export function TTNModal({ order, onClose, onSuccess }: TTNModalProps) {
     };
 
     const handleDeleteSender = async (id: number) => {
-        if (!confirm("Видалити ці дані відправника?")) return;
+        if (!confirm(t('ttn.confirm_delete_sender'))) return;
         try {
             const res = await fetch(`/api/novaposhta/senders/${id}`, { method: "DELETE" });
             if (res.ok) {
@@ -225,17 +247,49 @@ export function TTNModal({ order, onClose, onSuccess }: TTNModalProps) {
             const data = await res.json();
             if (res.ok) {
                 onSuccess(data.ttnNumber);
-                toast.success('ТТН успішно створено!');
+                toast.success(t('ttn.success'));
             } else {
-                toast.error(`Помилка: ${data.error}\n${data.details?.join(', ') || ''}`);
+                toast.error(t('ttn.error') + `: ${data.error}\n${data.details?.join(', ') || ''}`);
             }
         } catch (e) {
             console.error(e);
-            toast.error("Сталася помилка при генерації ТТН");
+            toast.error(t('ttn.generation_error'));
         } finally {
             setLoading(false);
         }
     };
+
+    if (keyStatus === 'loading') {
+        return (
+            <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4">
+                <Loader2 className="w-10 h-10 text-white animate-spin" />
+            </div>
+        );
+    }
+
+    if (keyStatus === 'missing' || keyStatus === 'invalid') {
+        return (
+            <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 text-center animate-in fade-in zoom-in-95 duration-200">
+                    <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <AlertTriangle className="w-6 h-6 text-red-600" />
+                    </div>
+                    <h2 className="text-xl font-bold text-slate-900 mb-2">{t('ttn.key_error_title', 'Помилка ключа API')}</h2>
+                    <p className="text-slate-600 mb-6">
+                        {t('ttn.key_error_msg', 'Введіть діючий ключ в налаштуваннях')}
+                    </p>
+                    <div className="flex flex-col gap-3">
+                        <Link href="/fujiadmin/settings" className="w-full inline-flex justify-center items-center px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors font-medium">
+                            {t('ttn.goto_settings', 'Перейти в налаштування')}
+                        </Link>
+                        <button onClick={onClose} className="text-slate-500 hover:text-slate-700 text-sm font-medium">
+                            {t('common.cancel', 'Скасувати')}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4">
@@ -254,25 +308,25 @@ export function TTNModal({ order, onClose, onSuccess }: TTNModalProps) {
                     {/* Package Params */}
                     <div className="space-y-4">
                         <h3 className="font-semibold text-slate-800 border-l-4 border-blue-500 pl-3">{t('ttn.package_params', 'Параметри посилки')}</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-medium text-slate-500">{t('ttn.p_weight', 'Вага (кг)')}</label>
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 items-end">
+                            <div className="flex flex-col">
+                                <label className="text-xs font-medium text-slate-500 min-h-[32px] flex items-end pb-1.5">{t('ttn.p_weight', 'Вага (кг)')}</label>
                                 <Input type="number" value={weight} onChange={e => setWeight(e.target.value)} step="0.1" />
                             </div>
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-medium text-slate-500">{t('ttn.p_width', 'Ширина (см)')}</label>
+                            <div className="flex flex-col">
+                                <label className="text-xs font-medium text-slate-500 min-h-[32px] flex items-end pb-1.5">{t('ttn.p_width', 'Ширина (см)')}</label>
                                 <Input type="number" value={width} onChange={e => setWidth(e.target.value)} />
                             </div>
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-medium text-slate-500">{t('ttn.p_height', 'Висота (см)')}</label>
+                            <div className="flex flex-col">
+                                <label className="text-xs font-medium text-slate-500 min-h-[32px] flex items-end pb-1.5">{t('ttn.p_height', 'Висота (см)')}</label>
                                 <Input type="number" value={height} onChange={e => setHeight(e.target.value)} />
                             </div>
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-medium text-slate-500">{t('ttn.p_length', 'Довжина (см)')}</label>
+                            <div className="flex flex-col">
+                                <label className="text-xs font-medium text-slate-500 min-h-[32px] flex items-end pb-1.5">{t('ttn.p_length', 'Довжина (см)')}</label>
                                 <Input type="number" value={length} onChange={e => setLength(e.target.value)} />
                             </div>
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-medium text-slate-500">{t('ttn.p_cost', 'Оцінка (грн)')}</label>
+                            <div className="flex flex-col">
+                                <label className="text-xs font-medium text-slate-500 min-h-[32px] flex items-end pb-1.5">{t('ttn.p_cost', 'Оцінка (грн)')}</label>
                                 <Input type="number" value={declaredCost} onChange={e => setDeclaredCost(e.target.value)} />
                             </div>
                         </div>
@@ -424,8 +478,8 @@ export function TTNModal({ order, onClose, onSuccess }: TTNModalProps) {
                             {recipientVariants.length > 0 && (
                                 <div className="mt-2 border border-slate-200 rounded-md bg-white shadow-sm max-h-40 overflow-y-auto">
                                     <div className="bg-slate-50 px-3 py-1.5 border-b border-slate-100 flex justify-between items-center">
-                                        <p className="text-xs font-medium text-slate-500">Знайдено {recipientVariants.length} ос.</p>
-                                        <button onClick={() => setRecipientVariants([])} className="text-xs text-blue-500 hover:underline">Закрити</button>
+                                        <p className="text-xs font-medium text-slate-500">{t('ttn.found')} {recipientVariants.length} {t('ttn.persons')}</p>
+                                        <button onClick={() => setRecipientVariants([])} className="text-xs text-blue-500 hover:underline">{t('ttn.close')}</button>
                                     </div>
                                     {recipientVariants.map((v, i) => (
                                         <div
@@ -438,7 +492,7 @@ export function TTNModal({ order, onClose, onSuccess }: TTNModalProps) {
                                                 <span className="text-xs text-slate-400">{v.phone}</span>
                                             </div>
                                             <div className="opacity-0 group-hover:opacity-100 bg-green-50 text-green-600 text-xs px-2 py-1 rounded-full font-medium">
-                                                Вибрати
+                                                {t('ttn.select')}
                                             </div>
                                         </div>
                                     ))}

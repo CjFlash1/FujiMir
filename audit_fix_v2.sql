@@ -1,0 +1,50 @@
+REPLACE INTO Translation (lang, `key`, value) VALUES
+-- UK SEO
+('uk', 'home.seo.title', 'Послуги цифрового фотодруку через інтернет у м. Дніпро'),
+('uk', 'home.seo.intro', 'Як ви думаєте, для чого потрібні фотографії? Фотографії потрібні для того, щоб зафіксувати унікальні моменти життя, які, можливо, ніколи не повторяться!'),
+('uk', 'home.seo.offer', 'Саме це і пропонує своїм клієнтам служба друку фотографій онлайн «FUJI-Світ» — друк фотографій у Дніпрі. Ви скажете, що друк фото у Дніпрі пропонують багато хто, і, звісно ж, маєте рацію! Але відчути себе на крок попереду всіх, скориставшись послугою друку фотографій через інтернет у Дніпрі, допоможемо вам саме ми!'),
+('uk', 'home.seo.services_title', 'У нас ви можете замовити ряд дизайнерських послуг таких як:'),
+('uk', 'home.seo.service_scanning', 'сканування фотографій та плівок'),
+('uk', 'home.seo.service_restoration', 'реставрація та комп\'ютерна обробка фотографій'),
+('uk', 'home.seo.service_redeye', 'усунення ефекту червоних очей'),
+('uk', 'home.seo.service_collage', 'розробка різноманітних макетів та колажів'),
+('uk', 'home.seo.service_docs', 'а також зробити фотографію на документи'),
+('uk', 'home.seo.service_film', 'продаж фотоплівки та проявка плівок'),
+('uk', 'home.seo.service_frames', 'продаж фоторамок різних розмірів'),
+('uk', 'home.seo.slogan', 'Наш сервіс для тих людей, хто цінує свій час та гроші!'),
+
+-- RU SEO
+('ru', 'home.seo.title', 'Услуги цифровой фотопечати через интернет в г. Днепр'),
+('ru', 'home.seo.intro', 'Как вы думаете, для чего нужны фотографии? Фотографии нужны для того, чтобы запечатлеть уникальные моменты жизни, которые, возможно, никогда не повторятся!'),
+('ru', 'home.seo.offer', 'Именно это и предлагает своим клиентам служба печати фотографий онлайн «FUJI-Світ» — печать фотографий в Днепре. Вы скажете, что печать фото в Днепре предлагают многие, и, конечно же, будете правы! Но почувствовать себя на шаг впереди всех, воспользовавшись услугой печати фотографий через интернет в Днепре, поможем вам именно мы!'),
+('ru', 'home.seo.services_title', 'У нас вы можете заказать ряд дизайнерских услуг, таких как:'),
+('ru', 'home.seo.service_scanning', 'сканирование фотографий и пленок'),
+('ru', 'home.seo.service_restoration', 'реставрация и компьютерная обработка фотографий'),
+('ru', 'home.seo.service_redeye', 'устранение эффекта красных глаз'),
+('ru', 'home.seo.service_collage', 'разработка разнообразных макетов и коллажей'),
+('ru', 'home.seo.service_docs', 'а также сделать фотографию на документы'),
+('ru', 'home.seo.service_film', 'продажа фотопленки и проявка пленок'),
+('ru', 'home.seo.service_frames', 'продажа фоторамок разных размеров'),
+('ru', 'home.seo.slogan', 'Наш сервис для тех людей, кто ценит свое время и деньги!'),
+
+-- EN SEO
+('en', 'home.seo.title', 'Digital photo printing services via the Internet in Dnipro'),
+('en', 'home.seo.intro', 'What do you think photographs are for? Photographs are needed to capture unique moments in life that may never happen again!'),
+('en', 'home.seo.offer', 'This is exactly what the online photo printing service «FUJI-Svit» offers — photo printing in Dnipro. You might say that many offer photo printing in Dnipro, and, of course, you would be right! But we are the ones who will help you feel a step ahead of everyone else by taking advantage of the online photo printing service in Dnipro!'),
+('en', 'home.seo.services_title', 'Here you can order a range of design services such as:'),
+('en', 'home.seo.service_scanning', 'scanning photos and films'),
+('en', 'home.seo.service_restoration', 'restoration and computer processing of photos'),
+('en', 'home.seo.service_redeye', 'red-eye removal'),
+('en', 'home.seo.service_collage', 'development of various layouts and collages'),
+('en', 'home.seo.service_docs', 'as well as take a photo for documents'),
+('en', 'home.seo.service_film', 'sale of photographic film and film development'),
+('en', 'home.seo.service_frames', 'sale of photo frames of various sizes'),
+('en', 'home.seo.slogan', 'Our service is for those who value their time and money!'),
+
+-- EN Benefits restore
+('en', 'benefits.delivery.desc', 'Production starts immediately after upload. Delivery throughout Ukraine.'),
+('en', 'benefits.delivery.title', 'Fast Delivery'),
+('en', 'benefits.discounts.desc', 'Order more, pay less. Discounts are applied automatically in the cart.'),
+('en', 'benefits.discounts.title', 'Auto Discounts'),
+('en', 'benefits.quality.desc', 'Original Fuji Crystal Archive paper for bright colors and clear details.'),
+('en', 'benefits.quality.title', 'Premium Quality');

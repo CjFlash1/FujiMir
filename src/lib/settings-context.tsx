@@ -19,11 +19,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         fetch('/api/fujiadmin/settings')
             .then(res => res.json())
             .then(data => {
-                const settingsMap = data.reduce((acc: any, curr: any) => {
-                    acc[curr.key] = curr.value;
-                    return acc;
-                }, {});
-                setSettings(settingsMap);
+                if (Array.isArray(data)) {
+                    const settingsMap = data.reduce((acc: any, curr: any) => {
+                        acc[curr.key] = curr.value;
+                        return acc;
+                    }, {});
+                    setSettings(settingsMap);
+                }
                 setIsLoading(false);
             })
             .catch(err => {

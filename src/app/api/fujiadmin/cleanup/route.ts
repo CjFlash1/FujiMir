@@ -68,24 +68,46 @@ export async function POST(req: Request) {
         const thumbDir = join(uploadsDir, "thumb");
         const tempDir = join(uploadsDir, "temp");
 
+        let mode = 'safe';
+        try {
+            const body = await req.json();
+            if (body.mode) mode = body.mode;
+        } catch (e) { }
+
+        const isFull = mode === 'full';
         const now = Date.now();
-        const ONE_HOUR_MS = 60 * 60 * 1000;
+
+        // Safe: 1 hour temp, 24h orphan. Full: 0 for both.
+        const TEMP_MAX_AGE = isFull ? 0 : 60 * 60 * 1000;
+        const ORPHAN_MIN_AGE_MS = isFull ? 0 : 24 * 60 * 60 * 1000;
 
         let tempDeleted = 0;
         let thumbDeleted = 0;
+        let orphansDeleted = 0;
         const orphanFiles: string[] = [];
         const errors: string[] = [];
 
-        // 1. Clean temp folder (chunks older than 1 hour)
+        // 0. (Full Only) Delete PENDING orders to free up their files
+        if (isFull) {
+            try {
+                await prisma.order.deleteMany({ where: { status: 'PENDING' } });
+            } catch (e) {
+                console.error("Failed to clean PENDING orders", e);
+            }
+        }
+
+        // 1. Clean temp folder
         try {
             const tempFiles = await readdir(tempDir);
             for (const file of tempFiles) {
                 const filePath = join(tempDir, file);
-                const stats = await stat(filePath);
-                if (stats.isFile() && (now - stats.mtimeMs) > ONE_HOUR_MS) {
-                    await unlink(filePath);
-                    tempDeleted++;
-                }
+                try {
+                    const stats = await stat(filePath);
+                    if (stats.isFile() && (now - stats.mtimeMs) > TEMP_MAX_AGE) {
+                        await unlink(filePath);
+                        tempDeleted++;
+                    }
+                } catch (e) { }
             }
         } catch (e) { /* temp folder may not exist */ }
 
@@ -114,38 +136,33 @@ export async function POST(req: Request) {
             }
         }
 
-        // 3. Clean thumbnails without originals
+        // 3. Clean thumbnails without originals (First Pass)
         try {
             const thumbFiles = await readdir(thumbDir);
-            const mainFiles = new Set(await readdir(uploadsDir).then(f => f.filter(async x => {
-                const s = await stat(join(uploadsDir, x)).catch(() => null);
-                return s && s.isFile();
-            })));
 
-            // Get actual main files (not dirs)
+            // Get actual main files
             const actualMainFiles = new Set<string>();
-            const mainItems = await readdir(uploadsDir);
-            for (const item of mainItems) {
-                const itemPath = join(uploadsDir, item);
-                try {
-                    const s = await stat(itemPath);
-                    if (s.isFile()) actualMainFiles.add(item);
-                } catch (e) { }
-            }
+            try {
+                const mainItems = await readdir(uploadsDir);
+                for (const item of mainItems) {
+                    const itemPath = join(uploadsDir, item);
+                    try {
+                        const s = await stat(itemPath);
+                        if (s.isFile()) actualMainFiles.add(item);
+                    } catch (e) { }
+                }
+            } catch (e) { }
 
             for (const thumbFile of thumbFiles) {
                 // If no original exists, delete thumbnail
                 if (!actualMainFiles.has(thumbFile) && !usedFiles.has(thumbFile)) {
-                    await unlink(join(thumbDir, thumbFile));
+                    await unlink(join(thumbDir, thumbFile)).catch(() => { });
                     thumbDeleted++;
                 }
             }
         } catch (e) { /* thumb folder may not exist */ }
 
         // 4. Find orphan files (main files not in any order)
-        // Only consider files older than 24 hours to protect active sessions
-        const ORPHAN_MIN_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
-
         try {
             const mainItems = await readdir(uploadsDir);
             for (const item of mainItems) {
@@ -157,21 +174,28 @@ export async function POST(req: Request) {
                     const s = await stat(itemPath);
                     if (s.isDirectory()) continue;
 
-                    // Skip files younger than 24 hours (protect active sessions/drafts)
+                    // Check age
                     const fileAge = now - s.mtimeMs;
                     if (fileAge < ORPHAN_MIN_AGE_MS) continue;
 
-                    // Check if file is used in any order
+                    // Check usage
                     if (!usedFiles.has(item)) {
-                        orphanFiles.push(item);
+                        if (isFull) {
+                            // Full Clean: Destroy
+                            await unlink(itemPath);
+                            orphansDeleted++;
+                        } else {
+                            // Safe Clean: Recover
+                            orphanFiles.push(item);
+                        }
                     }
                 } catch (e) { }
             }
         } catch (e) { /* main folder may not exist */ }
 
-        // 5. If orphans found, create recovery order
+        // 5. If orphans found (Safe Mode), create recovery order
         let recoveryOrderNumber: string | null = null;
-        if (orphanFiles.length > 0) {
+        if (!isFull && orphanFiles.length > 0) {
             // Generate Order Number
             try {
                 const seqs = await prisma.$queryRaw<Array<{ id: number, currentValue: number }>>`SELECT id, currentValue FROM OrderSequence LIMIT 1`;
@@ -237,27 +261,50 @@ export async function POST(req: Request) {
             }
         }
 
-        // 6. Also delete orphan thumbnails now that originals are moved
+        // 6. Delete thumbnails of processed orphans (both modes)
         try {
             const thumbFiles = await readdir(thumbDir);
-            for (const f of orphanFiles) {
-                if (thumbFiles.includes(f)) {
-                    await unlink(join(thumbDir, f)).catch(() => { });
-                    thumbDeleted++;
+            // If Full: orphans were deleted, so we check if thumb has no original (logic 3 again?).
+            // Or just check stored list.
+            const targetFiles = isFull ? [] : orphanFiles; // In full mode, files are gone, so logic 3 (or 2nd pass) catches them?
+            // Actually, if we deleted Main files, the thumbnails are now orphans.
+
+            // Let's simple iterate thumb again if Full mode
+            if (isFull) {
+                const updatedMainFiles = new Set(await readdir(uploadsDir).catch(() => []));
+                for (const t of thumbFiles) {
+                    if (!updatedMainFiles.has(t) && !usedFiles.has(t)) {
+                        await unlink(join(thumbDir, t)).catch(() => { });
+                        thumbDeleted++;
+                    }
+                }
+            } else {
+                // Safe Mode: delete thumbs of items moved to folder
+                for (const f of orphanFiles) {
+                    if (thumbFiles.includes(f)) {
+                        await unlink(join(thumbDir, f)).catch(() => { });
+                        thumbDeleted++;
+                    }
                 }
             }
         } catch (e) { }
 
-        const message = orphanFiles.length > 0
-            ? `Recovered ${orphanFiles.length} orphan files to Order #${recoveryOrderNumber}`
-            : "No orphan files found.";
+        let message = "";
+        if (isFull) {
+            message = `Full Clean Complete. Deleted ${orphansDeleted} orphans, ${tempDeleted} temp files.`;
+        } else {
+            message = orphanFiles.length > 0
+                ? `Recovered ${orphanFiles.length} orphan files to Order #${recoveryOrderNumber}`
+                : "No orphan files found.";
+        }
 
         return NextResponse.json({
             success: true,
             message,
             tempDeleted,
             thumbDeleted,
-            orphansRecovered: orphanFiles.length,
+            orphansRecovered: isFull ? 0 : orphanFiles.length,
+            orphansDeleted: isFull ? orphansDeleted : 0,
             recoveryOrderNumber,
             errors: errors.length > 0 ? errors : undefined
         });

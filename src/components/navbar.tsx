@@ -180,7 +180,7 @@ export function Navbar() {
 
                     <button
                         onClick={() => setIsOpen(!isOpen)}
-                        className="p-2 text-white hover:bg-white/10 rounded-md"
+                        className="lg:hidden p-2 text-white hover:bg-white/10 rounded-md"
                     >
                         {isOpen ? <X className="h-7 w-7" /> : <Menu className="h-7 w-7" />}
                     </button>

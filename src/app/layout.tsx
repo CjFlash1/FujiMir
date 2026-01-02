@@ -25,12 +25,23 @@ export async function generateMetadata(): Promise<Metadata> {
   const yandexVerification = await prisma.setting.findUnique({ where: { key: 'yandex_verification' } });
   const bingVerification = await prisma.setting.findUnique({ where: { key: 'bing_verification' } });
 
+  // Fetch SEO Translations (Default UK)
+  const seoTitle = await prisma.translation.findUnique({
+    where: { lang_key: { lang: 'uk', key: 'home.seo.title' } }
+  });
+  const seoDesc = await prisma.translation.findUnique({
+    where: { lang_key: { lang: 'uk', key: 'home.seo.offer' } }
+  });
+
+  const pageTitle = seoTitle?.value || `${siteNameValue} | Друк фотографій онлайн у Дніпрі`;
+  const pageDesc = seoDesc?.value?.substring(0, 160) + '...' || "Професійний друк фотографій онлайн у Дніпрі. Висока якість, швидка доставка.";
+
   return {
     title: {
-      default: `${siteNameValue} | Друк фотографій онлайн у Дніпрі`,
+      default: pageTitle,
       template: `%s | ${siteNameValue}`,
     },
-    description: "Професійний друк фотографій онлайн у Дніпрі. Висока якість друку на обладнанні Fuji Frontier 500. Швидка доставка по Україні. Знижки від 100 фото.",
+    description: pageDesc,
     keywords: [
       // Ukrainian
       "друк фотографій", "друк фото онлайн", "фотодрук Дніпро", "фото на магніті",
@@ -54,19 +65,14 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL('https://fujimir.com.ua'),
     alternates: {
       canonical: '/',
-      languages: {
-        'uk-UA': '/uk',
-        'ru-RU': '/ru',
-        'en-US': '/en',
-      },
     },
     openGraph: {
       type: 'website',
       locale: 'uk_UA',
       url: 'https://fujimir.com.ua',
       siteName: siteNameValue,
-      title: `${siteNameValue} | Друк фотографій онлайн у Дніпрі`,
-      description: "Професійний друк фотографій онлайн у Дніпрі. Висока якість друку на обладнанні Fuji Frontier 500.",
+      title: pageTitle,
+      description: pageDesc,
       images: [
         {
           url: '/og-image.jpg',
@@ -78,8 +84,8 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${siteNameValue} | Друк фотографій онлайн`,
-      description: "Професійний друк фотографій онлайн у Дніпрі",
+      title: pageTitle,
+      description: pageDesc,
     },
     robots: {
       index: true,
@@ -110,7 +116,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru" suppressHydrationWarning>
+    <html lang="uk" suppressHydrationWarning>
       <body
         suppressHydrationWarning
         className={`${manrope.variable} ${caveat.variable} font-sans antialiased min-h-screen flex flex-col`}

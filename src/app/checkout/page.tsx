@@ -54,6 +54,7 @@ export default function CheckoutPage() {
     const [addressError, setAddressError] = useState<string | null>(null);
     const [giftError, setGiftError] = useState<string | null>(null);
     const [emailError, setEmailError] = useState<string | null>(null);
+    const [magnetError, setMagnetError] = useState<string | null>(null);
 
     // Gift selection state
     const [giftChoice, setGiftChoice] = useState<GiftChoice | null>(null);
@@ -210,6 +211,13 @@ export default function CheckoutPage() {
             return;
         }
 
+        // Check if magnet option was selected when Free Magnet is chosen
+        if (giftChoice === 'FREE_MAGNET' && !magnetOption) {
+            setMagnetError(t('gift.make_choice'));
+            scrollToError('gift-section');
+            return;
+        }
+
         // Check magnet comments
         if (giftChoice === 'FREE_MAGNET' && magnetOption === 'comment' && !magnetComment.trim()) {
             setGiftError(t('validation.required_field'));
@@ -272,25 +280,28 @@ export default function CheckoutPage() {
             }
 
             // 3. Build notes with gift info (Same as before)
+            // 3. Build notes with gift info (Translated)
             let orderNotes = "";
             if (activeDeliveryOption) {
-                orderNotes += `🚚 Доставка: ${activeDeliveryOption.name}`;
-                if (giftChoice === 'FREE_DELIVERY' && activeDeliveryOption.price > 0) orderNotes += ` (БЕЗКОШТОВНО ЗА БОНУС)`;
+                orderNotes += `${t('order.note_delivery_prefix', '🚚 Доставка: ')}${activeDeliveryOption.name}`;
+                if (giftChoice === 'FREE_DELIVERY' && activeDeliveryOption.price > 0) {
+                    orderNotes += ` ${t('order.note_free_bonus', '(БЕЗКОШТОВНО ЗА БОНУС)')}`;
+                }
                 orderNotes += `\n`;
             }
 
             if (activeGift && giftChoice) {
                 if (giftChoice === 'FREE_DELIVERY') {
-                    orderNotes += `🎁 ПОДАРУНОК: БЕЗКОШТОВНА ДОСТАВКА\n`;
+                    orderNotes += `${t('order.note_gift_prefix', '🎁 ПОДАРУНОК: ')}${t('order.note_free_delivery', 'БЕЗКОШТОВНА ДОСТАВКА')}\n`;
                 } else if (giftChoice === 'FREE_MAGNET') {
-                    orderNotes += `🎁 ПОДАРУНОК: БЕЗКОШТОВНИЙ МАГНІТ 10x15\n`;
+                    orderNotes += `${t('order.note_gift_prefix', '🎁 ПОДАРУНОК: ')}${t('order.note_free_magnet', 'БЕЗКОШТОВНИЙ МАГНІТ 10x15')}\n`;
                     if (magnetOption === 'upload' && magnetFileData) {
-                        orderNotes += `📷 Нове фото (завантажено): ${magnetFileData.original}`;
+                        orderNotes += `${t('order.note_new_photo', '📷 Нове фото (завантажено): ')}${magnetFileData.original}`;
                     } else if (magnetOption === 'existing' && magnetPhotoId) {
                         const selectedItem = items.find(i => i.id === magnetPhotoId);
-                        orderNotes += `📷 Фото з замовлення: ${selectedItem?.file?.name || magnetPhotoId}`;
+                        orderNotes += `${t('order.note_existing_photo', '📷 Фото з замовлення: ')}${selectedItem?.file?.name || magnetPhotoId}`;
                     } else if (magnetOption === 'comment' && magnetComment) {
-                        orderNotes += `💬 Коментар клієнта: ${magnetComment}`;
+                        orderNotes += `${t('order.note_client_comment', '💬 Коментар клієнта: ')}${magnetComment}`;
                     }
                 }
             }
@@ -660,7 +671,7 @@ export default function CheckoutPage() {
 
                                             <button
                                                 type="button"
-                                                onClick={() => { setGiftChoice('FREE_MAGNET'); setGiftError(null); }}
+                                                onClick={() => { setGiftChoice('FREE_MAGNET'); setGiftError(null); setMagnetError(null); }}
                                                 className={`p-3 rounded-lg border-2 text-left transition-all flex items-center gap-3 ${giftChoice === 'FREE_MAGNET'
                                                     ? 'border-purple-500 bg-purple-100 text-purple-800'
                                                     : 'border-gray-200 hover:border-purple-300'
@@ -675,11 +686,12 @@ export default function CheckoutPage() {
                                         {giftChoice === 'FREE_MAGNET' && (
                                             <div className="mt-3 space-y-2 pl-4 border-l-2 border-purple-300">
                                                 <p className="text-xs text-purple-600 font-medium uppercase">{t('gift.free_magnet')} — {t('gift.select_photo')}:</p>
+                                                {magnetError && <p className="text-sm text-red-500 font-medium mt-1">{magnetError}</p>}
 
                                                 {/* Option 1: Upload new photo */}
                                                 <button
                                                     type="button"
-                                                    onClick={() => { setMagnetOption('upload'); magnetFileRef.current?.click(); }}
+                                                    onClick={() => { setMagnetOption('upload'); magnetFileRef.current?.click(); setMagnetError(null); }}
                                                     className={`w-full p-2 rounded border text-left text-sm flex items-center gap-2 ${magnetOption === 'upload' ? 'border-purple-400 bg-purple-50' : 'border-gray-200 hover:border-purple-200'
                                                         }`}
                                                 >
@@ -708,7 +720,7 @@ export default function CheckoutPage() {
                                                             type="radio"
                                                             name="magnetOption"
                                                             checked={magnetOption === 'existing'}
-                                                            onChange={() => setMagnetOption('existing')}
+                                                            onChange={() => { setMagnetOption('existing'); setMagnetError(null); }}
                                                         />
                                                         {t('gift.magnet_existing')}
                                                     </label>
@@ -735,7 +747,7 @@ export default function CheckoutPage() {
                                                             type="radio"
                                                             name="magnetOption"
                                                             checked={magnetOption === 'comment'}
-                                                            onChange={() => setMagnetOption('comment')}
+                                                            onChange={() => { setMagnetOption('comment'); setMagnetError(null); }}
                                                         />
                                                         {t('gift.magnet_comment')}
                                                     </label>
@@ -760,14 +772,25 @@ export default function CheckoutPage() {
                                     </div>
                                     <div className="flex justify-between items-center text-sm text-slate-600">
                                         <span>{t('pricing.delivery')}: {activeDeliveryOption?.name}</span>
-                                        <span className={`font-medium ${giftChoice === 'FREE_DELIVERY' || activeDeliveryOption?.slug === 'pickup' ? 'text-green-600' : ''}`}>
-                                            {giftChoice === 'FREE_DELIVERY'
-                                                ? t('checkout.free')
-                                                : (deliveryPrice > 0
-                                                    ? `${deliveryPrice.toFixed(2)} ${t('general.currency')}`
-                                                    : (activeDeliveryOption?.slug === 'pickup' ? t('checkout.free') : t('pricing.by_tariff'))
-                                                )
-                                            }
+                                        <span className="font-medium">
+                                            {(() => {
+                                                if (giftChoice === 'FREE_DELIVERY') return <span className="text-green-600">{t('checkout.free')}</span>;
+                                                if (deliveryPrice > 0) return `${deliveryPrice.toFixed(2)} ${t('general.currency')}`;
+                                                if (activeDeliveryOption?.slug === 'pickup') return <span className="text-green-600">{t('checkout.free')}</span>;
+                                                if (activeDeliveryOption?.slug === 'novaposhta') {
+                                                    return (
+                                                        <a
+                                                            href="https://novaposhta.ua/delivery"
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-primary-600 underline hover:text-primary-800 decoration-dotted underline-offset-4"
+                                                        >
+                                                            {t('pricing.by_tariff')}
+                                                        </a>
+                                                    );
+                                                }
+                                                return t('pricing.by_tariff');
+                                            })()}
                                         </span>
                                     </div>
 

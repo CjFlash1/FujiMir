@@ -1944,112 +1944,106 @@
     "value": "Магніт"
   },
   {
-    "id": 146,
     "lang": "en",
     "key": "benefits.delivery.desc",
-    "value": "Fast delivery across Ukraine"
+    "value": "Production starts immediately after upload. Delivery throughout Ukraine."
   },
   {
     "id": 147,
     "lang": "ru",
     "key": "benefits.delivery.desc",
-    "value": "Быстрая доставка по Украине"
+    "value": "Производство начинается сразу после загрузки. Доставка по всей Украине."
   },
   {
     "id": 145,
     "lang": "uk",
     "key": "benefits.delivery.desc",
-    "value": "Швидка доставка по Україні"
+    "value": "Виробництво починається відразу після завантаження. Доставка по всій Україні."
   },
   {
-    "id": 143,
     "lang": "en",
     "key": "benefits.delivery.title",
-    "value": "Delivery"
+    "value": "Fast Delivery"
   },
   {
     "id": 144,
     "lang": "ru",
     "key": "benefits.delivery.title",
-    "value": "Доставка"
+    "value": "Быстрая Доставка"
   },
   {
     "id": 142,
     "lang": "uk",
     "key": "benefits.delivery.title",
-    "value": "Доставка"
+    "value": "Швидка Доставка"
   },
   {
-    "id": 140,
     "lang": "en",
     "key": "benefits.discounts.desc",
-    "value": "Discounts for large orders"
+    "value": "Order more, pay less. Discounts are applied automatically in the cart."
   },
   {
     "id": 141,
     "lang": "ru",
     "key": "benefits.discounts.desc",
-    "value": "Скидки на большие заказы"
+    "value": "Заказывайте больше, платите меньше. Скидки применяются автоматически в корзине."
   },
   {
     "id": 139,
     "lang": "uk",
     "key": "benefits.discounts.desc",
-    "value": "Знижки на великі замовлення"
+    "value": "Замовляйте більше, платіть менше. Знижки застосовуються автоматично в кошику."
   },
   {
-    "id": 137,
     "lang": "en",
     "key": "benefits.discounts.title",
-    "value": "Discounts"
+    "value": "Auto Discounts"
   },
   {
     "id": 138,
     "lang": "ru",
     "key": "benefits.discounts.title",
-    "value": "Скидки"
+    "value": "Авто Скидки"
   },
   {
     "id": 136,
     "lang": "uk",
     "key": "benefits.discounts.title",
-    "value": "Знижки"
+    "value": "Авто Знижки"
   },
   {
-    "id": 134,
     "lang": "en",
     "key": "benefits.quality.desc",
-    "value": "Professional photo printing"
+    "value": "Original Fuji Crystal Archive paper for bright colors and clear details."
   },
   {
     "id": 135,
     "lang": "ru",
     "key": "benefits.quality.desc",
-    "value": "Профессиональная печать фото"
+    "value": "Оригинальная бумага Fuji Crystal Archive для ярких цветов и четких деталей."
   },
   {
     "id": 133,
     "lang": "uk",
     "key": "benefits.quality.desc",
-    "value": "Професійний друк фото"
+    "value": "Оригінальний папір Fuji Crystal Archive для яскравих кольорів та чітких деталей."
   },
   {
-    "id": 131,
     "lang": "en",
     "key": "benefits.quality.title",
-    "value": "Quality"
+    "value": "Premium Quality"
   },
   {
     "id": 132,
     "lang": "ru",
     "key": "benefits.quality.title",
-    "value": "Качество"
+    "value": "Премиум Качество"
   },
   {
     "id": 130,
     "lang": "uk",
     "key": "benefits.quality.title",
-    "value": "Якість"
+    "value": "Преміум Якість"
   },
   {
     "id": 173,
@@ -2109,19 +2103,19 @@
     "id": 224,
     "lang": "en",
     "key": "checkout.back",
-    "value": "Back"
+    "value": "Back to Upload"
   },
   {
     "id": 225,
     "lang": "ru",
     "key": "checkout.back",
-    "value": "Назад"
+    "value": "Назад к загрузке"
   },
   {
     "id": 223,
     "lang": "uk",
     "key": "checkout.back",
-    "value": "Назад"
+    "value": "Назад до завантаження"
   },
   {
     "id": 26,
@@ -2181,37 +2175,37 @@
     "id": 206,
     "lang": "en",
     "key": "checkout.email",
-    "value": "Email"
+    "value": "Email Address (Optional)"
   },
   {
     "id": 207,
     "lang": "ru",
     "key": "checkout.email",
-    "value": "Email"
+    "value": "Email (необязательно)"
   },
   {
     "id": 205,
     "lang": "uk",
     "key": "checkout.email",
-    "value": "Email"
+    "value": "Email (необов'язково)"
   },
   {
     "id": 221,
     "lang": "en",
     "key": "checkout.empty",
-    "value": "Your cart is empty"
+    "value": "Your cart is empty."
   },
   {
     "id": 222,
     "lang": "ru",
     "key": "checkout.empty",
-    "value": "Ваша корзина пуста"
+    "value": "Ваша корзина пуста."
   },
   {
     "id": 220,
     "lang": "uk",
     "key": "checkout.empty",
-    "value": "Ваш кошик порожній"
+    "value": "Ваш кошик порожній."
   },
   {
     "id": 22292,
@@ -2253,19 +2247,19 @@
     "id": 7616,
     "lang": "en",
     "key": "checkout.fullname_hint",
-    "value": "As in passport"
+    "value": "For Nova Poshta please enter first and last name"
   },
   {
     "id": 7617,
     "lang": "ru",
     "key": "checkout.fullname_hint",
-    "value": "Как в паспорте"
+    "value": "Для Новой Почты укажите имя и фамилию"
   },
   {
     "id": 7615,
     "lang": "uk",
     "key": "checkout.fullname_hint",
-    "value": "Як у паспорті"
+    "value": "Для Нової Пошти вкажіть ім'я та прізвище"
   },
   {
     "id": 22295,
@@ -2379,19 +2373,19 @@
     "id": 332,
     "lang": "en",
     "key": "checkout.phone_error",
-    "value": "Invalid phone number"
+    "value": "Please enter a valid phone number (at least 10 digits)"
   },
   {
     "id": 333,
     "lang": "ru",
     "key": "checkout.phone_error",
-    "value": "Неверный номер телефона"
+    "value": "Пожалуйста, введите корректный номер телефона (минимум 10 цифр)"
   },
   {
     "id": 331,
     "lang": "uk",
     "key": "checkout.phone_error",
-    "value": "Невірний номер телефону"
+    "value": "Будь ласка, введіть коректний номер телефону (мінімум 10 цифр)"
   },
   {
     "id": 212,
@@ -2433,19 +2427,19 @@
     "id": 230,
     "lang": "en",
     "key": "checkout.return_home",
-    "value": "Return to Home"
+    "value": "Return Home"
   },
   {
     "id": 231,
     "lang": "ru",
     "key": "checkout.return_home",
-    "value": "Вернуться на главную"
+    "value": "На главную"
   },
   {
     "id": 229,
     "lang": "uk",
     "key": "checkout.return_home",
-    "value": "Повернутися на головну"
+    "value": "На головну"
   },
   {
     "id": 197,
@@ -2493,13 +2487,13 @@
     "id": 24,
     "lang": "ru",
     "key": "checkout.total",
-    "value": "Итого"
+    "value": "Всего"
   },
   {
     "id": 22,
     "lang": "uk",
     "key": "checkout.total",
-    "value": "Разом"
+    "value": "Всього"
   },
   {
     "id": 26450,
@@ -6550,5 +6544,230 @@
     "lang": "uk",
     "key": "What is this?",
     "value": "Що це?"
+  },
+  {
+    "lang": "uk",
+    "key": "hero.description",
+    "value": "Професійний фотодрук онлайн. Завантажуйте фото з телефону чи комп'ютера, обирайте формат та отримуйте готові знімки вже сьогодні."
+  },
+  {
+    "lang": "ru",
+    "key": "hero.description",
+    "value": "Профессиональная фотопечать онлайн. Загружайте фото с телефона или компьютера, выбирайте формат и получайте готовые снимки уже сегодня."
+  },
+  {
+    "lang": "en",
+    "key": "hero.description",
+    "value": "Professional photo printing online. Upload photos from your phone or computer, choose format and get prints today."
+  },
+  {
+    "lang": "uk",
+    "key": "home.seo.title",
+    "value": "Послуги цифрового фотодруку через інтернет у м. Дніпро"
+  },
+  {
+    "lang": "uk",
+    "key": "home.seo.intro",
+    "value": "Як ви думаєте, для чого потрібні фотографії? Фотографії потрібні для того, щоб зафіксувати унікальні моменти життя, які, можливо, ніколи не повторяться!"
+  },
+  {
+    "lang": "uk",
+    "key": "home.seo.offer",
+    "value": "Саме це і пропонує своїм клієнтам служба друку фотографій онлайн «FUJI-Світ» — друк фотографій у Дніпрі. Ви скажете, що друк фото у Дніпрі пропонують багато хто, і, звісно ж, маєте рацію! Але відчути себе на крок попереду всіх, скориставшись послугою друку фотографій через інтернет у Дніпрі, допоможемо вам саме ми!"
+  },
+  {
+    "lang": "uk",
+    "key": "home.seo.services_title",
+    "value": "У нас ви можете замовити ряд дизайнерських послуг таких як:"
+  },
+  {
+    "lang": "uk",
+    "key": "home.seo.service_scanning",
+    "value": "сканування фотографій та плівок"
+  },
+  {
+    "lang": "uk",
+    "key": "home.seo.service_restoration",
+    "value": "реставрація та комп'ютерна обробка фотографій"
+  },
+  {
+    "lang": "uk",
+    "key": "home.seo.service_redeye",
+    "value": "усунення ефекту червоних очей"
+  },
+  {
+    "lang": "uk",
+    "key": "home.seo.service_collage",
+    "value": "розробка різноманітних макетів та колажів"
+  },
+  {
+    "lang": "uk",
+    "key": "home.seo.service_docs",
+    "value": "а також зробити фотографію на документи"
+  },
+  {
+    "lang": "uk",
+    "key": "home.seo.service_film",
+    "value": "продаж фотоплівки та проявка плівок"
+  },
+  {
+    "lang": "uk",
+    "key": "home.seo.service_frames",
+    "value": "продаж фоторамок різних розмірів"
+  },
+  {
+    "lang": "uk",
+    "key": "home.seo.slogan",
+    "value": "Наш сервіс для тих людей, хто цінує свій час та гроші!"
+  },
+  {
+    "lang": "ru",
+    "key": "home.seo.title",
+    "value": "Услуги цифровой фотопечати через интернет в г. Днепр"
+  },
+  {
+    "lang": "ru",
+    "key": "home.seo.intro",
+    "value": "Как вы думаете, для чего нужны фотографии? Фотографии нужны для того, чтобы запечатлеть уникальные моменты жизни, которые, возможно, никогда не повторятся!"
+  },
+  {
+    "lang": "ru",
+    "key": "home.seo.offer",
+    "value": "Именно это и предлагает своим клиентам служба печати фотографий онлайн «FUJI-Світ» — печать фотографий в Днепре. Вы скажете, что печать фото в Днепре предлагают многие, и, конечно же, будете правы! Но почувствовать себя на шаг впереди всех, воспользовавшись услугой печати фотографий через интернет в Днепре, поможем вам именно мы!"
+  },
+  {
+    "lang": "ru",
+    "key": "home.seo.services_title",
+    "value": "У нас вы можете заказать ряд дизайнерских услуг, таких как:"
+  },
+  {
+    "lang": "ru",
+    "key": "home.seo.service_scanning",
+    "value": "сканирование фотографий и пленок"
+  },
+  {
+    "lang": "ru",
+    "key": "home.seo.service_restoration",
+    "value": "реставрация и компьютерная обработка фотографий"
+  },
+  {
+    "lang": "ru",
+    "key": "home.seo.service_redeye",
+    "value": "устранение эффекта красных глаз"
+  },
+  {
+    "lang": "ru",
+    "key": "home.seo.service_collage",
+    "value": "разработка разнообразных макетов и коллажей"
+  },
+  {
+    "lang": "ru",
+    "key": "home.seo.service_docs",
+    "value": "а также сделать фотографию на документы"
+  },
+  {
+    "lang": "ru",
+    "key": "home.seo.service_film",
+    "value": "продажа фотопленки и проявка пленок"
+  },
+  {
+    "lang": "ru",
+    "key": "home.seo.service_frames",
+    "value": "продажа фоторамок разных размеров"
+  },
+  {
+    "lang": "ru",
+    "key": "home.seo.slogan",
+    "value": "Наш сервис для тех людей, кто ценит свое время и деньги!"
+  },
+  {
+    "lang": "en",
+    "key": "home.seo.title",
+    "value": "Digital photo printing services via the Internet in Dnipro"
+  },
+  {
+    "lang": "en",
+    "key": "home.seo.intro",
+    "value": "What do you think photographs are for? Photographs are needed to capture unique moments in life that may never happen again!"
+  },
+  {
+    "lang": "en",
+    "key": "home.seo.offer",
+    "value": "This is exactly what the online photo printing service «FUJI-Svit» offers — photo printing in Dnipro. You might say that many offer photo printing in Dnipro, and, of course, you would be right! But we are the ones who will help you feel a step ahead of everyone else by taking advantage of the online photo printing service in Dnipro!"
+  },
+  {
+    "lang": "en",
+    "key": "home.seo.services_title",
+    "value": "Here you can order a range of design services such as:"
+  },
+  {
+    "lang": "en",
+    "key": "home.seo.service_scanning",
+    "value": "scanning photos and films"
+  },
+  {
+    "lang": "en",
+    "key": "home.seo.service_restoration",
+    "value": "restoration and computer processing of photos"
+  },
+  {
+    "lang": "en",
+    "key": "home.seo.service_redeye",
+    "value": "red-eye removal"
+  },
+  {
+    "lang": "en",
+    "key": "home.seo.service_collage",
+    "value": "development of various layouts and collages"
+  },
+  {
+    "lang": "en",
+    "key": "home.seo.service_docs",
+    "value": "as well as take a photo for documents"
+  },
+  {
+    "lang": "en",
+    "key": "home.seo.service_film",
+    "value": "sale of photographic film and film development"
+  },
+  {
+    "lang": "en",
+    "key": "home.seo.service_frames",
+    "value": "sale of photo frames of various sizes"
+  },
+  {
+    "lang": "en",
+    "key": "home.seo.slogan",
+    "value": "Our service is for those who value their time and money!"
+  },
+  {
+    "lang": "uk",
+    "key": "home.formats_desc",
+    "value": "Оберіть формат, який підходить саме вам. Від класичних фотокарток до магнітів."
+  },
+  {
+    "lang": "ru",
+    "key": "home.formats_desc",
+    "value": "Выберите формат, который подходит именно вам. От классических фото до магнитов."
+  },
+  {
+    "lang": "en",
+    "key": "home.formats_desc",
+    "value": "Choose the format that suits you best. From classic photos to magnets."
+  },
+  {
+    "lang": "uk",
+    "key": "home.cta_desc",
+    "value": "Завантажуйте фото просто зараз і зберігайте спогади!"
+  },
+  {
+    "lang": "ru",
+    "key": "home.cta_desc",
+    "value": "Загружайте фото прямо сейчас и сохраняйте воспоминания!"
+  },
+  {
+    "lang": "en",
+    "key": "home.cta_desc",
+    "value": "Upload photos right now and preserve your memories!"
   }
 ]

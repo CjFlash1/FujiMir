@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 
 const NP_API_URL = "https://api.novaposhta.ua/v2.0/json/";
-export const DEFAULT_NP_KEY = "1f3dd12c344c40df149f57c68f13ddf7";
+// DEFAULT_NP_KEY removed to enforce user configuration
 
 interface NPRequest {
     apiKey: string;
@@ -11,16 +11,20 @@ interface NPRequest {
 }
 
 export async function npRequest(modelName: string, calledMethod: string, methodProperties: Record<string, any>, explicitApiKey?: string) {
-    let apiKey = explicitApiKey || DEFAULT_NP_KEY;
+    let apiKey = explicitApiKey;
 
-    // Only fetch from DB if no explicit key is provided and we are using default
+    // Only fetch from DB if no explicit key is provided
     if (!explicitApiKey) {
         try {
             const setting = await prisma.setting.findUnique({ where: { key: "novaposhta_api_key" } });
             if (setting?.value) apiKey = setting.value;
         } catch (e) {
-            console.warn("Failed to fetch NP API Key from DB, using default.");
+            console.warn("Failed to fetch NP API Key from DB.");
         }
+    }
+
+    if (!apiKey) {
+        return { success: false, errors: ["Nova Poshta API Key is missing. Please configure it in Settings."] };
     }
 
     const body: NPRequest = {

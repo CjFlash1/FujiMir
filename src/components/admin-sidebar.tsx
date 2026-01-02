@@ -142,14 +142,17 @@ export function AdminSidebar() {
 
     return (
         <>
-            {/* Mobile Menu Button - Fixed at top */}
+            {/* Mobile Header Bar */}
             {isMobile && !isMobileOpen && (
-                <button
-                    onClick={() => setIsMobileOpen(true)}
-                    className="fixed top-4 left-4 z-50 p-2 bg-slate-900 text-white rounded-lg shadow-lg md:hidden"
-                >
-                    <Menu className="w-6 h-6" />
-                </button>
+                <div className="fixed top-0 left-0 right-0 z-40 bg-slate-900 text-white px-4 py-3 flex items-center gap-3 shadow-lg md:hidden">
+                    <button
+                        onClick={() => setIsMobileOpen(true)}
+                        className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+                    >
+                        <Menu className="w-5 h-5" />
+                    </button>
+                    <span className="text-sm font-bold tracking-tight">Fujimir Admin</span>
+                </div>
             )}
 
             {/* Mobile Overlay */}

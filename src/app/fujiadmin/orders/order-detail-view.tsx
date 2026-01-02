@@ -135,7 +135,7 @@ export function OrderDetailView({ order }: { order: any }) {
     };
 
     const handleCancelTTN = async () => {
-        if (!confirm('Ви дійсно хочете видалити ТТН у системі Нової Пошти?')) return;
+        if (!confirm(t('admin.confirm_delete_ttn'))) return;
         try {
             const res = await fetch(`/api/fujiadmin/orders/${order.id}/ttn`, {
                 method: 'DELETE'
@@ -143,14 +143,14 @@ export function OrderDetailView({ order }: { order: any }) {
             if (res.ok) {
                 setOrderTTN(null);
                 router.refresh();
-                toast.success('ТТН видалено');
+                toast.success(t('admin.ttn_deleted', 'ТТН видалено'));
             } else {
                 const data = await res.json();
-                toast.error(`Помилка: ${data.error}`);
+                toast.error(t('ttn.error') + `: ${data.error}`);
             }
         } catch (e) {
             console.error(e);
-            toast.error('Помилка при видаленні ТТН');
+            toast.error(t('admin.ttn_delete_error'));
         }
     };
 
@@ -178,9 +178,20 @@ export function OrderDetailView({ order }: { order: any }) {
         let magnets = 0;
         let borders = 0;
         let totalPhotos = 0;
+        let archives = 0;
 
         order.items.forEach((item: any) => {
+            const files = getFilesFromItem(item);
+            const firstFile = files[0];
+            const fileName = firstFile?.original || item.fileName || "";
+            const isArchive = /\.(zip|rar|7z)$/i.test(fileName);
             const qty = item.options?.quantity || 1;
+
+            if (isArchive) {
+                archives += qty;
+                return;
+            }
+
             totalPhotos += qty;
 
             // Sizes
@@ -196,7 +207,7 @@ export function OrderDetailView({ order }: { order: any }) {
             if (item.options?.options?.border) borders += qty;
         });
 
-        return { sizes, papers, magnets, borders, totalPhotos };
+        return { sizes, papers, magnets, borders, totalPhotos, archives };
     }, [order.items]);
 
     // Delivery Cost Display
@@ -214,6 +225,9 @@ export function OrderDetailView({ order }: { order: any }) {
         if (orderSummary.magnets > 0) optionsArr.push('Магн: ' + orderSummary.magnets);
         if (orderSummary.borders > 0) optionsArr.push('Борд: ' + orderSummary.borders);
         const optionsStr = optionsArr.length > 0 ? optionsArr.join(', ') : '-';
+
+        const archivesStr = orderSummary.archives > 0 ? `<div><span class="summary-label">Архіви:</span><br><span class="summary-value">${orderSummary.archives} шт.</span></div>` : '';
+
 
         // Get delivery method translation
         const deliveryMethodDisplay =
@@ -271,6 +285,7 @@ export function OrderDetailView({ order }: { order: any }) {
             '<div><span class="summary-label">Папір:</span><br><span class="summary-value">' + papersStr + '</span></div>' +
             '<div><span class="summary-label">Опції:</span><br><span class="summary-value">' + optionsStr + '</span></div>' +
             '<div><span class="summary-label">ВСЬОГО:</span><br><span class="summary-value" style="font-size:13px;">' + orderSummary.totalPhotos + ' шт.</span></div>' +
+            archivesStr +
             '</div></div>' +
             '<div class="total-row"><span>Сума:</span><span>' + order.totalAmount.toFixed(2) + ' грн</span></div>' +
             '<script>window.onload=function(){window.print();}</script>' +
@@ -332,21 +347,21 @@ export function OrderDetailView({ order }: { order: any }) {
                     <div className="shrink-0 w-full bg-slate-900/95 text-white p-4 md:p-5 backdrop-blur-md border-t border-white/10" onClick={(e) => e.stopPropagation()}>
                         <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 text-sm">
                             <div>
-                                <div className="text-white/40 text-xs uppercase tracking-wider mb-1">Файл</div>
+                                <div className="text-white/40 text-xs uppercase tracking-wider mb-1">{t('admin.file')}</div>
                                 <div className="font-medium truncate" title={allImages[previewIndex].originalName}>
                                     {allImages[previewIndex].originalName}
                                 </div>
                             </div>
                             <div>
-                                <div className="text-white/40 text-xs uppercase tracking-wider mb-1">Параметри</div>
+                                <div className="text-white/40 text-xs uppercase tracking-wider mb-1">{t('admin.parameters')}</div>
                                 <div className="font-medium">
                                     {allImages[previewIndex].size} • {t(allImages[previewIndex].paper)}
                                 </div>
                             </div>
                             <div>
-                                <div className="text-white/40 text-xs uppercase tracking-wider mb-1">Тираж</div>
+                                <div className="text-white/40 text-xs uppercase tracking-wider mb-1">{t('admin.copies')}</div>
                                 <div className="font-medium">
-                                    {allImages[previewIndex].quantity} шт.
+                                    {allImages[previewIndex].quantity} {t('pcs')}
                                 </div>
                             </div>
                             <div className="flex items-center justify-end">
@@ -356,7 +371,7 @@ export function OrderDetailView({ order }: { order: any }) {
                                     className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-colors"
                                 >
                                     <Download className="w-4 h-4" />
-                                    <span>Завантажити JPG</span>
+                                    <span>{t('admin.download_jpg')}</span>
                                 </a>
                             </div>
                         </div>
@@ -595,42 +610,54 @@ export function OrderDetailView({ order }: { order: any }) {
                     <h3 className="font-semibold text-lg">{t('admin.order_statistics')}</h3>
                 </div>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                    {/* Archives Stats */}
+                    {orderSummary.archives > 0 && (
+                        <div>
+                            <h4 className="text-xs uppercase text-slate-500 font-bold mb-2 border-b border-slate-100 pb-1">{t('Archives', 'Архивы')}</h4>
+                            <div className="space-y-1">
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-slate-600">{t('Quantity')}</span>
+                                    <span className="font-bold text-slate-900">{orderSummary.archives} {t('pcs')}</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                     {/* Size Stats */}
                     <div>
-                        <h4 className="text-xs uppercase text-slate-500 font-bold mb-2 border-b border-slate-100 pb-1">Розміри фото</h4>
+                        <h4 className="text-xs uppercase text-slate-500 font-bold mb-2 border-b border-slate-100 pb-1">{t('admin.photo_sizes')}</h4>
                         <div className="space-y-1">
                             {Object.entries(orderSummary.sizes).map(([size, count]) => (
                                 <div key={size} className="flex justify-between text-sm">
                                     <span className="text-slate-600">{size}</span>
-                                    <span className="font-bold text-slate-900">{count} шт.</span>
+                                    <span className="font-bold text-slate-900">{count} {t('pcs')}</span>
                                 </div>
                             ))}
                         </div>
                     </div>
                     {/* Paper Stats */}
                     <div>
-                        <h4 className="text-xs uppercase text-slate-500 font-bold mb-2 border-b border-slate-100 pb-1">Тип паперу</h4>
+                        <h4 className="text-xs uppercase text-slate-500 font-bold mb-2 border-b border-slate-100 pb-1">{t('admin.paper_type')}</h4>
                         <div className="space-y-1">
                             {Object.entries(orderSummary.papers).map(([paper, count]) => (
                                 <div key={paper} className="flex justify-between text-sm">
                                     <span className="text-slate-600">{t(paper)}</span>
-                                    <span className="font-bold text-slate-900">{count} шт.</span>
+                                    <span className="font-bold text-slate-900">{count} {t('pcs')}</span>
                                 </div>
                             ))}
                         </div>
                     </div>
                     {/* Options Stats */}
                     <div>
-                        <h4 className="text-xs uppercase text-slate-500 font-bold mb-2 border-b border-slate-100 pb-1">Опції</h4>
+                        <h4 className="text-xs uppercase text-slate-500 font-bold mb-2 border-b border-slate-100 pb-1">{t('admin.options_title')}</h4>
                         <div className="space-y-1">
                             <div className="flex justify-between text-sm">
-                                <span className="text-slate-600">Магніт</span>
+                                <span className="text-slate-600">{t('Magnetic')}</span>
                                 <span className={`font-bold ${orderSummary.magnets > 0 ? 'text-slate-900' : 'text-slate-300'}`}>
                                     {orderSummary.magnets > 0 ? orderSummary.magnets : '-'}
                                 </span>
                             </div>
                             <div className="flex justify-between text-sm">
-                                <span className="text-slate-600">Біла рамка</span>
+                                <span className="text-slate-600">{t('Border')}</span>
                                 <span className={`font-bold ${orderSummary.borders > 0 ? 'text-slate-900' : 'text-slate-300'}`}>
                                     {orderSummary.borders > 0 ? orderSummary.borders : '-'}
                                 </span>
@@ -639,18 +666,18 @@ export function OrderDetailView({ order }: { order: any }) {
                     </div>
                     {/* Financial Stats */}
                     <div>
-                        <h4 className="text-xs uppercase text-slate-500 font-bold mb-2 border-b border-slate-100 pb-1">Фінал</h4>
+                        <h4 className="text-xs uppercase text-slate-500 font-bold mb-2 border-b border-slate-100 pb-1">{t('admin.final')}</h4>
                         <div className="space-y-1">
                             <div className="flex justify-between text-sm">
-                                <span className="text-slate-600">Всього фото</span>
-                                <span className="font-bold text-slate-900">{orderSummary.totalPhotos} шт.</span>
+                                <span className="text-slate-600">{t('admin.total_photos')}</span>
+                                <span className="font-bold text-slate-900">{orderSummary.totalPhotos} {t('pcs')}</span>
                             </div>
                             <div className="flex justify-between text-sm">
-                                <span className="text-slate-600">Доставка</span>
+                                <span className="text-slate-600">{t('pricing.delivery')}</span>
                                 <span className="font-bold text-slate-900">{deliveryCostDisplay}</span>
                             </div>
                             <div className="flex justify-between text-lg font-black text-primary-600 pt-2 border-t border-slate-100 mt-2">
-                                <span>Разом</span>
+                                <span>{t('checkout.total')}</span>
                                 <span>{order.totalAmount.toFixed(2)} {t('general.currency')}</span>
                             </div>
                         </div>

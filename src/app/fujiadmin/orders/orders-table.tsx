@@ -4,8 +4,16 @@ import { useTranslation } from "@/lib/i18n";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
+import { Trash2, ChevronLeft, ChevronRight, RefreshCw, Eye, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog";
 import { STATUS_COLORS, getStatusConfig } from "@/lib/constants/order-statuses";
 import { toast } from "sonner";
 
@@ -45,6 +53,7 @@ export function OrdersTable({ orders }: OrdersTableProps) {
     const [storageStats, setStorageStats] = useState<StorageStats | null>(null);
     const [isLoadingStats, setIsLoadingStats] = useState(false);
     const [isRunningCleanup, setIsRunningCleanup] = useState(false);
+    const [cleanupOpen, setCleanupOpen] = useState(false);
 
     // Load storage stats on mount
     const loadStorageStats = async () => {
@@ -65,27 +74,42 @@ export function OrdersTable({ orders }: OrdersTableProps) {
     // Run on mount
     useEffect(() => { loadStorageStats(); }, []);
 
-    const runCleanup = async () => {
-        if (!confirm(t('admin.cleanup_confirm') || 'Запустити очистку сховища? Загублені файли будуть перенесені в окреме замовлення для перегляду.')) return;
+    const runCleanup = () => setCleanupOpen(true);
+
+    const executeCleanup = async (mode: 'safe' | 'full') => {
+        setCleanupOpen(false);
+        if (mode === 'full') {
+            if (!confirm(t('admin.cleanup_full_confirm', 'WARNING! This will delete all temporary files and PENDING orders. Active client uploads will be lost. Are you sure?'))) return;
+        }
 
         setIsRunningCleanup(true);
+        const toastId = toast.loading(t('admin.cleaning', 'Cleaning...'));
         try {
-            const res = await fetch('/api/fujiadmin/cleanup', { method: 'POST' });
+            const res = await fetch('/api/fujiadmin/cleanup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode })
+            });
             const data = await res.json();
 
             if (data.success) {
-                if (data.orphansRecovered > 0) {
-                    toast.success(`Recovered ${data.orphansRecovered} files to Order #${data.recoveryOrderNumber}`);
+                if (mode === 'full') {
+                    toast.success(t('admin.full_cleaned', 'Storage fully cleaned!'), { id: toastId });
                     router.refresh();
                 } else {
-                    toast.success(t('admin.no_orphans') || 'Загублених файлів не знайдено. Сховище чисте!');
+                    if (data.orphansRecovered > 0) {
+                        toast.success(`Recovered ${data.orphansRecovered} files to Order #${data.recoveryOrderNumber}`, { id: toastId });
+                        router.refresh();
+                    } else {
+                        toast.success(t('admin.no_orphans') || 'No orphans found.', { id: toastId });
+                    }
                 }
-                loadStorageStats(); // Refresh stats
+                loadStorageStats();
             } else {
-                toast.error(data.error || 'Cleanup failed');
+                toast.error(data.error || 'Cleanup failed', { id: toastId });
             }
         } catch (e) {
-            toast.error('Cleanup failed');
+            toast.error('Cleanup failed', { id: toastId });
         } finally {
             setIsRunningCleanup(false);
         }
@@ -143,28 +167,61 @@ export function OrdersTable({ orders }: OrdersTableProps) {
         }
     };
 
+    const handleDeleteOrder = async (id: number) => {
+        if (!confirm(t('admin.confirm_delete_order', 'Видалити замовлення? Ця дія незворотна.'))) return;
+
+        const toastId = toast.loading(t('Deleting', 'Видалення...'));
+        try {
+            const res = await fetch(`/api/admin/orders/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                toast.success(t('admin.order_deleted', 'Замовлення видалено'), { id: toastId });
+                router.refresh();
+                if (selectedOrders.has(id)) {
+                    toggleSelect(id);
+                }
+            } else {
+                toast.error(t('admin.delete_failed', 'Помилка видалення'), { id: toastId });
+            }
+        } catch (e) {
+            console.error(e);
+            toast.error(t('admin.delete_failed', 'Помилка видалення'), { id: toastId });
+        }
+    };
+
     const handleBulkDelete = async () => {
         if (!confirm(t('Are you sure you want to delete selected orders?'))) return;
         setIsDeleting(true);
+        const total = selectedOrders.size;
+        let completed = 0;
+        const toastId = toast.loading(`${t('Deleting', 'Видалення')} 0/${total}...`);
+
         try {
             const results = await Promise.all(
                 Array.from(selectedOrders).map(async id => {
-                    const res = await fetch(`/api/admin/orders/${id}`, { method: 'DELETE' });
-                    return res.ok;
+                    try {
+                        const res = await fetch(`/api/admin/orders/${id}`, { method: 'DELETE' });
+                        completed++;
+                        // Update progress (throttling UI updates slightly is good practice but sonner handles it well)
+                        toast.loading(`${t('Deleting', 'Видалення')} ${completed}/${total}...`, { id: toastId });
+                        return res.ok;
+                    } catch (e) {
+                        completed++;
+                        return false;
+                    }
                 })
             );
 
             const failedCount = results.filter(r => !r).length;
             if (failedCount > 0) {
-                toast.error(`Failed to delete ${failedCount} orders.`);
+                toast.error(`Failed to delete ${failedCount} orders.`, { id: toastId });
             } else {
-                toast.success(t("admin.orders_deleted") || "Orders deleted");
+                toast.success(t("admin.orders_deleted") || "Orders deleted", { id: toastId });
             }
             router.refresh();
             setSelectedOrders(new Set());
         } catch (error) {
             console.error("Bulk delete failed", error);
-            toast.error("Some orders failed to delete");
+            toast.error("Some orders failed to delete", { id: toastId });
         } finally {
             setIsDeleting(false);
         }
@@ -311,9 +368,22 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <Link href={`/fujiadmin/orders/${order.id}`} className="text-primary-600 hover:text-primary-900 font-medium hover:underline">
-                                                    {t('admin.view')}
-                                                </Link>
+                                                <div className="flex items-center gap-3">
+                                                    <Link
+                                                        href={`/fujiadmin/orders/${order.id}`}
+                                                        className="group inline-flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-md hover:bg-blue-100 hover:border-blue-300 transition-all font-medium text-sm shadow-sm"
+                                                    >
+                                                        <Eye className="w-4 h-4 text-blue-500 group-hover:text-blue-700" />
+                                                        {t('admin.view', 'Перегляд')}
+                                                    </Link>
+                                                    <button
+                                                        onClick={() => handleDeleteOrder(order.id)}
+                                                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors border border-transparent hover:border-red-100"
+                                                        title={t('admin.delete', 'Видалити')}
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     );
@@ -379,6 +449,43 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                     </div>
                 )}
             </div>
+            <Dialog open={cleanupOpen} onOpenChange={setCleanupOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{t('admin.cleanup', 'Очистка')}</DialogTitle>
+                        <DialogDescription>
+                            {t('admin.cleanup_desc', 'Виберіть режим очистки.')}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex flex-col gap-6 py-4">
+                        <div className="flex flex-col gap-2">
+                            <h3 className="font-medium text-slate-900 flex items-center gap-2">
+                                <CheckCircle2 className="w-4 h-4 text-green-500" />
+                                {t('admin.cleanup_safe', 'Soft Clean (Безпечна)')}
+                            </h3>
+                            <p className="text-sm text-slate-500">
+                                {t('admin.cleanup_safe_desc', 'Видаляє тимчасові файли старші 1г та загублені файли старші 24г. Безпечно для активних користувачів.')}
+                            </p>
+                            <Button onClick={() => executeCleanup('safe')} variant="outline" className="w-full justify-start">
+                                {t('admin.run_safe_cleanup', 'Запустити Soft Clean')}
+                            </Button>
+                        </div>
+
+                        <div className="flex flex-col gap-2 pt-4 border-t border-slate-100">
+                            <h3 className="font-medium text-red-700 flex items-center gap-2">
+                                <AlertTriangle className="w-4 h-4" />
+                                {t('admin.cleanup_full', 'Full Clean (Повна очистка)')}
+                            </h3>
+                            <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md border border-red-100">
+                                {t('admin.cleanup_full_warning', 'Увага: Видаляє ВСІ тимчасові файли та замовлення в статусі PENDING. Активні завантаження клієнтів будуть перервані і втрачені.')}
+                            </div>
+                            <Button onClick={() => executeCleanup('full')} variant="destructive" className="w-full justify-start mt-1">
+                                {t('admin.run_full_cleanup', 'Запустити Full Clean')}
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

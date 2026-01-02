@@ -1,0 +1,3 @@
+REPLACE INTO Translation (lang, `key`, value) VALUES ('uk', 'home.formats_desc', 'Оберіть формат, який підходить саме вам. Від класичних фотокарток до магнітів.');
+REPLACE INTO Translation (lang, `key`, value) VALUES ('ru', 'home.formats_desc', 'Выберите формат, который подходит именно вам. От классических фото до магнитов.');
+REPLACE INTO Translation (lang, `key`, value) VALUES ('en', 'home.formats_desc', 'Choose the format that suits you best. From classic photos to magnets.');

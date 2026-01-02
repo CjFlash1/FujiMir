@@ -280,9 +280,6 @@ export default function UploadPage() {
                                         </Button>
                                     </>
                                 )}
-                                <Button variant="ghost" size="sm" onClick={() => bulkCloneItems(files.map(f => f.id))} className="text-[#4c4c4c]/50 hover:text-[#4c4c4c] font-bold">
-                                    {t('Duplicate All')}
-                                </Button>
                             </div>
                         </div>
 
@@ -300,12 +297,30 @@ export default function UploadPage() {
                                         )}
                                     >
                                         {isArchive ? (
-                                            <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-gray-100 text-gray-400">
-                                                <Archive className="w-16 h-16 mb-2 text-gray-300" />
-                                                <span className="text-[10px] font-bold uppercase tracking-wider">Archive</span>
-                                            </div>
+                                            // Archive files
+                                            file.serverFileName ? (
+                                                // Uploaded archive - show icon
+                                                <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-gray-100 text-gray-400">
+                                                    <Archive className="w-16 h-16 mb-2 text-gray-300" />
+                                                    <span className="text-[10px] font-bold uppercase tracking-wider">Archive</span>
+                                                </div>
+                                            ) : (
+                                                // Uploading archive - show progress
+                                                <>
+                                                    <div className="absolute inset-0 bg-slate-50 z-0" />
+                                                    <div className="absolute inset-0 z-30 pointer-events-none flex flex-col items-center justify-center pb-12">
+                                                        <Archive className="w-10 h-10 mb-2 text-gray-300" />
+                                                        <div className="bg-white p-2 rounded-full shadow-md flex flex-col items-center justify-center w-14 h-14 border-2 border-[#009846]/20">
+                                                            <Loader2 className="w-6 h-6 animate-spin text-[#009846]" />
+                                                            <span className="text-[9px] font-black text-[#009846] mt-0.5">
+                                                                {uploads[file.id]?.progress || 0}%
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )
                                         ) : file.serverFileName ? (
-                                            // Uploaded - show fast thumbnail preview (~30KB instead of 5MB)
+                                            // Uploaded photo - show fast thumbnail preview (~30KB instead of 5MB)
                                             <img
                                                 src={`/api/uploads/thumb/${file.serverFileName}`}
                                                 alt={file.name || "Photo"}
@@ -317,13 +332,18 @@ export default function UploadPage() {
                                                 }}
                                             />
                                         ) : (
-                                            // Not yet uploaded - show placeholder with progress
-                                            <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-slate-100 text-slate-400">
-                                                <Loader2 className="w-10 h-10 mb-2 animate-spin text-blue-400" />
-                                                <span className="text-[10px] font-bold uppercase tracking-wider">
-                                                    {uploads[file.id]?.progress || 0}%
-                                                </span>
-                                            </div>
+                                            // Not yet uploaded photo - show placeholder with progress
+                                            <>
+                                                <div className="absolute inset-0 bg-slate-50 z-0" />
+                                                <div className="absolute inset-0 z-30 pointer-events-none flex flex-col items-center justify-center pb-12">
+                                                    <div className="bg-white p-2 rounded-full shadow-md flex flex-col items-center justify-center w-14 h-14 border-2 border-[#009846]/20">
+                                                        <Loader2 className="w-6 h-6 animate-spin text-[#009846]" />
+                                                        <span className="text-[9px] font-black text-[#009846] mt-0.5">
+                                                            {uploads[file.id]?.progress || 0}%
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </>
                                         )}
 
                                         {/* Constant Filename Display */}
@@ -424,15 +444,15 @@ export default function UploadPage() {
                                             )}>
                                             {selectedIds.includes(file.id) && <div className="w-2.5 h-2.5 bg-white rounded-full" />}
                                         </div>
-
                                         {/* Hover Actions */}
-                                        {/* Action Buttons & Filename - Always visible for better mobile UX */}
+
+                                        {/* Action Buttons & Filename - Always visible to allow cancel/delete */}
                                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-2 pt-12 flex flex-col items-center justify-end gap-2 z-20">
 
                                             {/* Buttons Row */}
                                             <div className="flex items-center gap-3">
                                                 {/* Settings - Hide for archives */}
-                                                {!isArchive && (
+                                                {!isArchive && file.serverFileName && (
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
@@ -449,7 +469,9 @@ export default function UploadPage() {
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        removeItem(file.id);
+                                                        if (confirm(t('Remove') + '?')) {
+                                                            removeItem(file.id);
+                                                        }
                                                     }}
                                                     className="w-9 h-9 flex items-center justify-center bg-white/90 hover:bg-white text-[#e31e24] rounded-full shadow-xl backdrop-blur-sm transition-transform active:scale-95 border border-white/50"
                                                     title={t('Remove')}
@@ -463,31 +485,36 @@ export default function UploadPage() {
                                                 {file.name || file.file?.name}
                                             </p>
                                         </div>
+
                                     </div>
                                 );
                             })}
                         </div>
 
                         {/* Show More Button for pagination */}
-                        {files.length > photosToShow && (
-                            <div className="mt-6 text-center">
-                                <Button
-                                    variant="outline"
-                                    size="lg"
-                                    onClick={() => setPhotosToShow(prev => prev + PHOTOS_PER_PAGE)}
-                                    className="gap-2 font-bold uppercase tracking-tight"
-                                >
-                                    {t('Показати ще')} {Math.min(PHOTOS_PER_PAGE, files.length - photosToShow)} {t('фото')}
-                                </Button>
-                            </div>
-                        )}
+                        {
+                            files.length > photosToShow && (
+                                <div className="mt-6 text-center">
+                                    <Button
+                                        variant="outline"
+                                        size="lg"
+                                        onClick={() => setPhotosToShow(prev => prev + PHOTOS_PER_PAGE)}
+                                        className="gap-2 font-bold uppercase tracking-tight"
+                                    >
+                                        {t('upload.show_more')} {Math.min(PHOTOS_PER_PAGE, files.length - photosToShow)} {t('upload.photos')}
+                                    </Button>
+                                </div>
+                            )
+                        }
 
                         {/* Progress indicator for large uploads */}
-                        {files.length > 100 && (
-                            <div className="mt-4 text-center text-sm text-[#4c4c4c]/50 font-bold uppercase tracking-wide">
-                                {t('Показано')} {Math.min(photosToShow, files.length)} {t('з')} {files.length} {t('фото')}
-                            </div>
-                        )}
+                        {
+                            files.length > 100 && (
+                                <div className="mt-4 text-center text-sm text-[#4c4c4c]/50 font-bold uppercase tracking-wide">
+                                    {t('upload.shown')} {Math.min(photosToShow, files.length)} {t('upload.of')} {files.length} {t('upload.photos')}
+                                </div>
+                            )
+                        }
 
                     </div>
                 )}
@@ -680,6 +707,6 @@ export default function UploadPage() {
 
 
             </div>
-        </div>
+        </div >
     );
 }

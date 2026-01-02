@@ -40,13 +40,13 @@ export default function SettingsPage() {
             const data = await res.json();
             setNpValidationResult(data);
             if (data.valid) {
-                toast.success('Ключ API дійсний!');
+                toast.success(t('settings.np_valid', 'Ключ дійсний'));
             } else {
-                toast.error('Недійсний ключ: ' + (data.error || 'Unknown error'));
+                toast.error(t('settings.np_invalid', 'Невірний ключ') + ': ' + (data.error || 'Unknown error'));
             }
         } catch (e) {
             console.error(e);
-            toast.error('Помилка перевірки');
+            toast.error(t('settings.np_check_error', 'Помилка перевірки'));
         } finally {
             setNpValidating(false);
         }
@@ -113,12 +113,12 @@ export default function SettingsPage() {
             ]
         },
         {
-            title: t('settings.seo'),
-            description: t('settings.seo_desc'),
+            title: t('settings.seo', 'SEO'),
+            description: t('settings.seo_desc', 'Оптимизация для поисковиков'),
             items: [
-                { key: "google_verification", label: t('settings.google_verification'), icon: Search, placeholder: "google-site-verification code" },
-                { key: "yandex_verification", label: t('settings.yandex_verification'), icon: Search, placeholder: "yandex-verification code" },
-                { key: "bing_verification", label: t('settings.bing_verification'), icon: Search, placeholder: "msvalidate.01 code" },
+                { key: "google_verification", label: t('settings.google_verification', 'Verification Google'), icon: Search, placeholder: "google-site-verification code" },
+                { key: "yandex_verification", label: t('settings.yandex_verification', 'Verification Yandex'), icon: Search, placeholder: "yandex-verification code" },
+                { key: "bing_verification", label: t('settings.bing_verification', 'Verification Bing'), icon: Search, placeholder: "msvalidate.01 code" },
             ]
         },
         {
@@ -241,7 +241,7 @@ export default function SettingsPage() {
                                             className="text-xs h-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                                         >
                                             {npValidating ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <CheckCircle className="w-3 h-3 mr-1" />}
-                                            Перевірити ключ
+                                            {t('settings.np_validate', 'Перевірити ключ')}
                                         </Button>
 
                                         {npValidationResult && (
@@ -253,7 +253,7 @@ export default function SettingsPage() {
                                                         {npValidationResult.city && <span className="opacity-75 text-[10px] uppercase tracking-wide ml-1">({npValidationResult.city})</span>}
                                                     </span>
                                                 ) : (
-                                                    <span>{npValidationResult.error || 'Помилка'}</span>
+                                                    <span>{npValidationResult.error || t('ttn.error')}</span>
                                                 )}
                                             </div>
                                         )}

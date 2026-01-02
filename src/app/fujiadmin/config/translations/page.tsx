@@ -50,10 +50,18 @@ export default function TranslationManager() {
         }
     };
 
-    const filtered = translations.filter(t =>
-        t.key.toLowerCase().includes(search.toLowerCase()) ||
-        t.value.toLowerCase().includes(search.toLowerCase())
+    const matchingKeys = new Set(
+        translations
+            .filter(item =>
+                item.key.toLowerCase().includes(search.toLowerCase()) ||
+                (item.value && item.value.toLowerCase().includes(search.toLowerCase()))
+            )
+            .map(item => item.key)
     );
+
+    const filtered = translations
+        .filter(t => !search || matchingKeys.has(t.key))
+        .sort((a, b) => a.key.localeCompare(b.key) || a.lang.localeCompare(b.lang));
 
     if (loading) {
         return (
