@@ -1,46 +1,33 @@
 #!/bin/bash
-# deploy.sh v2 - Fix npx and memory issues
+# Minimal Deploy Script
 
-LOG_FILE="deploy.log"
-DATE_NOW=$(date)
-echo "" >> $LOG_FILE
-echo "=== Deployment started at $DATE_NOW ===" >> $LOG_FILE
+echo "=== DEPLOY START $(date) ==="
 
-# 1. Force Node 20 (LTS) or 18. Avoid 21.x.
-# Plesk paths usually: /opt/plesk/node/20/bin
+# Force Node 20 (LTS) to avoid uv_resident_set_memory crash in v21
 export PATH=/opt/plesk/node/20/bin:/opt/plesk/node/18/bin:$PATH
+echo "Using Node (Forced): $(node -v)"
 
-echo "Using Node: $(node -v)" >> $LOG_FILE
-echo "Using NPM: $(npm -v)" >> $LOG_FILE
+# 1. Install dependencies
+echo "--- INSTALLING ---"
+npm install --no-audit
 
-# 2. Install dependencies
-echo "Installing dependencies..." >> $LOG_FILE
-# Install production + dev dependencies (needed for build) without audit to be faster
-npm install --legacy-peer-deps --no-audit >> $LOG_FILE 2>&1
+# 2. Database (Prisma)
+echo "--- PRISMA ---"
+# Use npm exec to reliably find the binary
+npm exec prisma generate
+npm exec prisma db push --accept-data-loss
 
-# 3. Database Setup (Prisma)
-echo "Running Prisma Generate..." >> $LOG_FILE
-# Use npm exec to avoid 'npx not found' issues
-npm exec prisma generate >> $LOG_FILE 2>&1
-
-echo "Pushing DB Schema..." >> $LOG_FILE
-npm exec prisma db push --accept-data-loss >> $LOG_FILE 2>&1
-
-echo "Seeding Database..." >> $LOG_FILE
-npm exec prisma db seed >> $LOG_FILE 2>&1
-
-# 4. Build Application
-echo "Building application..." >> $LOG_FILE
-# Set NODE_OPTIONS to increase memory limit for build
-export NODE_OPTIONS="--max-old-space-size=2048"
+# 3. Build (CRITICAL STEP)
+echo "--- BUILDING ---"
+export NODE_OPTIONS="--max-old-space-size=3072"
 export NEXT_TELEMETRY_DISABLED=1
 
-# Build (linting disabled in next.config.ts)
-npm run build >> $LOG_FILE 2>&1
+# Run build nicely
+npm run build
 
-# 5. Restart
-echo "Triggering restart..." >> $LOG_FILE
+# 4. Restart
+echo "--- RESTARTING ---"
 mkdir -p tmp
 touch tmp/restart.txt
 
-echo "=== Deployment Finished ===" >> $LOG_FILE
+echo "=== SUCCESS ==="

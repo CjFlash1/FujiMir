@@ -279,9 +279,9 @@ export default function Home() {
           </p>
 
           <Link href="/upload">
-            <Button size="lg" className="h-20 bg-white text-[#009846] hover:bg-green-50 text-2xl px-16 rounded-3xl font-bold shadow-2xl shadow-green-900/20 transition-all hover:scale-105 hover:-translate-y-1">
+            <Button size="lg" className="h-20 bg-white text-[#009846] hover:bg-green-50 text-xl md:text-2xl px-6 md:px-16 rounded-3xl font-bold shadow-2xl shadow-green-900/20 transition-all hover:scale-105 hover:-translate-y-1 w-full md:w-auto">
               {t('nav.upload')}
-              <Upload className="w-6 h-6 ml-3" />
+              <Upload className="w-6 h-6 ml-3 shrink-0" />
             </Button>
           </Link>
         </div>
